@@ -1,5 +1,6 @@
 import sys
 from types import SimpleNamespace
+from contextlib import contextmanager
 import numpy as np
 import pymupdf
 from vvs_engine.source_rules.tiled_detection import detect, tile_starts
@@ -15,6 +16,11 @@ def test_tiles_cover_entire_axis_with_overlap():
 
 def test_clipped_rasters_keep_coordinates_and_deduplicate_overlap(tmp_path, monkeypatch):
     monkeypatch.setenv('VVS_DETECTION_TILE_PX', '1024')
+    from vvs_engine.source_rules import tiled_detection
+    @contextmanager
+    def model():
+        yield ['Label_Box'], 'test'
+    monkeypatch.setattr(tiled_detection, 'bounded_model', model)
     calls = []
     def boxes(image, conf):
         calls.append(image.shape)
@@ -34,3 +40,32 @@ def test_clipped_rasters_keep_coordinates_and_deduplicate_overlap(tmp_path, monk
     assert len(result['label_boxes']) == 1
     assert np.allclose(result['label_boxes'][0]['rect'], [450,100,470,120], atol=.5)
     assert result['raster_strategy']['dpi'] == 144
+
+
+def test_model_memory_options_and_session_restored_on_failure(monkeypatch):
+    from vvs_engine.source_rules.tiled_detection import bounded_model
+    previous = object()
+    pipe = SimpleNamespace(CONFIG={'model_path':'test.onnx'}, _session=previous)
+    sessions = []
+    def session(path, sess_options, providers):
+        assert path == 'test.onnx'
+        assert providers == ['CPUExecutionProvider']
+        assert sess_options.enable_cpu_mem_arena is False
+        assert sess_options.enable_mem_pattern is False
+        assert sess_options.intra_op_num_threads == 1
+        assert sess_options.inter_op_num_threads == 1
+        result = SimpleNamespace(get_modelmeta=lambda: SimpleNamespace(
+            custom_metadata_map={'1':'type2_label','0':'Label_Box'}))
+        sessions.append(result)
+        return result
+    monkeypatch.setitem(sys.modules, 'pipe_ai', pipe)
+    monkeypatch.setitem(sys.modules, 'onnxruntime', SimpleNamespace(
+        SessionOptions=SimpleNamespace, InferenceSession=session))
+    import pytest
+    with pytest.raises(RuntimeError, match='cancelled'):
+        with bounded_model() as (classes, provider):
+            assert classes == ['Label_Box','type2_label']
+            assert provider == 'cpu'
+            assert pipe._session[0] is sessions[0]
+            raise RuntimeError('cancelled')
+    assert pipe._session is previous

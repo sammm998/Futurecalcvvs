@@ -5,6 +5,7 @@ Only small box records are retained between tiles, never a full-page raster.
 """
 import math
 import os
+from contextlib import contextmanager
 
 
 def tile_starts(length, size, overlap):
@@ -16,7 +17,36 @@ def tile_starts(length, size, overlap):
     return starts
 
 
+@contextmanager
+def bounded_model():
+    """Release the model and its allocations before OCR and graph assembly."""
+    import pipe_ai
+    import onnxruntime as ort
+    options = ort.SessionOptions()
+    options.enable_cpu_mem_arena = False
+    options.enable_mem_pattern = False
+    options.intra_op_num_threads = 1
+    options.inter_op_num_threads = 1
+    options.log_severity_level = 3
+    session = ort.InferenceSession(pipe_ai.CONFIG['model_path'], sess_options=options,
+                                   providers=['CPUExecutionProvider'])
+    meta = session.get_modelmeta().custom_metadata_map
+    classes = [meta[k] for k in sorted(meta, key=int)]
+    previous = pipe_ai._session
+    pipe_ai._session = (session, classes, 'cpu')
+    try:
+        yield classes, 'cpu'
+    finally:
+        pipe_ai._session = previous
+        del session
+
+
 def detect(pdf_path, page_no=0, *, progress=None):
+    with bounded_model() as (classes, provider):
+        return _detect_tiles(pdf_path, page_no, classes, provider, progress=progress)
+
+
+def _detect_tiles(pdf_path, page_no, classes, provider, *, progress=None):
     import cv2
     import numpy as np
     import pymupdf
@@ -29,7 +59,6 @@ def detect(pdf_path, page_no=0, *, progress=None):
     scale = float(pipe_ai.CONFIG['render_dpi']) / 72
     if not math.isfinite(scale) or scale <= 0:
         raise ValueError('AI_RENDER_DPI must be positive and finite')
-    _, classes, provider = pipe_ai._get_session()
     floor = 0.05  # Same threshold as vectorascore.detect.LABEL_CONF.
     found = []
     with pymupdf.open(pdf_path) as doc:

@@ -7,13 +7,18 @@ import signal
 from pathlib import Path
 import time
 import traceback
-from copy import deepcopy
 
 
 def _cached_detector(output_dir, detect_page):
     """Reuse expensive extraction, but isolate each scale pass's graph edits."""
     import json
+    import pickle
+    import tempfile
     from pathlib import Path
+    # Only files created by this closure are read as pickle, from a private
+    # temporary directory. Preserve tuple/int-key types without retaining all
+    # pages' graphs in RAM or accepting uploaded pickle artifacts.
+    cache = tempfile.TemporaryDirectory(prefix='vvs-detector-cache-')
     detected = {}
 
     def detector(pdf, page, **options):
@@ -22,9 +27,15 @@ def _cached_detector(output_dir, detect_page):
             target = Path(output_dir) / 'native-detection' / str(page)
             result = detect_page(pdf, page, artifact_dir=target, **options)
             target.mkdir(parents=True, exist_ok=True)
-            (target / 'result.json').write_text(json.dumps(result, ensure_ascii=False))
-            detected[key] = deepcopy(result)
-        return deepcopy(detected[key])
+            with (target / 'result.json').open('w') as stream:
+                json.dump(result, stream, ensure_ascii=False)
+            cached = Path(cache.name) / str(len(detected))
+            with cached.open('wb') as stream:
+                pickle.dump(result, stream, protocol=pickle.HIGHEST_PROTOCOL)
+            detected[key] = cached
+            del result
+        with detected[key].open('rb') as stream:
+            return pickle.load(stream)
 
     return detector
 

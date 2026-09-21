@@ -28,3 +28,14 @@ def test_scale_pass_receives_fresh_nested_graph_and_raw_artifact(tmp_path):
     assert raw == original
     detector(tmp_path / 'sheet.pdf', 1)
     assert len(calls) == 2
+
+
+def test_disk_cache_preserves_graph_key_and_point_types(tmp_path):
+    path = Path(__file__).resolve().parents[2] / 'backend/app/analysis_worker.py'
+    spec = importlib.util.spec_from_file_location('worker_cache_types_test', path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    original = {'nodes': {7: (1.25, 4.5)}}
+    detector = module._cached_detector(tmp_path, lambda *a, **kw: original)
+    assert detector(tmp_path/'sheet.pdf', 0) == original
+    assert detector(tmp_path/'sheet.pdf', 0) == original

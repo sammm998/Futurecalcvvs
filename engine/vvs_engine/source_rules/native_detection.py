@@ -17,6 +17,11 @@ ROOT = Path(__file__).resolve().parents[3]
 SOURCE = ROOT / 'reference_sources' / 'pipestudio-main'
 
 
+def _pdf_digest(path):
+    with open(path, 'rb') as stream:
+        return hashlib.file_digest(stream, 'sha256').hexdigest()
+
+
 def load_runtime():
     source = str(SOURCE)
     if source not in sys.path:
@@ -43,7 +48,8 @@ def detect_page(pdf_path, page_number=0, style=None, progress=None, artifact_dir
         if artifact_dir:
             target = Path(artifact_dir) / name
             target.parent.mkdir(parents=True, exist_ok=True)
-            target.write_text(json.dumps(value, ensure_ascii=False))
+            with target.open('w') as stream:
+                json.dump(value, stream, ensure_ascii=False)
     def stage(name, fn):
         if progress: progress('PIPESTUDIO_' + name.upper())
         start = time.monotonic()
@@ -58,13 +64,15 @@ def detect_page(pdf_path, page_number=0, style=None, progress=None, artifact_dir
                 if report and report.get('partial'):
                     raise ValueError('Cannot isolate original drawing ink for native detection')
             doc.save(clean)
-        ex = stage('extract', lambda: extract.extract(clean, page_number))
-        P = stage('profile', lambda: profile.profile(ex))
         if strict_original:
             det = stage('detect', lambda: detect.detect(clean, page_number))
         else:
             from .tiled_detection import detect as bounded_detect
             det = stage('detect', lambda: bounded_detect(clean, page_number, progress=progress))
+        # Model inference does not need the vector graph. Build it afterwards
+        # so its allocations do not overlap the ONNX working set.
+        ex = stage('extract', lambda: extract.extract(clean, page_number))
+        P = stage('profile', lambda: profile.profile(ex))
         det = labels.text_label_boxes(ex, det, text_height=style_module.text_height(ex)[0])
         L = stage('ocr', lambda: labels.read_labels(clean, det, page_no=page_number))
         rotated_repairs = []
@@ -97,7 +105,7 @@ def detect_page(pdf_path, page_number=0, style=None, progress=None, artifact_dir
             L = [l for l in L if l['id'] not in excluded]
             det = {**det, 'label_boxes': [b for b in det['label_boxes'] if b['id'] not in excluded]}
         B, A, L, R = stage('vector_stages', lambda: vector_stages(ex, P, det, L, selected, mode='auto'))
-        return {'source_pdf_sha256': hashlib.sha256(Path(pdf_path).read_bytes()).hexdigest(),
+        return {'source_pdf_sha256': _pdf_digest(pdf_path),
                 'page': page_number, 'extraction': asdict(ex), 'profile': P,
                 'detection': det, 'bucket': B, 'graph': A, 'labels': L,
                 'association': R, 'timings': timings, 'style': selected, 'style_match': match,
