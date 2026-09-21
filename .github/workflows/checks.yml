@@ -27,6 +27,8 @@ jobs:
         working-directory: frontend
       - run: node --experimental-strip-types tools/test_live.mjs
         working-directory: frontend
+      - run: node --experimental-strip-types tools/test_palette.mjs
+        working-directory: frontend
 
   engine:
     runs-on: ubuntu-latest

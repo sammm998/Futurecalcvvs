@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { t as tr, num } from "../i18n";
 import { api } from "../api";
-import { identityColor } from "../palette";
+import { pipeColor } from "../palette";
 
 export type Draft = { points: number[][]; meters: number; hits?: string[] } | null;
 
@@ -102,7 +102,7 @@ export default function Corrections({ drawingId, jobId, page, quantities, correc
           <div className="subject">
             {/* hashed on the identity key, the same string the run on the sheet and the table hash, so the
                 chip is the colour of the run it names */}
-            <span className="sw" style={{ background: identityColor(pipe.identity ?? subject) }} />
+            <span className="sw" style={{ background: pipeColor({ ...pipe, identity: pipe.identity ?? subject }) }} />
             <b>{subject}</b>
             <span className="muted">
               {pipe.total_m != null ? ` · ${num(Number(pipe.total_m), 2)} m` : ""}

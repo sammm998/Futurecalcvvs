@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { identityColor } from "../palette";
+import { identityColor, pipeColor } from "../palette";
 
 export const identityKey = (r: any) => `${r.base}|DN${r.dn ?? "?"}`;
 import { t as tr } from "../i18n";
@@ -140,7 +140,7 @@ export default function QuantityTable({ rows, selected, onSelect, floorHeight, i
                     return (
                       <tr key={`${identityKey(r)}-run-${p.physical_pipe_id}`} className="run"
                         onClick={() => onPipeClick?.(p)}>
-                        <td>{String(i + 1).padStart(2, "0")} · sträcka</td>
+                        <td><span style={{ display: "inline-block", width: 12, height: 12, borderRadius: 2, background: pipeColor(p), marginRight: 6 }} />{String(i + 1).padStart(2, "0")} · sträcka</td>
                         <td colSpan={2} className="muted">
                           sida {(p.page ?? 0) + 1} · {labels} etikett{labels === 1 ? "" : "er"}
                         </td>

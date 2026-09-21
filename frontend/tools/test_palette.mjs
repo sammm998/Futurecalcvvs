@@ -1,0 +1,13 @@
+import assert from 'node:assert/strict';
+import { Color } from 'three';
+import { identityColor, pipeColor, pipeColorKey } from '../src/palette.ts';
+const pipe = {identity:'S3-R8|DN110',section_levels:[{level:{kind:'VG',value:1.62}}]};
+assert.notEqual(pipeColor(pipe),pipeColor({...pipe,identity:'S3-R8|DN160'}));
+assert.notEqual(pipeColor(pipe),pipeColor({...pipe,section_levels:[{level:{kind:'VG',value:1.64}}]}));
+assert.notEqual(identityColor('S3-R8|DN75'),identityColor('S3-R8|DN110'));
+assert.equal(pipeColorKey(pipe),pipeColorKey({...pipe,section_levels:[...pipe.section_levels,...pipe.section_levels]}));
+const levels=[...pipe.section_levels,{level:{kind:'VG',value:1.64}}];
+assert.equal(pipeColorKey({...pipe,section_levels:levels}),pipeColorKey({...pipe,section_levels:levels.toReversed()}));
+const colour=new Color(pipeColor(pipe));
+assert.notEqual(colour.getHexString(),'ffffff');
+console.log('Pipe colours: dimensions, levels, stable ordering and 3D parsing passed');

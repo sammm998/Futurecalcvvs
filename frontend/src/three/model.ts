@@ -9,7 +9,7 @@
  * påhittat i detalj. Det som inte går att avgöra byggs inte.
  */
 
-import { identityColor } from "../palette";
+import { identityColor, pipeColorKey } from "../palette";
 
 export type Vec2 = [number, number];
 
@@ -253,7 +253,7 @@ export function buildModel(result: Result, opts: { floorHeight?: number; wallLim
   for (const p of result.pipes ?? []) {
     const des: string = p.designation ?? (typeof p.identity === "string" ? p.identity : p.identity?.display) ?? "";
     const dn: number | null = p.dn ?? (typeof p.identity === "object" ? p.identity?.dn : null) ?? null;
-    const key = typeof p.identity === "string" && p.identity ? p.identity : des;
+    const key = pipeColorKey({ ...p, identity: typeof p.identity === "string" ? p.identity : undefined, designation: des, dn });
     let n = 0;
     for (const poly of polylinesOf(p)) push(`${p.physical_pipe_id ?? p.id ?? pipes.length}-${n++}`, des, dn, poly, false, key);
   }

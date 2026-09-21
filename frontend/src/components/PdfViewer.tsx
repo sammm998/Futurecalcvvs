@@ -23,7 +23,7 @@ export interface Drawn {
 
 // paletten bor i src/palette.ts så att bladet, tabellen och 3D-vyn ger samma rör samma färg; den lånas vidare
 // härifrån för dem som redan hämtar den från vyn
-import { identityColor } from "../palette";
+import { identityColor, pipeColor } from "../palette";
 export { identityColor };
 
 const len = (a: number[], b: number[]) => Math.hypot(b[0] - a[0], b[1] - a[1]);
@@ -867,7 +867,7 @@ const PdfViewer = forwardRef<ViewerHandle, ViewerProps>(function PdfViewer(props
                       strokeLinecap="round" strokeLinejoin="round"
                       style={{ pointerEvents: pick, cursor: "pointer" }} onClick={() => props.onPipeClick(p)} />
                     <polyline points={pts} fill="none"
-                      stroke={sel ? "#ff2d00" : identityColor(p.identity)} strokeWidth={sw(sel ? 5 : 3.2)}
+                      stroke={sel ? "#ff2d00" : pipeColor(p)} strokeWidth={sw(sel ? 5 : 3.2)}
                       strokeOpacity={dim ? 0.25 : 0.85} strokeLinecap="round" strokeLinejoin="round"
                       style={{ pointerEvents: "none" }} />
                   </g>
