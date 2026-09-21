@@ -524,7 +524,7 @@ export default function AnalysisPage() {
         </div>
         {tab === "mangder" && (
           <div className="card">
-            <SourceAssignment report={result.source_assignment} onZoom={(box) => viewer.current?.zoomTo(box)} />
+            <SourceAssignment report={result.source_assignment} />
             <div className="row" style={{ marginBottom: 18 }}>
               <button className="secondary small" disabled={rescaling} onClick={async () => {
                 setRescaling(true); setActionErr("");
@@ -749,7 +749,7 @@ export default function AnalysisPage() {
           const risers = calc.reduce((t: number, r: any) => t + (r.risers_calc || 0), 0);
           return (
           <div className="card">
-            <SourceAssignment report={result.source_assignment} onZoom={(box) => viewer.current?.zoomTo(box)} />
+            <SourceAssignment report={result.source_assignment} />
             <div className="row" style={{ marginBottom: 18 }}>
               <button className="secondary small" disabled={rescaling} onClick={async () => {
                 setRescaling(true); setActionErr("");
