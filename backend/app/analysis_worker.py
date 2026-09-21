@@ -9,7 +9,7 @@ import time
 import traceback
 
 
-def _cached_detector(output_dir, detect_page):
+def _cached_detector(output_dir, detect_page, persistent_dir=None, revision=None, cache_context=None):
     """Reuse expensive extraction, but isolate each scale pass's graph edits."""
     import json
     import pickle
@@ -25,7 +25,12 @@ def _cached_detector(output_dir, detect_page):
         key = (str(Path(pdf).resolve()), page)
         if key not in detected:
             target = Path(output_dir) / 'native-detection' / str(page)
-            result = detect_page(pdf, page, artifact_dir=target, **options)
+            if persistent_dir and revision:
+                from .native_cache import reuse_detection
+                result = reuse_detection(persistent_dir, revision, cache_context, detect_page,
+                                         pdf, page, target, options)
+            else:
+                result = detect_page(pdf, page, artifact_dir=target, **options)
             target.mkdir(parents=True, exist_ok=True)
             with (target / 'result.json').open('w') as stream:
                 json.dump(result, stream, ensure_ascii=False)
@@ -51,9 +56,13 @@ def _child(connection, args, kwargs, rule_values):
         if kwargs.get('source_mode') in ('model', 'compare', 'combined'):
             from .source_model import transport
             kwargs['source_ask'] = transport()
+        persistent_dir = kwargs.pop('native_cache_dir', None)
         if kwargs.pop('native_detection', False):
             from vvs_engine.source_rules.native_detection import detect_page
-            kwargs['source_detector'] = _cached_detector(args[1], detect_page)
+            import os
+            revision = os.environ.get('RAILWAY_GIT_COMMIT_SHA') or os.environ.get('VVS_BUILD')
+            kwargs['source_detector'] = _cached_detector(args[1], detect_page, persistent_dir,
+                                                        revision, rule_values)
         kwargs['progress']=lambda *a:connection.send(('progress',a))
         kwargs['film_sink']=lambda *a:connection.send(('film',a))
         with rules.using(rule_values):

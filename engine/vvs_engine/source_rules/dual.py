@@ -53,16 +53,39 @@ def run(A,L,R,style,mode='compare',ask=None):
             final = combined['result']
             from .continuity import reconcile
             combined['boundary_reconciliation'] = reconcile(final, out['dimension']['result'], L)
-            decided = {b['stretch'] for b in final['bindings']}
-            # Retain rejected/uncertain rule suggestions for review, never count
-            # them as confirmed just because the dimension pass supplied a name.
+            from .endpoint_agreement import bounded_label_agreement, designation_key
+            decided = {b['stretch']: b for b in final['bindings']}
+            labels = {l['id']: l for l in L}
+            endpoint_confirmations = []
             for proposal in out['dimension']['result']['bindings']:
-                if proposal['stretch'] not in decided:
+                current = decided.get(proposal['stretch'])
+                bounded = bounded_label_agreement(A, L, R, proposal)
+                if current is not None:
+                    # Never replace a competing model identity or an already
+                    # confirmed decision. Resolve uncertainty only when the
+                    # model's candidate agrees with both explicit endpoints.
+                    model_d = labels[current['label']]['designations'][current['designation_idx']]
+                    rule_d = labels[proposal['label']]['designations'][proposal['designation_idx']]
+                    if (current['confidence'] != 'low' or not bounded
+                            or designation_key(model_d) != designation_key(rule_d)):
+                        continue
+                    b = current
+                else:
                     b = deepcopy(proposal)
-                    b.update(id=len(final['bindings']), confidence='low',
-                             rule='combined_unverified_rule',
-                             reason='Dimensionsförslag som modellen inte kunde bekräfta.')
+                    b['id'] = len(final['bindings'])
                     final['bindings'].append(b)
+                    decided[b['stretch']] = b
+                b.update(confidence='high' if bounded else 'low',
+                         rule='combined_matching_endpoint_labels' if bounded else 'combined_unverified_rule',
+                         reason='Samma rörbeteckning och dimension är uttryckligen anslutna i sträckans båda ändar.'
+                                if bounded else 'Dimensionsförslag som modellen inte kunde bekräfta.')
+                if bounded:
+                    endpoint_confirmations.append(b['stretch'])
+                    for assignment in final.get('assignments', []):
+                        if assignment['stretch'] == b['stretch']:
+                            assignment.update(label=b['label'], designation_idx=b['designation_idx'],
+                                              status='assigned', reconciliation=b['rule'])
+            combined['endpoint_confirmations'] = endpoint_confirmations
             combined['review_required'] = sum(b['confidence'] == 'low' for b in final['bindings'])
         out['combined'] = combined
     return out

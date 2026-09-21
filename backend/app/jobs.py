@@ -265,6 +265,7 @@ def run_job(job_id: str) -> None:
                                 ocr_assist=run_ocr["ocr_assist"], film_sink=_film_sink(out_dir),
                                 second_reader_enabled=second_reader_state()[0], known_families=known, known_legend=vocab,
                                 given_scale=by_hand, source_mode="combined", native_detection=True,
+                                native_cache_dir=storage.path(f"cache/native/{drawing.project_id}"),
                                 source_style="auto")
             # which readers this installation actually had available, and by what name - a reading that quietly used a
             # model, or quietly did without one, is not a reading anyone can check
