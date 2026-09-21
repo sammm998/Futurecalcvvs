@@ -25,4 +25,4 @@ Kodexporten innehåller ingen lokal kontodatabas, API-nyckel, uppladdad ritning 
 
 ## Separat kontroll av GitHub-exporten
 
-Efter export och installation av frontendberoenden: 1 065 tester godkända, 3 överhoppade. Produktbygge och gesttester passerade också. De överhoppade proven kräver Linux för Debian-beroenden. Dessa körningar använder den lokalt installerade Python-miljön; en ren GitHub Actions-körning återstår.
+Efter export och installation av frontendberoenden: 1 065 tester godkända, 3 överhoppade. Produktbygge och gesttester passerade också. Två överhoppade prov kräver Linux för Debian-beroenden; ett kräver ett separat referensblad. Dessa körningar använder den lokalt installerade Python-miljön; en ren GitHub Actions-körning återstår.
