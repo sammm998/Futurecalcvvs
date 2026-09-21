@@ -25,7 +25,9 @@ def configured():
 
 
 class AssignmentTransport:
-    def __init__(self, client, model, style=None, page=None):
+    def __init__(self, client, model, style=None, page=None, request_cache=None):
+        from .model_request_cache import ModelRequestCache
+        self.request_cache = request_cache if request_cache is not None else ModelRequestCache()
         self.client = client
         self.model = model
         self.usage = []
@@ -35,10 +37,10 @@ class AssignmentTransport:
         self.page = page
 
     def for_style(self, style):
-        return AssignmentTransport(self.client, self.model, style, self.page)
+        return AssignmentTransport(self.client, self.model, style, self.page, self.request_cache)
 
     def for_page(self, page):
-        return AssignmentTransport(self.client, self.model, self.style, (page.source_path, page.info.index))
+        return AssignmentTransport(self.client, self.model, self.style, (page.source_path, page.info.index), self.request_cache)
 
     def __call__(self, questions):
         from vvs_engine.source_rules.pipestudio.final_bind import SYSTEM, SCHEMA
@@ -55,19 +57,29 @@ class AssignmentTransport:
             from .drawing_evidence import visual_evidence
             visual, images = visual_evidence(*self.page, questions)
             content = [{"type":"input_text","text":content}] + visual
-        response = self.client.responses.create(
+        request = dict(
             model=self.model, store=False, max_output_tokens=12000,
             reasoning={'effort': os.environ.get('STUDIO_ASTRA_EFFORT', 'medium')},
             input=[{'role': 'system', 'content': SYSTEM + '\n' + FORMAT + '\n' + ALIAS_FORMAT + '\nSTYLE CONVENTIONS:\n' + serialize(self.style.get('rules', [])) + '\nMEASURED DRAWING FEATURES (observations, not ownership rules):\n' + serialize(self.style.get('observed_features', {}))},
                    {'role': 'user', 'content': content}],
             text={'format': {'type': 'json_schema', 'name': 'pipe_assignments',
                              'strict': True, 'schema': SCHEMA}})
+        def produce():
+            response = self.client.responses.create(**request)
+            if response.status != 'completed':
+                raise RuntimeError('Model assignment did not complete')
+            if not isinstance(json.loads(response.output_text).get('decisions'), list):
+                raise ValueError('Invalid assignment response')
+            return response
+        response, reused = self.request_cache.run(request, produce)
         u = response.usage
         with self.lock:
             self.candidate_aliases.extend(aliases)
             self.usage.append({'model': response.model, 'response_id': response.id,
-                'tokens_in': u.input_tokens if u else None,
-                'tokens_out': u.output_tokens if u else None, 'drawing_images': images})
+                'tokens_in': 0 if reused else u.input_tokens if u else None,
+                'tokens_out': 0 if reused else u.output_tokens if u else None,
+                'cached_tokens': 0 if reused else getattr(getattr(u, 'input_tokens_details', None), 'cached_tokens', 0),
+                'request_reused': reused, 'drawing_images': images})
         if response.status != 'completed':
             raise RuntimeError('Model assignment did not complete')
         decisions = json.loads(response.output_text)['decisions']
