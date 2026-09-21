@@ -28,7 +28,9 @@ TOOLS = [{"type": "function", "name": "drawing_action",
         "required": ["action"], "additionalProperties": False}}]
 
 
-def create_session():
+def create_session(language="sv"):
+    if language not in ("sv", "en"):
+        raise ValueError("Unsupported conversation language")
     from .source_model import connection_settings
     from openai import OpenAI
     key, _ = connection_settings()
@@ -37,9 +39,9 @@ def create_session():
     model = os.environ.get("VVS_REALTIME_MODEL", "gpt-realtime-2.1")
     secret = OpenAI(api_key=key, timeout=25, max_retries=0).realtime.client_secrets.create(
         expires_after={"anchor": "created_at", "seconds": 60},
-        session={"type": "realtime", "model": model, "instructions": INSTRUCTIONS,
+        session={"type": "realtime", "model": model, "instructions": INSTRUCTIONS.replace("Tala naturlig, kort svenska", "Speak natural, concise English" if language == "en" else "Tala naturlig, kort svenska"),
                  "tools": TOOLS, "tool_choice": "auto", "max_output_tokens": 2048,
-                 "audio": {"input": {"transcription": {"model": "gpt-4o-mini-transcribe", "language": "sv"},
+                 "audio": {"input": {"transcription": {"model": "gpt-4o-mini-transcribe", "language": language},
                                      "turn_detection": {"type": "server_vad", "create_response": True, "interrupt_response": True}},
                            "output": {"voice": "marin"}}})
     return {"value": secret.value, "expires_at": secret.expires_at, "model": model}

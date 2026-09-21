@@ -21,6 +21,11 @@ def test_session_only_returns_ephemeral_secret(monkeypatch):
     assert captured['session']['model'] != 'takeoff-model'
     assert captured['session']['audio']['input']['turn_detection']['interrupt_response'] is True
     assert captured['session']['tools'][0]['parameters']['additionalProperties'] is False
+    assert captured['session']['audio']['input']['transcription']['language'] == 'sv'
+    live_agent.create_session(language='en')
+    assert captured['session']['audio']['input']['transcription']['language'] == 'en'
+    assert 'Speak natural, concise English' in captured['session']['instructions']
+    assert 'Tala naturlig, kort svenska' not in captured['session']['instructions']
 
 
 def test_missing_key_does_not_make_network_request(monkeypatch):

@@ -1,3 +1,4 @@
+import { t as tr } from '../i18n';
 import { useEffect, useRef, useState } from 'react';
 import { HandGestures, pinchedHands, type Motion } from './gestures';
 
@@ -19,7 +20,7 @@ export default function HandCamera({ onMotion, onImage }: { onMotion: (m: Motion
         video.current!.srcObject = stream; await video.current!.play();
         if (cancelled) return;
         worker = new Worker('/hand-tracking/worker.js');
-        worker.onerror = () => { setErr('Handmodellen kunde inte starta.'); stop(); setActive(false); };
+        worker.onerror = () => { setErr(tr("Handmodellen kunde inte starta.")); stop(); setActive(false); };
         worker.onmessage = ({ data }) => {
           if (cancelled) return;
           if (data.type === 'ready') {
@@ -41,27 +42,27 @@ export default function HandCamera({ onMotion, onImage }: { onMotion: (m: Motion
             setHands(data.landmarks.length); setPinches(pinchedHands(data.landmarks).length);
             const motion = gestures.update(data.landmarks, data.time);
             if (motion && !document.hidden) callback.current(motion);
-          } else if (data.type === 'error') { setErr('Handmodellen kunde inte läsa kameran.'); stop(); setActive(false); }
+          } else if (data.type === 'error') { setErr(tr("Handmodellen kunde inte läsa kameran.")); stop(); setActive(false); }
         };
         worker.postMessage({ type: 'init' });
-      } catch { stop(); setErr('Kameran kunde inte öppnas. Kontrollera kamerabehörigheten.'); setActive(false); }
+      } catch { stop(); setErr(tr("Kameran kunde inte öppnas. Kontrollera kamerabehörigheten.")); setActive(false); }
     };
     void start();
     return stop;
   }, [active]);
   return <div className="live-camera">
-    <button className="secondary small" onClick={() => { setErr(''); setReady(false); setActive(!active); }}>{active ? 'Stäng kamera' : 'Starta handstyrning'}</button>
+    <button className="secondary small" onClick={() => { setErr(''); setReady(false); setActive(!active); }}>{active ? tr("Stäng kamera") : tr("Starta handstyrning")}</button>
     {active && <>
       <video ref={video} muted playsInline className="hand-preview" />
-      <small>{ready ? 'Nyp med en hand och dra för att flytta. Nyp med båda och sära för att zooma. Släpp för att stanna.' : 'Laddar handmodellen…'}</small>
-      {ready && <small role="status">{hands} händer upptäckta · {pinches === 2 ? 'Zoom aktiv' : pinches === 1 ? 'Förflyttning aktiv' : 'Nyp ihop tumme och pekfinger för att styra'}</small>}
-      <small>Kameran behandlas lokalt. Endast knappen nedan skickar en stillbild till samtalet.</small>
+      <small>{ready ? tr("Nyp med en hand och dra för att flytta. Nyp med båda och sära för att zooma. Släpp för att stanna.") : tr("Laddar handmodellen…")}</small>
+      {ready && <small role="status">{hands} {tr("händer upptäckta")} · {pinches === 2 ? tr("Zoom aktiv") : pinches === 1 ? tr("Förflyttning aktiv") : tr("Nyp ihop tumme och pekfinger för att styra")}</small>}
+      <small>{tr("Kameran behandlas lokalt. Endast knappen nedan skickar en stillbild till samtalet.")}</small>
       <button className="secondary small" disabled={!ready} onClick={() => {
         if (!video.current) return;
         const c = document.createElement('canvas'); c.width = 640; c.height = 480;
         c.getContext('2d')?.drawImage(video.current, 0, 0, c.width, c.height);
         onImage(c.toDataURL('image/jpeg', 0.8));
-      }}>Dela kamerabild i samtalet</button>
+      }}>{tr("Dela kamerabild i samtalet")}</button>
     </>}
     {err && <p role="alert" className="error">{err}</p>}
   </div>;

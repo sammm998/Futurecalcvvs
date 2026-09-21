@@ -350,13 +350,13 @@ def delete_drawing(drawing_id: str, user: User = Depends(current_user), db: Sess
 
 
 @app.post("/api/jobs/{job_id}/live/session")
-def live_session(job_id: str, user: User = Depends(current_user), db: Session = Depends(get_db)):
+def live_session(job_id: str, language: Literal["sv", "en"] = "sv", user: User = Depends(current_user), db: Session = Depends(get_db)):
     j = _job(db, user, job_id)
     if j.status != "COMPLETED":
         raise HTTPException(409, "Analysen är inte klar")
     from .live_agent import create_session
     try:
-        result = create_session()
+        result = create_session(language=language)
     except ValueError:
         raise HTTPException(503, "OpenAI-anslutning saknas") from None
     except Exception:

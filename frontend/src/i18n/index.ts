@@ -17,6 +17,7 @@
  * stället - osynligt för tsc när värdet är `any`. tools/i18n_check.mjs håller regeln.
  */
 
+import { live } from "./en/live";
 import { ram } from "./en/ram";
 import { publikt } from "./en/publikt";
 import { mangd } from "./en/mangd";
@@ -82,6 +83,7 @@ export const locale = () => (lang === "sv" ? "sv-SE" : "en-GB");
  * något. Står samma nyckel i två delar med olika engelska säger tools/i18n_check.mjs ifrån. */
 const EN: Record<string, string> = {
   ...ram,
+  ...live,
   ...publikt,
   ...mangd,
   ...projekt,

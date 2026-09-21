@@ -1318,8 +1318,8 @@ def test_live_session_is_owned_private_and_requires_completed_job(client, source
         j = AnalysisJob(drawing_id=d['id'], status='QUEUED'); db.add(j); db.commit(); job_id = j.id
     url = f'/api/jobs/{job_id}/live/session'
     calls = []
-    def mint():
-        calls.append(1)
+    def mint(language="sv"):
+        calls.append(language)
         return {'value': 'ek_test', 'expires_at': 123, 'model': 'test-model'}
     monkeypatch.setattr(live_agent, 'create_session', mint)
     assert client.post(url).status_code == 401
@@ -1331,7 +1331,12 @@ def test_live_session_is_owned_private_and_requires_completed_job(client, source
     r = client.post(url, headers=owner)
     assert r.status_code == 200 and r.json()['value'] == 'ek_test'
     assert r.headers['cache-control'] == 'no-store' and len(calls) == 1
-    def failed():
+    assert calls == ['sv']
+    assert client.post(url + '?language=en', headers=owner).status_code == 200
+    assert calls == ['sv', 'en']
+    assert client.post(url + '?language=invalid', headers=owner).status_code == 422
+    assert calls == ['sv', 'en']
+    def failed(language="sv"):
         raise RuntimeError('private-key-do-not-forward')
     monkeypatch.setattr(live_agent, 'create_session', failed)
     r = client.post(url, headers=owner)
