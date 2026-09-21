@@ -1,0 +1,58 @@
+{
+  "category": "document_status",
+  "description": "Handlingars status — ritningar and beskrivningar (texthandlingar) can carry several kinds of status. The status is written in the title block (namnruta) and determines how the document may be used and how changes are handled.",
+  "entries": [
+    {
+      "code": "PH",
+      "term_sv": "Programhandling",
+      "term_en": "Programme document",
+      "definition_en": "A basis of drawings showing the right room in the right place with the right function. During the programme phase the functional requirements of the operation are established and the project's financial conditions are investigated. Fundamental decisions on the size and technical standard of the building are taken. The programhandling summarises the conditions for a project and forms the collected basis for the decision to continue designing. This stage is the last opportunity for the end user to raise major views on layout and scope.",
+      "title_block_text": null,
+      "takeoff_relevance": "Too early for quantity takeoff; no dimensions or system designations to rely on."
+    },
+    {
+      "code": "SH",
+      "term_sv": "Systemhandling",
+      "term_en": "System document",
+      "definition_en": "In the systemhandling stage it is investigated which technical systems, materials and so on constitute the optimal solutions for the project's requirements. It provides a basis of drawings that gives a picture of the planned building, its structural design and its technical installation systems, and forms the basis for a cost estimate (kostnadskalkyl) and lease agreements.",
+      "title_block_text": null,
+      "takeoff_relevance": "First stage where a meaningful cost estimate is expected. Quantities are indicative."
+    },
+    {
+      "code": null,
+      "term_sv": "Preliminär handling",
+      "term_en": "Preliminary document",
+      "definition_en": "The document is work in progress and not yet fixed for execution. Ritningar and beskrivningar are marked with the text 'PRELIMINÄR HANDLING'.",
+      "title_block_text": "PRELIMINÄR HANDLING",
+      "dating_rule_en": "Preliminary documents are dated provisionally, with the date placed above the ändringstabell (revision table). The previous date is struck through when a new one is added.",
+      "takeoff_relevance": "Do not use as a basis for a binding tender; content will change."
+    },
+    {
+      "code": "FU",
+      "term_sv": "Förfrågningsunderlag",
+      "term_en": "Tender documents",
+      "definition_en": "The document is not yet fixed for execution, but it is finished for tender pricing (anbudsräkning). Ritningar and beskrivningar are marked with the text 'FÖRFRÅGNINGSUNDERLAG'. The date is entered in the place intended for dating and this date is kept throughout the project.",
+      "title_block_text": "FÖRFRÅGNINGSUNDERLAG",
+      "change_handling_en": "Changes require careful documentation and are normally accompanied by a KFU (kompletterande förfrågningsunderlag, supplementary tender documents). That a förfrågningsunderlag has been changed once is visible in the ändringstabell at the top (the KFU entry) and at the bottom right in the space for the ändringsbeteckning (e.g. A).",
+      "takeoff_relevance": "This is the normal basis for mängdavtagning and tender pricing. Always check the ändringstabell for KFU revisions before pricing."
+    },
+    {
+      "code": null,
+      "term_sv": "Bygghandling",
+      "term_en": "Construction document",
+      "definition_en": "The document is fixed for execution. Ritningar and beskrivningar are marked with the text 'BYGGHANDLING'.",
+      "title_block_text": "BYGGHANDLING",
+      "change_handling_en": "The dating of a change to a bygghandling is stated in the ändringstabell and is usually accompanied by an Ändrings-PM. Changes are indicated in the same way as for a förfrågningsunderlag, but Ändrings-PM is used instead of KFU. KFU and PM are numbered in the same sequence.",
+      "takeoff_relevance": "The version work is actually built from. Compare against the FU version to identify variations (ÄTA)."
+    },
+    {
+      "code": null,
+      "term_sv": "Relationshandling",
+      "term_en": "As-built document",
+      "definition_en": "Relationshandlingar must show the actual execution of the finished building works, including measures taken during construction that had not previously been entered on the ritningar. During construction the contractor must enter all changes on a separate set of drawings (särskild ritningsomgång), which can form the basis for relationshandlingar.",
+      "title_block_text": "RELATIONSHANDLING",
+      "change_handling_en": "The title block can be changed to relationshandling in two ways: either the history is kept in the ändringstabell, or a new ändringstabell is started. The latter marks that the documents pass from construction documents to facility management documents (förvaltningsdokument).",
+      "takeoff_relevance": "Basis for facility management and for future rebuild takeoffs of befintlig installation."
+    }
+  ]
+}

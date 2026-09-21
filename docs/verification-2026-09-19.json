@@ -1,0 +1,327 @@
+{
+  "date": "2026-09-19",
+  "engine_source_sha256": "ba576a0f8d60d6bc5986c6611c52ad119228b4db87a2c99bd01262f59efb551d",
+  "unattended_takeoff_ready": false,
+  "tests": {
+    "passed": 915,
+    "skipped": 3,
+    "warnings": 164,
+    "seconds": 89.89
+  },
+  "frontend": [
+    "i18n",
+    "eslint",
+    "typescript",
+    "vite"
+  ],
+  "dependency_check": "passed",
+  "default_cases": [
+    {
+      "case": "0501112",
+      "file": "W-50-1-0501112.pdf",
+      "input_sha256": "6f17a6dfb3f8449312a61e2954b96d6317eeb9e109452ac4a1cf0b5c3efb7129",
+      "status": "COMPLETED",
+      "seconds": 5.99,
+      "rows": 7,
+      "totals": {
+        "physical_pipes": 12,
+        "confirmed_horizontal_m": 44.158,
+        "confirmed_vertical_m": 0.0,
+        "confirmed_total_m": 44.158,
+        "ambiguous_m": 2.158,
+        "in_hatched_area_m": 0.0,
+        "riser_labels": 0
+      },
+      "quality": "DEGRADED"
+    },
+    {
+      "case": "0201112",
+      "file": "W-50-1-0201112.pdf",
+      "input_sha256": "1bb3518ee9acfee92e5518cd5cbe13ba6d07244b77d03e428ddc7dc3bbad593b",
+      "status": "COMPLETED",
+      "seconds": 20.91,
+      "rows": 14,
+      "totals": {
+        "physical_pipes": 38,
+        "confirmed_horizontal_m": 57.425,
+        "confirmed_vertical_m": 0.0,
+        "confirmed_total_m": 57.425,
+        "ambiguous_m": 22.206,
+        "in_hatched_area_m": 0.0,
+        "riser_labels": 0
+      },
+      "quality": "DEGRADED"
+    },
+    {
+      "case": "A0011",
+      "file": "W-50-1-A-0011.pdf",
+      "input_sha256": "e9c0d89336398c3776451f24396319cf2dd9edb33d471df63f96bf3f74844229",
+      "status": "COMPLETED",
+      "seconds": 16.97,
+      "rows": 11,
+      "totals": {
+        "physical_pipes": 45,
+        "confirmed_horizontal_m": 207.196,
+        "confirmed_vertical_m": 0.82,
+        "confirmed_total_m": 208.016,
+        "ambiguous_m": 3.671,
+        "in_hatched_area_m": 12.16,
+        "riser_labels": 68
+      },
+      "quality": "VALID"
+    },
+    {
+      "case": "current-job",
+      "file": "V-50-1-A0001.pdf",
+      "input_sha256": "3d8fc03a0aff960072b6463985695495e668163e5c74a086d7629225ced84a68",
+      "status": "COMPLETED",
+      "seconds": 22.37,
+      "rows": 12,
+      "totals": {
+        "physical_pipes": 19,
+        "confirmed_horizontal_m": 129.994,
+        "confirmed_vertical_m": 0.0,
+        "confirmed_total_m": 129.994,
+        "ambiguous_m": 4.77,
+        "in_hatched_area_m": 0.0,
+        "riser_labels": 0
+      },
+      "quality": "VALID"
+    },
+    {
+      "case": "eon-hairline",
+      "file": "R9UHA10-CLB001-002.pdf",
+      "input_sha256": "3d1ea6884cc22c9640d4c78af59507ec24d7c399bf708e3cdb89ab70bb04773c",
+      "status": "COMPLETED",
+      "seconds": 9.05,
+      "rows": 7,
+      "totals": {
+        "physical_pipes": 8,
+        "confirmed_horizontal_m": 42.475,
+        "confirmed_vertical_m": 0.0,
+        "confirmed_total_m": 42.475,
+        "ambiguous_m": 12.419,
+        "in_hatched_area_m": 0.0,
+        "riser_labels": 0
+      },
+      "quality": "DEGRADED"
+    },
+    {
+      "case": "axis-bluebeam",
+      "file": "V50-1-0842 - Plan B2, Del 42, Värme & Sanitäranlägg-.pdf",
+      "input_sha256": "ef53f8474ca0a36eb6e0eaa55909c54c87af856b3e87806ca95be652d1c4cb70",
+      "status": "COMPLETED",
+      "seconds": 11.3,
+      "rows": 8,
+      "totals": {
+        "physical_pipes": 20,
+        "confirmed_horizontal_m": 116.748,
+        "confirmed_vertical_m": 0.0,
+        "confirmed_total_m": 116.748,
+        "ambiguous_m": 236.783,
+        "in_hatched_area_m": 143.696,
+        "riser_labels": 0
+      },
+      "quality": "DEGRADED"
+    },
+    {
+      "case": "style4-heavy-dashed",
+      "file": "6.pdf",
+      "input_sha256": "8f070fe1eea57a52d84e89ae9232f587f332dbedbde2daeb05aa3edd33697ade",
+      "status": "COMPLETED",
+      "seconds": 44.32,
+      "rows": 16,
+      "totals": {
+        "physical_pipes": 92,
+        "confirmed_horizontal_m": 271.453,
+        "confirmed_vertical_m": 0.0,
+        "confirmed_total_m": 271.453,
+        "ambiguous_m": 47.332,
+        "in_hatched_area_m": 0.86,
+        "riser_labels": 0
+      },
+      "quality": "DEGRADED"
+    },
+    {
+      "case": "style6-single-width",
+      "file": "R1502.pdf",
+      "input_sha256": "93f060ebf7760e1e3ede566f613315b54f99ca7432516fcd507c7e73d0b2bf6c",
+      "status": "COMPLETED",
+      "seconds": 34.56,
+      "rows": 0,
+      "totals": {
+        "physical_pipes": 0,
+        "confirmed_horizontal_m": 0,
+        "confirmed_vertical_m": 0,
+        "confirmed_total_m": 0,
+        "ambiguous_m": 0,
+        "in_hatched_area_m": 0,
+        "riser_labels": 0
+      },
+      "quality": "INVALID"
+    }
+  ],
+  "spatial": {
+    "0501112": [
+      {
+        "reference_pt": 3989.9075987783453,
+        "predicted_pt": 1728.2214993035466,
+        "reference_recovered_pt": 1410.2831370815127,
+        "prediction_supported_pt": 1284.6788426585358,
+        "missed_pt": 2579.624461696833,
+        "unsupported_pt": 443.5426566450107,
+        "duplicate_prediction_pt": 5.6399999999999295,
+        "reference_coverage": 0.35346260587922435,
+        "prediction_support": 0.7433531194793298
+      }
+    ],
+    "0201112": [
+      {
+        "reference_pt": 19649.495639598244,
+        "predicted_pt": 2186.2416030687577,
+        "reference_recovered_pt": 1677.9425188584337,
+        "prediction_supported_pt": 1450.460242225606,
+        "missed_pt": 17971.55312073981,
+        "unsupported_pt": 735.7813608431518,
+        "duplicate_prediction_pt": 50.16000000000035,
+        "reference_coverage": 0.08539366860271946,
+        "prediction_support": 0.6634491998458181
+      }
+    ],
+    "A0011": [
+      {
+        "reference_pt": 12096.748950880217,
+        "predicted_pt": 9925.4475223943,
+        "reference_recovered_pt": 9967.799859932627,
+        "prediction_supported_pt": 9224.780025477256,
+        "missed_pt": 2128.9490909475903,
+        "unsupported_pt": 700.6674969170463,
+        "duplicate_prediction_pt": 27.239999999999156,
+        "reference_coverage": 0.8240065078979194,
+        "prediction_support": 0.9294069617177297
+      }
+    ]
+  },
+  "spatial_scope": "Exact designation, confirmed drawn centreline outside hatch, tolerance 1 PDF point. Partial references, not overall accuracy or independent holdout.",
+  "ocr_case": {
+    "file": "R1502.pdf",
+    "input_sha256": "93f060ebf7760e1e3ede566f613315b54f99ca7432516fcd507c7e73d0b2bf6c",
+    "status": "COMPLETED",
+    "seconds": 97.07,
+    "rows": 10,
+    "quality": {
+      "verdict": "DEGRADED",
+      "reasons": [
+        "MOST_PIPE_INK_UNOWNED",
+        "MANY_LOSSY_FRONTIERS"
+      ],
+      "measures": {
+        "DESIGNATIONS_READ": 18,
+        "DESIGNATIONS_WITH_DN_SHARE": null,
+        "ATTACHMENT_VERIFIED_SHARE": 0.367,
+        "NAMES_WITH_METRES_SHARE": 0.5,
+        "INK_CONFIRMED_SHARE": 0.012,
+        "INK_AMBIGUOUS_SHARE": 0.028,
+        "INK_UNOWNED_SHARE": 0.961,
+        "FRONTIER_LOSSY_SHARE": 0.471
+      },
+      "thresholds": {
+        "names_with_metres": 0.5,
+        "ink_confirmed": 0.3,
+        "lossy_frontiers": 0.35
+      },
+      "geometry_conservation": "VALID",
+      "accuracy_verified": false,
+      "note": "konservering säger att inget dubbelräknas; giltighet säger om läsningen nådde bladet - två frågor",
+      "artifact_schema": 3
+    },
+    "totals": {
+      "physical_pipes": 15,
+      "confirmed_horizontal_m": 34.415,
+      "confirmed_vertical_m": 0.0,
+      "confirmed_total_m": 34.415,
+      "ambiguous_m": 65.32,
+      "in_hatched_area_m": 0.0,
+      "riser_labels": 0
+    },
+    "ocr": {
+      "rows_with_unknown": 377,
+      "unknown_glyphs": 703,
+      "resolved": 382,
+      "prose_twins_resolved": 53,
+      "rows_resolved": 207,
+      "words_considered": 409,
+      "state": "ran",
+      "reading": {
+        "crops_planned": 32,
+        "crops_read": 32,
+        "budget_exhausted": false,
+        "seconds": 21.16
+      },
+      "regions_read": 377,
+      "ocr_words": 880,
+      "artifact_schema": 3
+    },
+    "exports": [
+      {
+        "format": "xlsx",
+        "status": 200,
+        "bytes": 5883
+      },
+      {
+        "format": "csv",
+        "status": 200,
+        "bytes": 1025
+      },
+      {
+        "format": "json",
+        "status": 200,
+        "bytes": 6830
+      },
+      {
+        "format": "report",
+        "status": 200,
+        "bytes": 2607
+      },
+      {
+        "format": "pdf",
+        "status": 200,
+        "bytes": 884567
+      }
+    ],
+    "local_valve_roles_verified": [
+      "AV1",
+      "AV2",
+      "AV6"
+    ]
+  },
+  "current_user_file": {
+    "file": "W-50-1-A-0011.pdf",
+    "input_sha256": "c2884f3007f3764a5f566c57264acf05c830dc892d6f5087029cff745492ab5f",
+    "status": "COMPLETED",
+    "seconds": 15.02,
+    "rows": 11,
+    "totals": {
+      "physical_pipes": 45,
+      "confirmed_horizontal_m": 207.196,
+      "confirmed_vertical_m": 0.82,
+      "confirmed_total_m": 208.016,
+      "ambiguous_m": 3.671,
+      "in_hatched_area_m": 12.16,
+      "riser_labels": 68
+    },
+    "run_mode": "offline CLI, separately from existing user job; UI rerun refused by credit policy"
+  },
+  "ui_checks": [
+    "Existing user analysis stays visible after HTTP 402; readable error replaces raw JSON",
+    "VVS5 drawing and quantity layout preserved",
+    "R1502 shows review required, 50% of read pipe names measured",
+    "Document legend shows valves as components"
+  ],
+  "limitations": [
+    "Large spatial misses on 0201112 and 0501112",
+    "Scanned drawing takeoff not implemented",
+    "No newly trained model",
+    "Production Docker/deployment not verified"
+  ]
+}

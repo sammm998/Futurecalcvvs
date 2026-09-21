@@ -1,0 +1,32 @@
+{
+  "category": "system_designation",
+  "description": "Systembeteckningar (system designations) written on ritningar next to the pipe dimension. Format: <systembeteckning>[index]-<dimension>, e.g. KV-28, VV-15, VVC-12, KV1-35, VS2-40, KB2-50. line_count = number of pipes the designation belongs to; line_count 2 marks a circulating circuit (heat carrier, cold carrier) where framledning and returrör always travel as a pair. Whether that pair is drawn as two lines with the label on only one of them, or as one line covering both, is a property of the sheet rather than of the code: look for a parallel unlabelled twin before deciding whether to copy the label across or to double the measured length. line_count 1 systems (KV, VV, VVC, S, D and the rest) label every drawn pipe individually, so never infer a partner for them.",
+  "entries": [
+    { "code": "V",    "term_sv": "Vätska i allmänhet",                    "term_en": "Liquid, general",                                        "line_count": 1 },
+    { "code": "KV",   "term_sv": "Tappkallvatten",                       "term_en": "Domestic cold water",                                    "line_count": 1 },
+    { "code": "VV",   "term_sv": "Tappvarmvatten",                       "term_en": "Domestic hot water",                                     "line_count": 1 },
+    { "code": "VVC",  "term_sv": "Varmvattencirkulation i separat ledning", "term_en": "Domestic hot water circulation, in a separate pipe",   "line_count": 1, "notes": "Labelled separately from VV. VV and VVC run together and look like a supply/return pair, but they are two systems with two labels and usually two dimensions." },
+    { "code": "VVCi", "term_sv": "Varmvattencirkulation i infogad ledning", "term_en": "Domestic hot water circulation, in an integrated (inserted) pipe", "line_count": 1 },
+    { "code": "S",    "term_sv": "Spillvatten",                          "term_en": "Wastewater / soil and waste drainage",                   "line_count": 1 },
+    { "code": "D",    "term_sv": "Dagvatten",                            "term_en": "Stormwater / surface water",                             "line_count": 1 },
+    { "code": "DR",   "term_sv": "Dränvatten",                           "term_en": "Subsoil drainage water",                                 "line_count": 1 },
+    { "code": "VP",   "term_sv": "Primärt vatten i värmeanläggning",     "term_en": "Primary water in a heating installation",                "line_count": 2 },
+    { "code": "VS",   "term_sv": "Sekundärt vatten i värmeanläggning",   "term_en": "Secondary water in a heating installation",              "line_count": 2 },
+    { "code": "Å",    "term_sv": "Ånga",                                 "term_en": "Steam",                                                  "line_count": 1 },
+    { "code": "K",    "term_sv": "Kondensat",                            "term_en": "Condensate",                                             "line_count": 1 },
+    { "code": "G",    "term_sv": "Gas i allmänhet",                      "term_en": "Gas, general",                                           "line_count": 1 },
+    { "code": "L",    "term_sv": "Luft (tryckluft, vakuum etc.)",        "term_en": "Air (compressed air, vacuum, etc.)",                     "line_count": 1 },
+    { "code": "O",    "term_sv": "Olja",                                 "term_en": "Oil",                                                    "line_count": 1 },
+    { "code": "SL",   "term_sv": "Säkerhetsledning",                     "term_en": "Safety line",                                            "line_count": 1, "notes": "Code collision: SL also denotes Slutapparat in ventilation equipment (see side_contractor_equipment)." },
+    { "code": "BRL",  "term_sv": "Ledning för brandsläckningsändamål",   "term_en": "Fire-fighting line",                                     "line_count": 1 },
+    { "code": "KB",   "term_sv": "Köldbärare",                           "term_en": "Cold carrier / brine circuit",                           "line_count": 2, "notes": "KP and KS are also used for köldbärare. Index commonly refers to the system: KB1 = wet cooling (våt kyla), KB2 = dry cooling (torr kyla). KP is the same circuit under another legend spelling." },
+    { "code": "KM",   "term_sv": "Kylmedel",                             "term_en": "Refrigerant / cooling medium",                           "line_count": 2 },
+    { "code": "ÅV",   "term_sv": "Återvinningskrets",                    "term_en": "Heat recovery circuit",                                  "line_count": 2 },
+    { "code": "FV",   "term_sv": "Fjärrvärme",                           "term_en": "District heating",                                       "line_count": 2 },
+    { "code": "FK",   "term_sv": "Fjärrkyla",                            "term_en": "District cooling",                                       "line_count": 2 },
+    { "code": "KP",   "term_sv": "Köldbärare (alternativ beteckning)",   "term_en": "Cold carrier / brine circuit (legend variant)",           "line_count": 2, "notes": "Legend spelling of KB. Code collision: KP also denotes kompensator (expansion joint) as a component symbol - position resolves it." },
+    { "code": "VÅV",  "term_sv": "Värmeåtervinning",                     "term_en": "Heat recovery circuit (legend variant)",                 "line_count": 2, "notes": "Legend spelling of ÅV." },
+    { "code": "FJV",  "term_sv": "Fjärrvärme (alternativ beteckning)",   "term_en": "District heating (legend variant)",                      "line_count": 2, "notes": "Legend spelling of FV." },
+    { "code": "FJK",  "term_sv": "Fjärrkyla (alternativ beteckning)",    "term_en": "District cooling (legend variant)",                      "line_count": 2, "notes": "Legend spelling of FK." }
+  ]
+}

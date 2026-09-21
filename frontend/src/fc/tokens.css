@@ -1,0 +1,146 @@
+/* FutureCalc — ett designsystem, tre intensiteter.
+ *
+ * Samma tokens bär hela produkten. Det som skiljer är hur hårt de används:
+ *
+ *   PUBLIKA SIDOR   cinematic. Gigantisk typografi, hela vyer, koreograferad rörelse.
+ *   APPEN           effektiv. Samma färger och samma typsnitt, men täta rader och ingen scenografi.
+ *   ACADEMY         mittemellan. Premium ram, funktionellt innehåll - en lektion ska läsas, inte upplevas.
+ *
+ * Färgerna är nästan svarta med off-white text. Accenten är grön och betyder alltid samma sak i hela
+ * produkten: verifierat, mätt, aktivt. Den fyller aldrig en yta - den markerar en.
+ */
+
+/* ---------------------------------------------------------------- typsnitten, självhostade */
+@font-face {
+  font-family: "Inter Tight";
+  src: url("/fonts/InterTight-var.woff2") format("woff2");
+  font-weight: 100 900;                    /* en variabel fil bär alla vikter */
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Instrument Serif";
+  src: url("/fonts/InstrumentSerif-400-normal.woff2") format("woff2");
+  font-weight: 400; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: "Instrument Serif";
+  src: url("/fonts/InstrumentSerif-400-italic.woff2") format("woff2");
+  font-weight: 400; font-style: italic; font-display: swap;
+}
+@font-face {
+  font-family: "IBM Plex Mono";
+  src: url("/fonts/IBMPlexMono-400-normal.woff2") format("woff2");
+  font-weight: 400; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: "IBM Plex Mono";
+  src: url("/fonts/IBMPlexMono-500-normal.woff2") format("woff2");
+  font-weight: 500; font-style: normal; font-display: swap;
+}
+
+:root {
+  /* ---- grund ---- */
+  --fc-black: #080808;
+  --fc-bg: #0a0a0a;
+  --fc-bg-2: #101010;
+  --fc-bg-3: #151515;
+  --fc-paper: #f2f1ed;
+
+  /* ---- text ---- */
+  --fc-ink: #f2f1ed;
+  --fc-ink-60: rgba(242, 241, 237, 0.60);
+  --fc-ink-40: rgba(242, 241, 237, 0.40);
+  --fc-ink-24: rgba(242, 241, 237, 0.24);
+
+  /* ---- linjer ---- */
+  --fc-line: rgba(255, 255, 255, 0.10);
+  --fc-line-2: rgba(255, 255, 255, 0.055);
+  --fc-line-3: rgba(255, 255, 255, 0.18);
+
+  /* ---- accent: verifierat, mätt, aktivt. Aldrig dekoration. ---- */
+  --fc-accent: #6ee7a5;
+  --fc-accent-dim: rgba(110, 231, 165, 0.16);
+  --fc-accent-ink: #06130c;
+
+  /* ---- typsnitt ---- */
+  --fc-sans: "Inter Tight", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  --fc-serif: "Instrument Serif", "Iowan Old Style", Georgia, "Times New Roman", serif;
+  --fc-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  /* ---- rum ---- */
+  --fc-gut: clamp(20px, 4vw, 72px);        /* sidans marginal mot kanten */
+  --fc-col: 1440px;                        /* textens största bredd i en bred vy */
+
+  --fc-r-sm: 4px;
+  --fc-r: 10px;
+  --fc-r-lg: 20px;
+  --fc-r-pill: 999px;
+}
+
+/* ---------------------------------------------------------------- typografiska klasser */
+
+/* Displayrubriken. Storleken är inte satt här - varje scen sätter sin egen ur clamp() - men allt annat är:
+   tight radavstånd, negativ spärr, och versaler som inte är hårda mot ögat. */
+.fc-display {
+  font-family: var(--fc-sans);
+  font-weight: 600;
+  line-height: 0.88;
+  letter-spacing: -0.035em;
+  text-wrap: balance;
+}
+.fc-display-xl { font-size: clamp(3rem, 9vw, 10rem); }
+.fc-display-lg { font-size: clamp(2.6rem, 6.4vw, 6.5rem); }
+.fc-display-md { font-size: clamp(2rem, 4.4vw, 4rem); }
+
+/* Serifen är kontrasten, inte grunden. Ett ord i en rubrik, ett citat, ett kapitelnamn. Kursiv som standard:
+   den raka serifen och grotesken ligger för nära varandra för att skillnaden ska märkas. */
+.fc-serif { font-family: var(--fc-serif); font-weight: 400; letter-spacing: -0.01em; }
+.fc-italic { font-family: var(--fc-serif); font-style: italic; font-weight: 400; letter-spacing: -0.005em; }
+
+/* Den tekniska etiketten. Den bär ritningens röst in i webbplatsen: system, dimension, längd, status.
+   Alltid mono, alltid versal, alltid liten. */
+.fc-label {
+  font-family: var(--fc-mono);
+  font-size: clamp(10px, 0.72vw, 11.5px);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--fc-ink-40);
+  font-weight: 400;
+}
+.fc-label-on { color: var(--fc-accent); }
+
+.fc-body {
+  font-family: var(--fc-sans);
+  font-size: clamp(15px, 1.1vw, 18px);
+  line-height: 1.55;
+  color: var(--fc-ink-60);
+  letter-spacing: -0.005em;
+}
+.fc-lead {
+  font-family: var(--fc-sans);
+  font-size: clamp(18px, 1.7vw, 26px);
+  line-height: 1.38;
+  color: var(--fc-ink);
+  letter-spacing: -0.017em;
+  text-wrap: pretty;
+}
+
+/* ---------------------------------------------------------------- rörelse */
+:root {
+  /* Kurvorna har namn för att de ska gå att känna igen, inte för att spara tecken. PRIMARY är den som allt
+     annat mäts mot; REVEAL är långsammare i slutet, så något som kommer fram landar i stället för att stanna;
+     EXIT är snabb i början, för det som lämnar ska lämna. */
+  --fc-e-primary: cubic-bezier(0.22, 1, 0.36, 1);
+  --fc-e-reveal: cubic-bezier(0.16, 1, 0.3, 1);
+  --fc-e-exit: cubic-bezier(0.7, 0, 0.84, 0);
+  --fc-d-fast: 0.28s;
+  --fc-d-med: 0.62s;
+  --fc-d-slow: 1.1s;
+}
+
+/* Den som bett systemet om mindre rörelse får innehållet, aldrig resan dit. Regeln står här en gång i stället
+   för i varje komponent, så att en ny komponent inte kan glömma den. */
+@media (prefers-reduced-motion: reduce) {
+  .fc-reveal, .fc-reveal-in { transform: none !important; opacity: 1 !important; clip-path: none !important; }
+}

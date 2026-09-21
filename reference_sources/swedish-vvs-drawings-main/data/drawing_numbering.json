@@ -1,0 +1,45 @@
+{
+  "category": "drawing_numbering",
+  "description": "Ritningsnummer — a drawing number is split into three parts separated by hyphens: responsible party (ansvarig part), classification (klassifikation) and numbering (numrering). The classification part may be omitted.",
+  "structure": {
+    "parts": [
+      { "part": "Ansvarig part", "part_en": "Responsible party / discipline", "example": "V", "note": "One letter (or two, e.g. SK)." },
+      { "part": "Klassifikation - ritningens innehåll", "part_en": "Classification - drawing content", "example": "56", "note": "Two digits, huvudgrupp + delgrupp." },
+      { "part": "Klassifikation - redovisningssätt", "part_en": "Classification - drawing category / presentation type", "example": "1", "note": "One digit." },
+      { "part": "Numrering", "part_en": "Number", "example": "124", "note": "Location-coded or sequential." }
+    ],
+    "full_example": "V-56-1-124",
+    "short_example": "V-124",
+    "note_en": "Klassifikation can be omitted, so a drawing number may look like either V-124 or V-56-1-124."
+  },
+  "rules": [
+    {
+      "id": "typical_vvs_content_code",
+      "rule_en": "For VVS-ritningar the content code is most often 50 or 57. Code 50 is used when several kinds of installation (e.g. heating, tappvatten and drainage) are shown on the same ritning, which makes it suitable for pipework installations (rörentreprenad)."
+    },
+    {
+      "id": "coordinated_numbering",
+      "rule_en": "Drawing numbering is generally coordinated between disciplines (A, E, V, etc.). In large projects numbers are built on a 'lägeskod' (location code) - e.g. the number 124 can mean building 1, building part 2, storey 4."
+    },
+    {
+      "id": "sequential_numbering",
+      "rule_en": "Drawings can also be numbered sequentially. All such numbers must contain the same number of digits and can be divided into number series, e.g. 101-199 or 201-299 for different groups of drawings."
+    }
+  ],
+  "example_title_block_fields": [
+    "Ändringstabell: BET / ANT / ÄNDRINGEN AVSER / DATUM / SIGN",
+    "Handlingsstatus (e.g. PRELIMINÄR HANDLING, FÖRFRÅGNINGSUNDERLAG, BYGGHANDLING, RELATIONSHANDLING)",
+    "Projekt / fastighet",
+    "Discipline contact rows: A Arkitekt, K Konstruktör, V VVS-konsult, E El-konsult, L Landskap, Konsult (the responsible discipline is marked with a cross)",
+    "Uppdrag nr",
+    "Ritad/konstr av",
+    "Handläggare",
+    "Datum",
+    "Ansvarig",
+    "Type of work (e.g. NYBYGGNAD, OMBYGGNAD)",
+    "Content (e.g. PLAN 1, DEL 2, VVS-INSTALLATIONER)",
+    "Skala",
+    "Nummer",
+    "Bet (ändringsbeteckning)"
+  ]
+}

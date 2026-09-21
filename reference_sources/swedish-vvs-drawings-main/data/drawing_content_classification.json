@@ -1,0 +1,17 @@
+{
+  "category": "drawing_content_classification",
+  "description": "Klassificering av ritning (ritningens innehåll) — the two-digit content code in a ritningsnummer: huvudgrupp (main group) plus delgrupp (subgroup).",
+  "sources": ["SS 32209:2022 (main group 5)", "SS 32266 (main group 8)"],
+  "entries": [
+    { "main_group": "5", "main_group_sv": "VA, VVS, Kyla", "main_group_en": "Water and sewage, VVS, cooling", "code": "50", "term_sv": "Sammansatt redovisning", "term_en": "Combined presentation", "comment_sv": "Flera system på samma ritning", "comment_en": "Several systems on the same drawing", "source": "SS 32209:2022" },
+    { "main_group": "5", "main_group_sv": "VA, VVS, Kyla", "main_group_en": "Water and sewage, VVS, cooling", "code": "51", "term_sv": "VA m.m. i mark (utanför hus)", "term_en": "Water and sewage etc. in the ground (outside the building)", "comment_sv": "Vatten, avlopp, fjärrvärme, gas m.m.", "comment_en": "Water, drainage, district heating, gas etc.", "source": "SS 32209:2022" },
+    { "main_group": "5", "main_group_sv": "VA, VVS, Kyla", "main_group_en": "Water and sewage, VVS, cooling", "code": "52", "term_sv": "Försörjningssystem", "term_en": "Supply systems", "comment_sv": "Tappvatten, ånga, gas m.m.", "comment_en": "Domestic water, steam, gas etc.", "source": "SS 32209:2022" },
+    { "main_group": "5", "main_group_sv": "VA, VVS, Kyla", "main_group_en": "Water and sewage, VVS, cooling", "code": "53", "term_sv": "Avloppsvattensystem m.m.", "term_en": "Wastewater systems etc.", "comment_sv": "Avlopp, sop/dammsug m.m.", "comment_en": "Drainage, waste chutes / central vacuum etc.", "source": "SS 32209:2022" },
+    { "main_group": "5", "main_group_sv": "VA, VVS, Kyla", "main_group_en": "Water and sewage, VVS, cooling", "code": "54", "term_sv": "Brandsläckningssystem", "term_en": "Fire-fighting systems", "source": "SS 32209:2022" },
+    { "main_group": "5", "main_group_sv": "VA, VVS, Kyla", "main_group_en": "Water and sewage, VVS, cooling", "code": "55", "term_sv": "Kylsystem", "term_en": "Cooling systems", "source": "SS 32209:2022" },
+    { "main_group": "5", "main_group_sv": "VA, VVS, Kyla", "main_group_en": "Water and sewage, VVS, cooling", "code": "56", "term_sv": "Värmesystem", "term_en": "Heating systems", "source": "SS 32209:2022" },
+    { "main_group": "5", "main_group_sv": "VA, VVS, Kyla", "main_group_en": "Water and sewage, VVS, cooling", "code": "57", "term_sv": "Luftbehandlingssystem", "term_en": "Air handling systems", "source": "SS 32209:2022" },
+    { "main_group": "8", "main_group_sv": "Styr- och övervakning", "main_group_en": "Control and monitoring", "code": "81", "term_sv": "Styr- och övervakning", "term_en": "Control and monitoring", "comment_sv": "Fastighetsdrift", "comment_en": "Building operation", "source": "SS 32266" },
+    { "main_group": "8", "main_group_sv": "Styr- och övervakning", "main_group_en": "Control and monitoring", "code": "82", "term_sv": "Styr- och övervakning", "term_en": "Control and monitoring", "comment_sv": "Processinstallationer", "comment_en": "Process installations", "source": "SS 32266" }
+  ]
+}

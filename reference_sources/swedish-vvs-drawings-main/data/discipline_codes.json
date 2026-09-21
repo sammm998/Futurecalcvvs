@@ -1,0 +1,17 @@
+{
+  "category": "discipline_code",
+  "description": "Ansvarig part för ritningen anges med bokstav — the party responsible for a drawing is identified by a letter, used as the first part of the ritningsnummer.",
+  "entries": [
+    { "code": "A",  "term_sv": "Arkitekt",             "term_en": "Architect" },
+    { "code": "I",  "term_sv": "Inredningsarkitekt",   "term_en": "Interior architect" },
+    { "code": "E",  "term_sv": "Elprojektör",          "term_en": "Electrical designer" },
+    { "code": "H",  "term_sv": "Hissprojektör",        "term_en": "Lift designer" },
+    { "code": "SK", "term_sv": "Storköksprojektör",    "term_en": "Commercial kitchen designer" },
+    { "code": "G",  "term_sv": "Geotekniker",          "term_en": "Geotechnical engineer" },
+    { "code": "K",  "term_sv": "Byggnadskonstruktör",  "term_en": "Structural engineer" },
+    { "code": "L",  "term_sv": "Landskapsarkitekt",    "term_en": "Landscape architect" },
+    { "code": "M",  "term_sv": "Markprojektör",        "term_en": "Site/ground designer" },
+    { "code": "R",  "term_sv": "VA-projektör",         "term_en": "Water and sewage (VA) designer" },
+    { "code": "V",  "term_sv": "VVS-projektör",        "term_en": "VVS designer" }
+  ]
+}

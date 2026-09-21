@@ -1,0 +1,13 @@
+{
+  "category": "sensor_instrument",
+  "description": "Beteckningar på givare och mätinstrument. Givare = sensor (G-prefix), Mätinstrument = measuring instrument (M-prefix). The second letter denotes the measured quantity. On a rörritning these are drawn as small symbols on a stem from the pipe: a cone for a givare, a circle with a pointer for a visande mätinstrument, a circle with an S for a skrivande (recording) instrument, a slash for a rörtermometer, and a bowtie with a circle for a styrventil med motor.",
+  "entries": [
+    { "sensor_code": "GF", "instrument_code": "MF", "quantity_sv": "Flöde",                   "quantity_en": "Flow" },
+    { "sensor_code": "GL", "instrument_code": "ML", "quantity_sv": "Läge, nivå, vinkel, längd", "quantity_en": "Position, level, angle, length" },
+    { "sensor_code": "GM", "instrument_code": "MM", "quantity_sv": "Fuktighet",               "quantity_en": "Humidity" },
+    { "sensor_code": "GP", "instrument_code": "MP", "quantity_sv": "Tryck",                   "quantity_en": "Pressure" },
+    { "sensor_code": "GS", "instrument_code": "MS", "quantity_sv": "Hastighet, varvtal",      "quantity_en": "Speed, rotational speed" },
+    { "sensor_code": "GT", "instrument_code": "MT", "quantity_sv": "Temperatur",              "quantity_en": "Temperature" },
+    { "sensor_code": "GX", "instrument_code": "MX", "quantity_sv": "Övrigt",                  "quantity_en": "Other" }
+  ]
+}

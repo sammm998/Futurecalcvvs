@@ -1,0 +1,182 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://futurecalc.ai/contracts/drawing-space.schema.json",
+  "title": "Drawing space",
+  "description": "The vocabulary that crosses the service boundary: where things are on a sheet, how big they are, and how a pixel relates to a millimetre. Both this application and the detection microservice must mean the same thing by these, or coordinates land somewhere nobody drew.\n\nIt is separate from the application's own definitions on purpose. Everything here ships in the contract bundle, so a change to it is a contract release; the application's own vocabulary — a pipe's parameters, a height datum, a source identity — lives in annotations-defs.schema.json and ships nowhere. Adding a pipe parameter is then a change the microservice never sees, which is what it should be.\n\nEvery physical length is in MILLIMETRES and no field carries a unit — not a `unit` property, not a suffix on the name. Pixels appear only in a `px` field and in coordinates.",
+  "$defs": {
+    "noUnitField": {
+      "$comment": "One measure of physical length across the whole format: millimetres. No field carries a unit, so `unit` is refused outright rather than merely unused — a document that states one is stating something the schema does not mean.",
+      "not": {
+        "required": [
+          "unit"
+        ]
+      }
+    },
+    "coordinateSpace": {
+      "type": "object",
+      "description": "The canvas positions are written in, in pixels of the background image. Origin top-left, x right, y down — fixed here, not repeated in the data.",
+      "properties": {
+        "width": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "height": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        }
+      },
+      "required": [
+        "width",
+        "height"
+      ],
+      "additionalProperties": false
+    },
+    "box": {
+      "type": "object",
+      "properties": {
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        },
+        "width": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "height": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "rotation": {
+          "type": "number",
+          "minimum": -360,
+          "maximum": 360,
+          "description": "Degrees clockwise about (x, y)."
+        }
+      },
+      "required": [
+        "x",
+        "y",
+        "width",
+        "height"
+      ],
+      "additionalProperties": true
+    },
+    "geometry": {
+      "type": "object",
+      "description": "One connected undirected graph of uniform parameters. Branches and loops are allowed; a crossing is not a connection, only a shared node id is. The rules a schema cannot state — connectivity, orphan edges, duplicate and zero-length edges — are checked by annotations-validate.ts.",
+      "properties": {
+        "nodes": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 20000,
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "integer"
+              },
+              "x": {
+                "type": "number"
+              },
+              "y": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "id",
+              "x",
+              "y"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "edges": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 40000,
+          "items": {
+            "type": "array",
+            "prefixItems": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "integer"
+              }
+            ],
+            "minItems": 2,
+            "maxItems": 2,
+            "items": false
+          }
+        }
+      },
+      "required": [
+        "nodes",
+        "edges"
+      ],
+      "additionalProperties": false
+    },
+    "scale": {
+      "type": "object",
+      "properties": {
+        "pixelsPerMm": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "description": "Pixels of coordinateSpace per millimetre."
+        },
+        "source": {
+          "type": "string",
+          "description": "e.g. manual, vector:scale_bar."
+        }
+      },
+      "required": [
+        "pixelsPerMm"
+      ],
+      "additionalProperties": true,
+      "allOf": [
+        {
+          "$ref": "#/$defs/noUnitField"
+        }
+      ]
+    },
+    "planLength": {
+      "type": "object",
+      "description": "A run measured two ways: in pixels of the coordinate space, and in millimetres. Whoever owns the number computes it their own way — this states the units, not a method.",
+      "properties": {
+        "px": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Pixels of coordinateSpace."
+        },
+        "planView": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Millimetres. Absent without a scale — unknown, never zero."
+        }
+      },
+      "required": [
+        "px"
+      ],
+      "additionalProperties": true,
+      "allOf": [
+        {
+          "$ref": "#/$defs/noUnitField"
+        }
+      ]
+    },
+    "confidence": {
+      "enum": [
+        "high",
+        "medium",
+        "low"
+      ]
+    },
+    "uuid": {
+      "type": "string",
+      "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+      "$comment": "A pattern rather than `format: uuid`, so the rule holds without pulling ajv-formats into an edge function bundle."
+    }
+  }
+}

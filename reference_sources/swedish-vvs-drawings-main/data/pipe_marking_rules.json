@@ -1,0 +1,47 @@
+{
+  "category": "pipe_marking_rule",
+  "description": "How rörledningar (pipes) are labelled and drawn on VVS-ritningar. These rules govern how a takeoff engine should parse a pipe label and infer geometry.",
+  "entries": [
+    {
+      "id": "label_format",
+      "title": "Pipe label composition",
+      "rule_en": "A pipe is labelled on the ritning with its systemtillhörighet (system designation) and its rördimension, e.g. KV-22, VS2-32, S1-160. The digit after the dash is the pipe dimension.",
+      "rule_sv_source": "Rörledningar betecknas på ritningar med systemtillhörighet och rördimension.",
+      "parse_pattern": "^(?<system>[A-ZÅÄÖ]{1,3}i?)(?<index>\\d*)-(?<dimension>\\d+)$",
+      "examples": ["KV-28", "VV-15", "VVC-12", "KV1-35", "VS2-40", "KB2-50", "S1-160"]
+    },
+    {
+      "id": "label_repetition",
+      "title": "Repetition of the label",
+      "rule_en": "The label is normally repeated for every individual pipe, except for circulating circuits (e.g. värmebärare or köldbärare), where one label refers to both the supply and the return pipe.",
+      "rule_sv_source": "Beteckningen upprepas normalt för varje enskilt rör, utom för cirkulerande kretsar, exempelvis värme- eller köldbärare, där beteckningen syftar på både framlednings- och returrör."
+    },
+    {
+      "id": "index_meaning",
+      "title": "Meaning of the index digit",
+      "rule_en": "An extra digit (index) may follow the system designation. Its meaning is defined by the ritning or the beskrivning. For KV, VV, VVC, S and D the index usually refers to the pipe material (rörmaterial), but can occasionally mean something else. For VS, KB and G the index can refer to the material but more often refers to the system: e.g. VS1 = a radiator group, VS2 = a ventilation group; KB1 = wet cooling, KB2 = dry cooling.",
+      "rule_sv_source": "I vissa fall finns ytterligare en siffra, exempelvis: KV1-35, VS2-40, KB2-50. Detta index kan ha olika innebörd, vilket framgår av ritningar eller beskrivningar.",
+      "notes": "Some designation systems are more complex and may also encode requirements on insulation and other properties. In that case there is usually a specific legend (särskild förklaring) on the ritning."
+    },
+    {
+      "id": "properties_from_beskrivning",
+      "title": "Material, jointing and insulation come from the beskrivning",
+      "rule_en": "Rörmaterial, fogmetod (jointing method) and isolering (insulation) are not read from the pipe label. They are stated in the VVS-beskrivning.",
+      "rule_sv_source": "Rörmaterial, fogmetod, isolering etc. framgår då av VVS-beskrivningen.",
+      "takeoff_implication": "Quantity takeoff from a planritning alone yields length per system and dimension. Material and insulation must be joined in from the beskrivning before pricing."
+    },
+    {
+      "id": "single_line_representation",
+      "title": "Single-line representation on planritning",
+      "rule_en": "Pipes on a planritning are shown as single lines (enkla linjer). Where pipes cross, the line is usually broken (avbrott på linjen).",
+      "rule_sv_source": "Ledningar på planritningen redovisas som enkla linjer. Vid korsande rör görs ofta avbrott på linjen.",
+      "takeoff_implication": "A gap in a line is a crossing indicator, not an end of pipe. Segmentation logic must reconnect across such breaks."
+    },
+    {
+      "id": "section_convention",
+      "title": "What a planritning section represents",
+      "rule_en": "The line style on a ritning marks the position in front of or behind the theoretical section from which the view is drawn. A planritning normally shows a section at window level (fönsternivå) looking downwards, and the height of a pipe in the room is encoded in the line style.",
+      "rule_sv_source": "Linjers utformning på en ritning markerar läget framför eller bakom det teoretiska snitt varifrån det avbildade betraktas. Planritningar redovisar normalt ett snitt i fönsternivå sett nedåt."
+    }
+  ]
+}

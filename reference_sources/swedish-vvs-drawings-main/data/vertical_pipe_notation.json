@@ -1,0 +1,90 @@
+{
+  "category": "vertical_pipe_notation",
+  "description": "Vertikalt förlagda rörledningar (vertically routed pipes) are marked in a specific way on VVS-ritningar. A heavy stroke (grovt streck) placed above and/or below the dimension figure tells whether the vertical pipe penetrates the slab above, the slab below, both or neither.",
+  "entries": [
+    {
+      "code": "stroke_above",
+      "notation": "overline on the dimension, e.g. ‾15",
+      "term_sv": "Grovt streck över dimensionsangivelsen",
+      "term_en": "Heavy stroke above the dimension figure",
+      "meaning_en": "The vertical pipe does NOT pass through the slab above (överliggande bjälklag).",
+      "penetrates_slab_above": false,
+      "penetrates_slab_below": true
+    },
+    {
+      "code": "stroke_below",
+      "notation": "underline on the dimension, e.g. 15_",
+      "term_sv": "Grovt streck under dimensionsangivelsen",
+      "term_en": "Heavy stroke below the dimension figure",
+      "meaning_en": "The vertical pipe does NOT pass through the slab below (underliggande bjälklag).",
+      "penetrates_slab_above": true,
+      "penetrates_slab_below": false
+    },
+    {
+      "code": "stroke_above_and_below",
+      "notation": "overline and underline, e.g. ‾15_",
+      "term_sv": "Grovt streck både över och under dimensionsangivelsen",
+      "term_en": "Heavy stroke both above and below the dimension figure",
+      "meaning_en": "The pipe stays within the storey (ledningen stannar inom våningsplanet).",
+      "penetrates_slab_above": false,
+      "penetrates_slab_below": false
+    },
+    {
+      "code": "no_stroke",
+      "notation": "bare dimension, e.g. 15",
+      "term_sv": "Inget streck",
+      "term_en": "No stroke",
+      "meaning_en": "The pipe passes straight through the storey (går genom våningsplanet), i.e. through both slabs.",
+      "penetrates_slab_above": true,
+      "penetrates_slab_below": true
+    }
+  ],
+  "worked_examples": [
+    {
+      "case_sv": "Vertikal ledning genom våningsplan",
+      "case_en": "Vertical pipe passing through the storey",
+      "section_label": "S1-110",
+      "plan_label": "S1 over 110 (no strokes)",
+      "reading": "Spillvatten stack, DN110, continues through both slabs."
+    },
+    {
+      "case_sv": "Nedgång till annat plan",
+      "case_en": "Drop down to another storey",
+      "section_label": "S1-110",
+      "plan_label": "S1 over 110 with overline, plus a dash-dot branch labelled S1-110",
+      "reading": "Pipe goes down only; no penetration of the slab above."
+    },
+    {
+      "case_sv": "Uppgång till annat plan",
+      "case_en": "Rise up to another storey",
+      "section_label": "S1-110",
+      "plan_label": "S1 over 110 with underline, plus a branch labelled S1-110",
+      "reading": "Pipe goes up only; no penetration of the slab below."
+    },
+    {
+      "case_sv": "Vertikal ledning inom plan",
+      "case_en": "Vertical pipe contained within the storey",
+      "section_label": "S1-110",
+      "plan_label": "S1 over 110 with both overline and underline",
+      "reading": "Riser starts and ends within the same storey."
+    },
+    {
+      "case_sv": "Ledning i golv och på annat plan",
+      "case_en": "Pipe in the floor and on another storey",
+      "plan_label": "S1 over 110 over 110 (stacked dimensions)",
+      "reading": "Stacked dimension figures list several vertical segments at the same plan position; each figure carries its own stroke notation."
+    },
+    {
+      "case_sv": "Ledning i ovanför liggande plan",
+      "case_en": "Pipe in the storey above",
+      "plan_label": "S1 over 110 with overline, drawn dash-dot",
+      "reading": "Pipe belongs to the storey above; combine the line type with the stroke notation to place it."
+    },
+    {
+      "case_sv": "Staplade dimensioner 15 / 20 / 20",
+      "case_en": "Stacked dimensions 15 / 20 / 20",
+      "reading": "Where several pipes share the same plan position, dimensions are stacked in reading order and each corresponds to one segment in the section. Reading a stack requires pairing each figure with its own line type and stroke."
+    }
+  ],
+  "takeoff_implication": "Stroke notation plus line type is the only way to recover vertical pipe length and slab penetrations from a 2D planritning. An automated reader must detect over/underlines on dimension text and must handle stacked dimension figures at one leader point."
+}

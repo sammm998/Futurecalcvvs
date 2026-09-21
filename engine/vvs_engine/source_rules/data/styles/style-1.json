@@ -1,0 +1,65 @@
+{
+  "id": "style-1",
+  "name": "AutoCAD - pdfplot14-16 - Ghostscript 9.21",
+  "description": "Merged drawing family. Confirmed pipe stroke widths in the supplied samples: 1.44 / 2.04 pt. Solid, dashed, dash-dot and dash-double-dot pipes belong to this same style. Text and label formats do not define separate styles. Historical sample profiles remain archived.",
+  "version": 2,
+  "calibration": {},
+  "signatures": [
+    {
+      "pipe_ratios": [
+        4.0
+      ],
+      "ring_ratio": 7.5,
+      "layered": true
+    },
+    {
+      "pipe_ratios": [
+        3.0,
+        4.25
+      ],
+      "ring_ratio": 5.75,
+      "layered": false
+    }
+  ],
+  "rules": [
+    {
+      "id": "reading-direction",
+      "stage": "binding",
+      "instruction": "Read from the system entry towards fixtures. For gravity systems S*/D* except SL, a higher VG establishes the inward direction and outranks other direction signals. CL serves this role only on gravity systems. Pressure-pipe CL is mounting height, not flow direction."
+    },
+    {
+      "id": "branch-description",
+      "stage": "binding",
+      "instruction": "A main keeps its designation through an unmarked tee. A branch with its own label includes its approach from the main to its mark when supported by topology. Do not propagate the main label into that branch."
+    },
+    {
+      "id": "solid-fixtures",
+      "stage": "binding",
+      "instruction": "R1 and K5 describe solid fixture connections in this style. An uninsulated split-form heating label typically describes a short rise or drop, not a long insulated distribution run."
+    },
+    {
+      "id": "parallel-pairs",
+      "stage": "binding",
+      "instruction": "Use the designation line_count from the system table: only line_count 2 permits an unlabelled parallel twin. Nx describes a bundle. VV and VVC are distinct individually labelled systems."
+    },
+    {
+      "id": "mark-boundaries",
+      "stage": "binding",
+      "instruction": "Another designation's landing is a boundary, including an unreadable designation. A label may cover its own approach and continuation when topology supports one branch; never cross a competing designation merely to fill an unassigned stretch."
+    }
+  ],
+  "merged_members": [
+    "style-1",
+    "priorn-shx",
+    "hyllie-ghostscript"
+  ],
+  "library_ids": [
+    "sweco-pdfplot-strokes",
+    "priorn-shx",
+    "hyllie-ghostscript"
+  ],
+  "verified_pipe_widths": [
+    1.44,
+    2.04
+  ]
+}

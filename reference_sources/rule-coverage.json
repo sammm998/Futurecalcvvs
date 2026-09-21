@@ -1,0 +1,1422 @@
+{
+  "schema_version": 1,
+  "imported_rule_instances": 80,
+  "active_style_instances": 55,
+  "archived_style_instances": 25,
+  "rules": [
+    {
+      "source_file": "vectorascore/data/styles/archive/bd-ghostscript.json",
+      "style_id": "bd-ghostscript",
+      "archived": true,
+      "definition": {
+        "id": "reading-direction",
+        "stage": "binding",
+        "instruction": "Read from the system entry towards fixtures. For gravity systems S*/D* except SL, a higher VG establishes the inward direction and outranks other direction signals. CL serves this role only on gravity systems. Pressure-pipe CL is mounting height, not flow direction."
+      },
+      "runtime_status": "archived_reference_only",
+      "related_runtime_files": [
+        "engine/vvs_engine/source_rules/adapter.py",
+        "engine/vvs_engine/source_rules/pipestudio/flow_assign.py",
+        "engine/vvs_engine/source_rules/pipestudio/final_bind.py"
+      ],
+      "assessment_sv": "Historisk profil bevarad för spårbarhet. Kan inte väljas som aktiv profil."
+    },
+    {
+      "source_file": "vectorascore/data/styles/archive/bd-ghostscript.json",
+      "style_id": "bd-ghostscript",
+      "archived": true,
+      "definition": {
+        "id": "branch-description",
+        "stage": "binding",
+        "instruction": "A main keeps its designation through an unmarked tee. A branch with its own label includes its approach from the main to its mark when supported by topology. Do not propagate the main label into that branch."
+      },
+      "runtime_status": "archived_reference_only",
+      "related_runtime_files": [
+        "engine/vvs_engine/source_rules/adapter.py",
+        "engine/vvs_engine/source_rules/pipestudio/flow_assign.py",
+        "engine/vvs_engine/source_rules/pipestudio/final_bind.py"
+      ],
+      "assessment_sv": "Historisk profil bevarad för spårbarhet. Kan inte väljas som aktiv profil."
+    },
+    {
+      "source_file": "vectorascore/data/styles/archive/bd-ghostscript.json",
+      "style_id": "bd-ghostscript",
+      "archived": true,
+      "definition": {
+        "id": "solid-fixtures",
+        "stage": "binding",
+        "instruction": "R1 and K5 describe solid fixture connections in this style. An uninsulated split-form heating label typically describes a short rise or drop, not a long insulated distribution run."
+      },
+      "runtime_status": "archived_reference_only",
+      "related_runtime_files": [
+        "engine/vvs_engine/source_rules/adapter.py",
+        "engine/vvs_engine/source_rules/pipestudio/flow_assign.py",
+        "engine/vvs_engine/source_rules/pipestudio/final_bind.py"
+      ],
+      "assessment_sv": "Historisk profil bevarad för spårbarhet. Kan inte väljas som aktiv profil."
+    },
+    {
+      "source_file": "vectorascore/data/styles/archive/bd-ghostscript.json",
+      "style_id": "bd-ghostscript",
+      "archived": true,
+      "definition": {
+        "id": "parallel-pairs",
+        "stage": "binding",
+        "instruction": "Use the designation line_count from the system table: only line_count 2 permits an unlabelled parallel twin. Nx describes a bundle. VV and VVC are distinct individually labelled systems."
+      },
+      "runtime_status": "archived_reference_only",
+      "related_runtime_files": [
+        "engine/vvs_engine/source_rules/adapter.py",
+        "engine/vvs_engine/source_rules/pipestudio/flow_assign.py",
+        "engine/vvs_engine/source_rules/pipestudio/final_bind.py"
+      ],
+      "assessment_sv": "Historisk profil bevarad för spårbarhet. Kan inte väljas som aktiv profil."
+    },
+    {
+      "source_file": "vectorascore/data/styles/archive/bd-ghostscript.json",
+      "style_id": "bd-ghostscript",
+      "archived": true,
+      "definition": {
+        "id": "mark-boundaries",
+        "stage": "binding",
+        "instruction": "Another designation's landing is a boundary, including an unreadable designation. A label may cover its own approach and continuation when topology supports one branch; never cross a competing designation merely to fill an unassigned stretch."
+      },
+      "runtime_status": "archived_reference_only",
+      "related_runtime_files": [
+        "engine/vvs_engine/source_rules/adapter.py",
+        "engine/vvs_engine/source_rules/pipestudio/flow_assign.py",
+        "engine/vvs_engine/source_rules/pipestudio/final_bind.py"
+      ],
+      "assessment_sv": "Historisk profil bevarad för spårbarhet. Kan inte väljas som aktiv profil."
+    },
+    {
+      "source_file": "vectorascore/data/styles/archive/hyllie-ghostscript.json",
+      "style_id": "hyllie-ghostscript",
+      "archived": true,
+      "definition": {
+        "id": "reading-direction",
+        "stage": "binding",
+        "instruction": "Read from the system entry towards fixtures. For gravity systems S*/D* except SL, a higher VG establishes the inward direction and outranks other direction signals. CL serves this role only on gravity systems. Pressure-pipe CL is mounting height, not flow direction."
+      },
+      "runtime_status": "archived_reference_only",
+      "related_runtime_files": [
+        "engine/vvs_engine/source_rules/adapter.py",
+        "engine/vvs_engine/source_rules/pipestudio/flow_assign.py",
+        "engine/vvs_engine/source_rules/pipestudio/final_bind.py"
+      ],
+      "assessment_sv": "Historisk profil bevarad för spårbarhet. Kan inte väljas som aktiv profil."
+    },
+    {
+      "source_file": "vectorascore/data/styles/archive/hyllie-ghostscript.json",
+      "style_id": "hyllie-ghostscript",
+      "archived": true,
+      "definition": {
+        "id": "branch-description",
+        "stage": "binding",
+        "instruction": "A main keeps its designation through an unmarked tee. A branch with its own label includes its approach from the main to its mark when supported by topology. Do not propagate the main label into that branch."
+      },
+      "runtime_status": "archived_reference_only",
+      "related_runtime_files": [
+        "engine/vvs_engine/source_rules/adapter.py",
+        "engine/vvs_engine/source_rules/pipestudio/flow_assign.py",
+        "engine/vvs_engine/source_rules/pipestudio/final_bind.py"
+      ],
+      "assessment_sv": "Historisk profil bevarad för spårbarhet. Kan inte väljas som aktiv profil."
+    },
+    {
+      "source_file": "vectorascore/data/styles/archive/hyllie-ghostscript.json",
+      "style_id": "hyllie-ghostscript",
+      "archived": true,
+      "definition": {
+        "id": "solid-fixtures",
+        "stage": "binding",
+        "instruction": "R1 and K5 describe solid fixture connections in this style. An uninsulated split-form heating label typically describes a short rise or drop, not a long insulated distribution run."
+      },
+      "runtime_status": "archived_reference_only",
+      "related_runtime_files": [
+        "engine/vvs_engine/source_rules/adapter.py",
+        "engine/vvs_engine/source_rules/pipestudio/flow_assign.py",
+        "engine/vvs_engine/source_rules/pipestudio/final_bind.py"
+      ],
+      "assessment_sv": "Historisk profil bevarad för spårbarhet. Kan inte väljas som aktiv profil."
+    },
+    {
+      "source_file": "vectorascore/data/styles/archive/hyllie-ghostscript.json",
+      "style_id": "hyllie-ghostscript",
+      "archived": true,
+      "definition": {
+        "id": "parallel-pairs",
+        "stage": "binding",
+        "instruction": "Use the designation line_count from the system table: only line_count 2 permits an unlabelled parallel twin. Nx describes a bundle. VV and VVC are distinct individually labelled systems."
+      },
+      "runtime_status": "archived_reference_only",
+      "related_runtime_files": [
+        "engine/vvs_engine/source_rules/adapter.py",
+        "engine/vvs_engine/source_rules/pipestudio/flow_assign.py",
+        "engine/vvs_engine/source_rules/pipestudio/final_bind.py"
+      ],
+      "assessment_sv": "Historisk profil bevarad för spårbarhet. Kan inte väljas som aktiv profil."
+    },
+    {
+      "source_file": "vectorascore/data/styles/archive/hyllie-ghostscript.json",
+      "style_id": "hyllie-ghostscript",
+      "archived": true,
+      "definition": {
+        "id": "mark-boundaries",
+        "stage": "binding",
+        "instruction": "Another designation's landing is a boundary, including an unreadable designation. A label may cover its own approach and continuation when topology supports one branch; never cross a competing designation merely to fill an unassigned stretch."
+      },
+      "runtime_status": "archived_reference_only",
+      "related_runtime_files": [
+        "engine/vvs_engine/source_rules/adapter.py",
+        "engine/vvs_engine/source_rules/pipestudio/flow_assign.py",
+        "engine/vvs_engine/source_rules/pipestudio/final_bind.py"
+      ],
+      "assessment_sv": "Historisk profil bevarad för spårbarhet. Kan inte väljas som aktiv profil."
+    },
+    {
+      "source_file": "vectorascore/data/styles/archive/lopoglan-booklet.json",
+      "style_id": "lopoglan-booklet",
+      "archived": true,
+      "definition": {
+        "id": "reading-direction",
+        "stage": "binding",
+        "instruction": "Read from the system entry towards fixtures. For gravity systems S*/D* except SL, a higher VG establishes the inward direction and outranks other direction signals. CL serves this role only on gravity systems. Pressure-pipe CL is mounting height, not flow direction."
+      },
+      "runtime_status": "archived_reference_only",
+      "related_runtime_files": [
+        "engine/vvs_engine/source_rules/adapter.py",
+        "engine/vvs_engine/source_rules/pipestudio/flow_assign.py",
+        "engine/vvs_engine/source_rules/pipestudio/final_bind.py"
+      ],
+      "assessment_sv": "Historisk profil bevarad för spårbarhet. Kan inte väljas som aktiv profil."
+    },
+    {
+      "source_file": "vectorascore/data/styles/archive/lopoglan-booklet.json",
+      "style_id": "lopoglan-booklet",
+      "archived": true,
+      "definition": {
+        "id": "branch-description",
+        "stage": "binding",
+        "instruction": "A main keeps its designation through an unmarked tee. A branch with its own label includes its approach from the main to its mark when supported by topology. Do not propagate the main label into that branch."
+      },
+      "runtime_status": "archived_reference_only",
+      "related_runtime_files": [
+        "engine/vvs_engine/source_rules/adapter.py",
+        "engine/vvs_engine/source_rules/pipestudio/flow_assign.py",
+        "engine/vvs_engine/source_rules/pipestudio/final_bind.py"
+      ],
+      "assessment_sv": "Historisk profil bevarad för spårbarhet. Kan inte väljas som aktiv profil."
+    },
+    {
+      "source_file": "vectorascore/data/styles/archive/lopoglan-booklet.json",
+      "style_id": "lopoglan-booklet",
+      "archived": true,
+      "definition": {
+        "id": "solid-fixtures",
+        "stage": "binding",
+        "instruction": "R1 and K5 describe solid fixture connections in this style. An uninsulated split-form heating label typically describes a short rise or drop, not a long insulated distribution run."
+      },
+      "runtime_status": "archived_reference_only",
+      "related_runtime_files": [
+        "engine/vvs_engine/source_rules/adapter.py",
+        "engine/vvs_engine/source_rules/pipestudio/flow_assign.py",
+        "engine/vvs_engine/source_rules/pipestudio/final_bind.py"
+      ],
+      "assessment_sv": "Historisk profil bevarad för spårbarhet. Kan inte väljas som aktiv profil."
+    },
+    {
+      "source_file": "vectorascore/data/styles/archive/lopoglan-booklet.json",
+      "style_id": "lopoglan-booklet",
+      "archived": true,
+      "definition": {
+        "id": "parallel-pairs",
+        "stage": "binding",
+        "instruction": "Use the designation line_count from the system table: only line_count 2 permits an unlabelled parallel twin. Nx describes a bundle. VV and VVC are distinct individually labelled systems."
+      },
+      "runtime_status": "archived_reference_only",
+      "related_runtime_files": [
+        "engine/vvs_engine/source_rules/adapter.py",
+        "engine/vvs_engine/source_rules/pipestudio/flow_assign.py",
+        "engine/vvs_engine/source_rules/pipestudio/final_bind.py"
+      ],
+      "assessment_sv": "Historisk profil bevarad för spårbarhet. Kan inte väljas som aktiv profil."
+    },
+    {
+      "source_file": "vectorascore/data/styles/archive/lopoglan-booklet.json",
+      "style_id": "lopoglan-booklet",
+      "archived": true,
+      "definition": {
+        "id": "mark-boundaries",
+        "stage": "binding",
+        "instruction": "Another designation's landing is a boundary, including an unreadable designation. A label may cover its own approach and continuation when topology supports one branch; never cross a competing designation merely to fill an unassigned stretch."
+      },
+      "runtime_status": "archived_reference_only",
+      "related_runtime_files": [
+        "engine/vvs_engine/source_rules/adapter.py",
+        "engine/vvs_engine/source_rules/pipestudio/flow_assign.py",
+        "engine/vvs_engine/source_rules/pipestudio/final_bind.py"
+      ],
+      "assessment_sv": "Historisk profil bevarad för spårbarhet. Kan inte väljas som aktiv profil."
+    },
+    {
+      "source_file": "vectorascore/data/styles/archive/priorn-shx.json",
+      "style_id": "priorn-shx",
+      "archived": true,
+      "definition": {
+        "id": "reading-direction",
+        "stage": "binding",
+        "instruction": "Read from the system entry towards fixtures. For gravity systems S*/D* except SL, a higher VG establishes the inward direction and outranks other direction signals. CL serves this role only on gravity systems. Pressure-pipe CL is mounting height, not flow direction."
+      },
+      "runtime_status": "archived_reference_only",
+      "related_runtime_files": [
+        "engine/vvs_engine/source_rules/adapter.py",
+        "engine/vvs_engine/source_rules/pipestudio/flow_assign.py",
+        "engine/vvs_engine/source_rules/pipestudio/final_bind.py"
+      ],
+      "assessment_sv": "Historisk profil bevarad för spårbarhet. Kan inte väljas som aktiv profil."
+    },
+    {
+      "source_file": "vectorascore/data/styles/archive/priorn-shx.json",
+      "style_id": "priorn-shx",
+      "archived": true,
+      "definition": {
+        "id": "branch-description",
+        "stage": "binding",
+        "instruction": "A main keeps its designation through an unmarked tee. A branch with its own label includes its approach from the main to its mark when supported by topology. Do not propagate the main label into that branch."
+      },
+      "runtime_status": "archived_reference_only",
+      "related_runtime_files": [
+        "engine/vvs_engine/source_rules/adapter.py",
+        "engine/vvs_engine/source_rules/pipestudio/flow_assign.py",
+        "engine/vvs_engine/source_rules/pipestudio/final_bind.py"
+      ],
+      "assessment_sv": "Historisk profil bevarad för spårbarhet. Kan inte väljas som aktiv profil."
+    },
+    {
+      "source_file": "vectorascore/data/styles/archive/priorn-shx.json",
+      "style_id": "priorn-shx",
+      "archived": true,
+      "definition": {
+        "id": "solid-fixtures",
+        "stage": "binding",
+        "instruction": "R1 and K5 describe solid fixture connections in this style. An uninsulated split-form heating label typically describes a short rise or drop, not a long insulated distribution run."
+      },
+      "runtime_status": "archived_reference_only",
+      "related_runtime_files": [
+        "engine/vvs_engine/source_rules/adapter.py",
+        "engine/vvs_engine/source_rules/pipestudio/flow_assign.py",
+        "engine/vvs_engine/source_rules/pipestudio/final_bind.py"
+      ],
+      "assessment_sv": "Historisk profil bevarad för spårbarhet. Kan inte väljas som aktiv profil."
+    },
+    {
+      "source_file": "vectorascore/data/styles/archive/priorn-shx.json",
+      "style_id": "priorn-shx",
+      "archived": true,
+      "definition": {
+        "id": "parallel-pairs",
+        "stage": "binding",
+        "instruction": "Use the designation line_count from the system table: only line_count 2 permits an unlabelled parallel twin. Nx describes a bundle. VV and VVC are distinct individually labelled systems."
+      },
+      "runtime_status": "archived_reference_only",
+      "related_runtime_files": [
+        "engine/vvs_engine/source_rules/adapter.py",
+        "engine/vvs_engine/source_rules/pipestudio/flow_assign.py",
+        "engine/vvs_engine/source_rules/pipestudio/final_bind.py"
+      ],
+      "assessment_sv": "Historisk profil bevarad för spårbarhet. Kan inte väljas som aktiv profil."
+    },
+    {
+      "source_file": "vectorascore/data/styles/archive/priorn-shx.json",
+      "style_id": "priorn-shx",
+      "archived": true,
+      "definition": {
+        "id": "mark-boundaries",
+        "stage": "binding",
+        "instruction": "Another designation's landing is a boundary, including an unreadable designation. A label may cover its own approach and continuation when topology supports one branch; never cross a competing designation merely to fill an unassigned stretch."
+      },
+      "runtime_status": "archived_reference_only",
+      "related_runtime_files": [
+        "engine/vvs_engine/source_rules/adapter.py",
+        "engine/vvs_engine/source_rules/pipestudio/flow_assign.py",
+        "engine/vvs_engine/source_rules/pipestudio/final_bind.py"
+      ],
+      "assessment_sv": "Historisk profil bevarad för spårbarhet. Kan inte väljas som aktiv profil."
+    },
+    {
+      "source_file": "vectorascore/data/styles/archive/style-1.json",
+      "style_id": "style-1",
+      "archived": true,
+      "definition": {
+        "id": "reading-direction",
+        "stage": "binding",
+        "instruction": "Read from the system entry towards fixtures. For gravity systems S*/D* except SL, a higher VG establishes the inward direction and outranks other direction signals. CL serves this role only on gravity systems. Pressure-pipe CL is mounting height, not flow direction."
+      },
+      "runtime_status": "archived_reference_only",
+      "related_runtime_files": [
+        "engine/vvs_engine/source_rules/adapter.py",
+        "engine/vvs_engine/source_rules/pipestudio/flow_assign.py",
+        "engine/vvs_engine/source_rules/pipestudio/final_bind.py"
+      ],
+      "assessment_sv": "Historisk profil bevarad för spårbarhet. Kan inte väljas som aktiv profil."
+    },
+    {
+      "source_file": "vectorascore/data/styles/archive/style-1.json",
+      "style_id": "style-1",
+      "archived": true,
+      "definition": {
+        "id": "branch-description",
+        "stage": "binding",
+        "instruction": "A main keeps its designation through an unmarked tee. A branch with its own label includes its approach from the main to its mark when supported by topology. Do not propagate the main label into that branch."
+      },
+      "runtime_status": "archived_reference_only",
+      "related_runtime_files": [
+        "engine/vvs_engine/source_rules/adapter.py",
+        "engine/vvs_engine/source_rules/pipestudio/flow_assign.py",
+        "engine/vvs_engine/source_rules/pipestudio/final_bind.py"
+      ],
+      "assessment_sv": "Historisk profil bevarad för spårbarhet. Kan inte väljas som aktiv profil."
+    },
+    {
+      "source_file": "vectorascore/data/styles/archive/style-1.json",
+      "style_id": "style-1",
+      "archived": true,
+      "definition": {
+        "id": "solid-fixtures",
+        "stage": "binding",
+        "instruction": "R1 and K5 describe solid fixture connections in this style. An uninsulated split-form heating label typically describes a short rise or drop, not a long insulated distribution run."
+      },
+      "runtime_status": "archived_reference_only",
+      "related_runtime_files": [
+        "engine/vvs_engine/source_rules/adapter.py",
+        "engine/vvs_engine/source_rules/pipestudio/flow_assign.py",
+        "engine/vvs_engine/source_rules/pipestudio/final_bind.py"
+      ],
+      "assessment_sv": "Historisk profil bevarad för spårbarhet. Kan inte väljas som aktiv profil."
+    },
+    {
+      "source_file": "vectorascore/data/styles/archive/style-1.json",
+      "style_id": "style-1",
+      "archived": true,
+      "definition": {
+        "id": "parallel-pairs",
+        "stage": "binding",
+        "instruction": "Use the designation line_count from the system table: only line_count 2 permits an unlabelled parallel twin. Nx describes a bundle. VV and VVC are distinct individually labelled systems."
+      },
+      "runtime_status": "archived_reference_only",
+      "related_runtime_files": [
+        "engine/vvs_engine/source_rules/adapter.py",
+        "engine/vvs_engine/source_rules/pipestudio/flow_assign.py",
+        "engine/vvs_engine/source_rules/pipestudio/final_bind.py"
+      ],
+      "assessment_sv": "Historisk profil bevarad för spårbarhet. Kan inte väljas som aktiv profil."
+    },
+    {
+      "source_file": "vectorascore/data/styles/archive/style-1.json",
+      "style_id": "style-1",
+      "archived": true,
+      "definition": {
+        "id": "mark-boundaries",
+        "stage": "binding",
+        "instruction": "Another designation's landing is a boundary, including an unreadable designation. A label may cover its own approach and continuation when topology supports one branch; never cross a competing designation merely to fill an unassigned stretch."
+      },
+      "runtime_status": "archived_reference_only",
+      "related_runtime_files": [
+        "engine/vvs_engine/source_rules/adapter.py",
+        "engine/vvs_engine/source_rules/pipestudio/flow_assign.py",
+        "engine/vvs_engine/source_rules/pipestudio/final_bind.py"
+      ],
+      "assessment_sv": "Historisk profil bevarad för spårbarhet. Kan inte väljas som aktiv profil."
+    },
+    {
+      "source_file": "vectorascore/data/styles/axis-bluebeam.json",
+      "style_id": "axis-bluebeam",
+      "archived": false,
+      "definition": {
+        "id": "reading-direction",
+        "stage": "binding",
+        "instruction": "Read from the system entry towards fixtures. For gravity systems S*/D* except SL, a higher VG establishes the inward direction and outranks other direction signals. CL serves this role only on gravity systems. Pressure-pipe CL is mounting height, not flow direction."
+      },
+      "runtime_status": "source_engine_partial_adapter",
+      "related_runtime_files": [
+        "engine/vvs_engine/source_rules/adapter.py",
+        "engine/vvs_engine/source_rules/pipestudio/flow_assign.py",
+        "engine/vvs_engine/source_rules/pipestudio/final_bind.py"
+      ],
+      "assessment_sv": "Dimensionsmotorn och modellmotorn kör källans olika prioriteringar separat. VG överförs. Systeminträden saknas ännu i adaptern."
+    },
+    {
+      "source_file": "vectorascore/data/styles/axis-bluebeam.json",
+      "style_id": "axis-bluebeam",
+      "archived": false,
+      "definition": {
+        "id": "branch-description",
+        "stage": "binding",
+        "instruction": "A main keeps its designation through an unmarked tee. A branch with its own label includes its approach from the main to its mark when supported by topology. Do not propagate the main label into that branch."
+      },
+      "runtime_status": "source_engine_partial_adapter",
+      "related_runtime_files": [
+        "engine/vvs_engine/source_rules/adapter.py",
+        "engine/vvs_engine/source_rules/pipestudio/flow_assign.py",
+        "engine/vvs_engine/source_rules/pipestudio/final_bind.py"
+      ],
+      "assessment_sv": "Originalkällans gren-/huvudledningsregler körs på den överförda grafen. Hela kedjans överensstämmelse mot handmängdning är inte verifierad."
+    },
+    {
+      "source_file": "vectorascore/data/styles/axis-bluebeam.json",
+      "style_id": "axis-bluebeam",
+      "archived": false,
+      "definition": {
+        "id": "solid-fixtures",
+        "stage": "binding",
+        "instruction": "R1 and K5 describe solid fixture connections in this style. An uninsulated split-form heating label typically describes a short rise or drop, not a long insulated distribution run."
+      },
+      "runtime_status": "source_engine_partial_adapter",
+      "related_runtime_files": [
+        "engine/vvs_engine/source_rules/adapter.py",
+        "engine/vvs_engine/source_rules/pipestudio/flow_assign.py",
+        "engine/vvs_engine/source_rules/pipestudio/final_bind.py"
+      ],
+      "assessment_sv": "Vald aktiv profils fullständiga instruktion skickas nu till modellen. Inte en universell R1/K5-regel; geometrikalibrering är fortfarande delvis värdens."
+    },
+    {
+      "source_file": "vectorascore/data/styles/axis-bluebeam.json",
+      "style_id": "axis-bluebeam",
+      "archived": false,
+      "definition": {
+        "id": "parallel-pairs",
+        "stage": "binding",
+        "instruction": "Use the designation line_count from the system table: only line_count 2 permits an unlabelled parallel twin. Nx describes a bundle. VV and VVC are distinct individually labelled systems."
+      },
+      "runtime_status": "source_engine_partial_adapter",
+      "related_runtime_files": [
+        "engine/vvs_engine/source_rules/adapter.py",
+        "engine/vvs_engine/source_rules/pipestudio/flow_assign.py",
+        "engine/vvs_engine/source_rules/pipestudio/final_bind.py"
+      ],
+      "assessment_sv": "Swedish VVS:s line_count används. PipeStudios Nx-komplettering körs före båda lägena; kvarstående underskott redovisas. Modellens kandidatkod har parallellkontext. Dimensionsläget saknar enligt källan tvillingpropagering."
+    },
+    {
+      "source_file": "vectorascore/data/styles/axis-bluebeam.json",
+      "style_id": "axis-bluebeam",
+      "archived": false,
+      "definition": {
+        "id": "mark-boundaries",
+        "stage": "binding",
+        "instruction": "Another designation's landing is a boundary, including an unreadable designation. A label may cover its own approach and continuation when topology supports one branch; never cross a competing designation merely to fill an unassigned stretch."
+      },
+      "runtime_status": "source_engine_partial_adapter",
+      "related_runtime_files": [
+        "engine/vvs_engine/source_rules/adapter.py",
+        "engine/vvs_engine/source_rules/pipestudio/flow_assign.py",
+        "engine/vvs_engine/source_rules/pipestudio/final_bind.py"
+      ],
+      "assessment_sv": "Källans tilldelning följer riktiga leaderlandningar; inre kontakter delas i grafen. Detektion av oläsliga eller missade etiketter är ännu ofullständig."
+    },
+    {
+      "source_file": "vectorascore/data/styles/badskon-a3-booklet.json",
+      "style_id": "badskon-a3-booklet",
+      "archived": false,
+      "definition": {
+        "id": "reading-direction",
+        "stage": "binding",
+        "instruction": "Read from the system entry towards fixtures. For gravity systems S*/D* except SL, a higher VG establishes the inward direction and outranks other direction signals. CL serves this role only on gravity systems. Pressure-pipe CL is mounting height, not flow direction."
+      },
+      "runtime_status": "source_engine_partial_adapter",
+      "related_runtime_files": [
+        "engine/vvs_engine/source_rules/adapter.py",
+        "engine/vvs_engine/source_rules/pipestudio/flow_assign.py",
+        "engine/vvs_engine/source_rules/pipestudio/final_bind.py"
+      ],
+      "assessment_sv": "Dimensionsmotorn och modellmotorn kör källans olika prioriteringar separat. VG överförs. Systeminträden saknas ännu i adaptern."
+    },
+    {
+      "source_file": "vectorascore/data/styles/badskon-a3-booklet.json",
+      "style_id": "badskon-a3-booklet",
+      "archived": false,
+      "definition": {
+        "id": "branch-description",
+        "stage": "binding",
+        "instruction": "A main keeps its designation through an unmarked tee. A branch with its own label includes its approach from the main to its mark when supported by topology. Do not propagate the main label into that branch."
+      },
+      "runtime_status": "source_engine_partial_adapter",
+      "related_runtime_files": [
+        "engine/vvs_engine/source_rules/adapter.py",
+        "engine/vvs_engine/source_rules/pipestudio/flow_assign.py",
+        "engine/vvs_engine/source_rules/pipestudio/final_bind.py"
+      ],
+      "assessment_sv": "Originalkällans gren-/huvudledningsregler körs på den överförda grafen. Hela kedjans överensstämmelse mot handmängdning är inte verifierad."
+    },
+    {
+      "source_file": "vectorascore/data/styles/badskon-a3-booklet.json",
+      "style_id": "badskon-a3-booklet",
+      "archived": false,
+      "definition": {
+        "id": "solid-fixtures",
+        "stage": "binding",
+        "instruction": "R1 and K5 describe solid fixture connections in this style. An uninsulated split-form heating label typically describes a short rise or drop, not a long insulated distribution run."
+      },
+      "runtime_status": "source_engine_partial_adapter",
+      "related_runtime_files": [
+        "engine/vvs_engine/source_rules/adapter.py",
+        "engine/vvs_engine/source_rules/pipestudio/flow_assign.py",
+        "engine/vvs_engine/source_rules/pipestudio/final_bind.py"
+      ],
+      "assessment_sv": "Vald aktiv profils fullständiga instruktion skickas nu till modellen. Inte en universell R1/K5-regel; geometrikalibrering är fortfarande delvis värdens."
+    },
+    {
+      "source_file": "vectorascore/data/styles/badskon-a3-booklet.json",
+      "style_id": "badskon-a3-booklet",
+      "archived": false,
+      "definition": {
+        "id": "parallel-pairs",
+        "stage": "binding",
+        "instruction": "Use the designation line_count from the system table: only line_count 2 permits an unlabelled parallel twin. Nx describes a bundle. VV and VVC are distinct individually labelled systems."
+      },
+      "runtime_status": "source_engine_partial_adapter",
+      "related_runtime_files": [
+        "engine/vvs_engine/source_rules/adapter.py",
+        "engine/vvs_engine/source_rules/pipestudio/flow_assign.py",
+        "engine/vvs_engine/source_rules/pipestudio/final_bind.py"
+      ],
+      "assessment_sv": "Swedish VVS:s line_count används. PipeStudios Nx-komplettering körs före båda lägena; kvarstående underskott redovisas. Modellens kandidatkod har parallellkontext. Dimensionsläget saknar enligt källan tvillingpropagering."
+    },
+    {
+      "source_file": "vectorascore/data/styles/badskon-a3-booklet.json",
+      "style_id": "badskon-a3-booklet",
+      "archived": false,
+      "definition": {
+        "id": "mark-boundaries",
+        "stage": "binding",
+        "instruction": "Another designation's landing is a boundary, including an unreadable designation. A label may cover its own approach and continuation when topology supports one branch; never cross a competing designation merely to fill an unassigned stretch."
+      },
+      "runtime_status": "source_engine_partial_adapter",
+      "related_runtime_files": [
+        "engine/vvs_engine/source_rules/adapter.py",
+        "engine/vvs_engine/source_rules/pipestudio/flow_assign.py",
+        "engine/vvs_engine/source_rules/pipestudio/final_bind.py"
+      ],
+      "assessment_sv": "Källans tilldelning följer riktiga leaderlandningar; inre kontakter delas i grafen. Detektion av oläsliga eller missade etiketter är ännu ofullständig."
+    },
+    {
+      "source_file": "vectorascore/data/styles/bd-ghostscript.json",
+      "style_id": "bd-ghostscript",
+      "archived": false,
+      "definition": {
+        "id": "reading-direction",
+        "stage": "binding",
+        "instruction": "Read from the system entry towards fixtures. For gravity systems S*/D* except SL, a higher VG establishes the inward direction and outranks other direction signals. CL serves this role only on gravity systems. Pressure-pipe CL is mounting height, not flow direction."
+      },
+      "runtime_status": "source_engine_partial_adapter",
+      "related_runtime_files": [
+        "engine/vvs_engine/source_rules/adapter.py",
+        "engine/vvs_engine/source_rules/pipestudio/flow_assign.py",
+        "engine/vvs_engine/source_rules/pipestudio/final_bind.py"
+      ],
+      "assessment_sv": "Dimensionsmotorn och modellmotorn kör källans olika prioriteringar separat. VG överförs. Systeminträden saknas ännu i adaptern."
+    },
+    {
+      "source_file": "vectorascore/data/styles/bd-ghostscript.json",
+      "style_id": "bd-ghostscript",
+      "archived": false,
+      "definition": {
+        "id": "branch-description",
+        "stage": "binding",
+        "instruction": "A main keeps its designation through an unmarked tee. A branch with its own label includes its approach from the main to its mark when supported by topology. Do not propagate the main label into that branch."
+      },
+      "runtime_status": "source_engine_partial_adapter",
+      "related_runtime_files": [
+        "engine/vvs_engine/source_rules/adapter.py",
+        "engine/vvs_engine/source_rules/pipestudio/flow_assign.py",
+        "engine/vvs_engine/source_rules/pipestudio/final_bind.py"
+      ],
+      "assessment_sv": "Originalkällans gren-/huvudledningsregler körs på den överförda grafen. Hela kedjans överensstämmelse mot handmängdning är inte verifierad."
+    },
+    {
+      "source_file": "vectorascore/data/styles/bd-ghostscript.json",
+      "style_id": "bd-ghostscript",
+      "archived": false,
+      "definition": {
+        "id": "solid-fixtures",
+        "stage": "binding",
+        "instruction": "R1 and K5 describe solid fixture connections in this style. An uninsulated split-form heating label typically describes a short rise or drop, not a long insulated distribution run."
+      },
+      "runtime_status": "source_engine_partial_adapter",
+      "related_runtime_files": [
+        "engine/vvs_engine/source_rules/adapter.py",
+        "engine/vvs_engine/source_rules/pipestudio/flow_assign.py",
+        "engine/vvs_engine/source_rules/pipestudio/final_bind.py"
+      ],
+      "assessment_sv": "Vald aktiv profils fullständiga instruktion skickas nu till modellen. Inte en universell R1/K5-regel; geometrikalibrering är fortfarande delvis värdens."
+    },
+    {
+      "source_file": "vectorascore/data/styles/bd-ghostscript.json",
+      "style_id": "bd-ghostscript",
+      "archived": false,
+      "definition": {
+        "id": "parallel-pairs",
+        "stage": "binding",
+        "instruction": "Use the designation line_count from the system table: only line_count 2 permits an unlabelled parallel twin. Nx describes a bundle. VV and VVC are distinct individually labelled systems."
+      },
+      "runtime_status": "source_engine_partial_adapter",
+      "related_runtime_files": [
+        "engine/vvs_engine/source_rules/adapter.py",
+        "engine/vvs_engine/source_rules/pipestudio/flow_assign.py",
+        "engine/vvs_engine/source_rules/pipestudio/final_bind.py"
+      ],
+      "assessment_sv": "Swedish VVS:s line_count används. PipeStudios Nx-komplettering körs före båda lägena; kvarstående underskott redovisas. Modellens kandidatkod har parallellkontext. Dimensionsläget saknar enligt källan tvillingpropagering."
+    },
+    {
+      "source_file": "vectorascore/data/styles/bd-ghostscript.json",
+      "style_id": "bd-ghostscript",
+      "archived": false,
+      "definition": {
+        "id": "mark-boundaries",
+        "stage": "binding",
+        "instruction": "Another designation's landing is a boundary, including an unreadable designation. A label may cover its own approach and continuation when topology supports one branch; never cross a competing designation merely to fill an unassigned stretch."
+      },
+      "runtime_status": "source_engine_partial_adapter",
+      "related_runtime_files": [
+        "engine/vvs_engine/source_rules/adapter.py",
+        "engine/vvs_engine/source_rules/pipestudio/flow_assign.py",
+        "engine/vvs_engine/source_rules/pipestudio/final_bind.py"
+      ],
+      "assessment_sv": "Källans tilldelning följer riktiga leaderlandningar; inre kontakter delas i grafen. Detektion av oläsliga eller missade etiketter är ännu ofullständig."
+    },
+    {
+      "source_file": "vectorascore/data/styles/blackhornet-2xa0.json",
+      "style_id": "blackhornet-2xa0",
+      "archived": false,
+      "definition": {
+        "id": "reading-direction",
+        "stage": "binding",
+        "instruction": "Read from the system entry towards fixtures. For gravity systems S*/D* except SL, a higher VG establishes the inward direction and outranks other direction signals. CL serves this role only on gravity systems. Pressure-pipe CL is mounting height, not flow direction."
+      },
+      "runtime_status": "source_engine_partial_adapter",
+      "related_runtime_files": [
+        "engine/vvs_engine/source_rules/adapter.py",
+        "engine/vvs_engine/source_rules/pipestudio/flow_assign.py",
+        "engine/vvs_engine/source_rules/pipestudio/final_bind.py"
+      ],
+      "assessment_sv": "Dimensionsmotorn och modellmotorn kör källans olika prioriteringar separat. VG överförs. Systeminträden saknas ännu i adaptern."
+    },
+    {
+      "source_file": "vectorascore/data/styles/blackhornet-2xa0.json",
+      "style_id": "blackhornet-2xa0",
+      "archived": false,
+      "definition": {
+        "id": "branch-description",
+        "stage": "binding",
+        "instruction": "A main keeps its designation through an unmarked tee. A branch with its own label includes its approach from the main to its mark when supported by topology. Do not propagate the main label into that branch."
+      },
+      "runtime_status": "source_engine_partial_adapter",
+      "related_runtime_files": [
+        "engine/vvs_engine/source_rules/adapter.py",
+        "engine/vvs_engine/source_rules/pipestudio/flow_assign.py",
+        "engine/vvs_engine/source_rules/pipestudio/final_bind.py"
+      ],
+      "assessment_sv": "Originalkällans gren-/huvudledningsregler körs på den överförda grafen. Hela kedjans överensstämmelse mot handmängdning är inte verifierad."
+    },
+    {
+      "source_file": "vectorascore/data/styles/blackhornet-2xa0.json",
+      "style_id": "blackhornet-2xa0",
+      "archived": false,
+      "definition": {
+        "id": "solid-fixtures",
+        "stage": "binding",
+        "instruction": "R1 and K5 describe solid fixture connections in this style. An uninsulated split-form heating label typically describes a short rise or drop, not a long insulated distribution run."
+      },
+      "runtime_status": "source_engine_partial_adapter",
+      "related_runtime_files": [
+        "engine/vvs_engine/source_rules/adapter.py",
+        "engine/vvs_engine/source_rules/pipestudio/flow_assign.py",
+        "engine/vvs_engine/source_rules/pipestudio/final_bind.py"
+      ],
+      "assessment_sv": "Vald aktiv profils fullständiga instruktion skickas nu till modellen. Inte en universell R1/K5-regel; geometrikalibrering är fortfarande delvis värdens."
+    },
+    {
+      "source_file": "vectorascore/data/styles/blackhornet-2xa0.json",
+      "style_id": "blackhornet-2xa0",
+      "archived": false,
+      "definition": {
+        "id": "parallel-pairs",
+        "stage": "binding",
+        "instruction": "Use the designation line_count from the system table: only line_count 2 permits an unlabelled parallel twin. Nx describes a bundle. VV and VVC are distinct individually labelled systems."
+      },
+      "runtime_status": "source_engine_partial_adapter",
+      "related_runtime_files": [
+        "engine/vvs_engine/source_rules/adapter.py",
+        "engine/vvs_engine/source_rules/pipestudio/flow_assign.py",
+        "engine/vvs_engine/source_rules/pipestudio/final_bind.py"
+      ],
+      "assessment_sv": "Swedish VVS:s line_count används. PipeStudios Nx-komplettering körs före båda lägena; kvarstående underskott redovisas. Modellens kandidatkod har parallellkontext. Dimensionsläget saknar enligt källan tvillingpropagering."
+    },
+    {
+      "source_file": "vectorascore/data/styles/blackhornet-2xa0.json",
+      "style_id": "blackhornet-2xa0",
+      "archived": false,
+      "definition": {
+        "id": "mark-boundaries",
+        "stage": "binding",
+        "instruction": "Another designation's landing is a boundary, including an unreadable designation. A label may cover its own approach and continuation when topology supports one branch; never cross a competing designation merely to fill an unassigned stretch."
+      },
+      "runtime_status": "source_engine_partial_adapter",
+      "related_runtime_files": [
+        "engine/vvs_engine/source_rules/adapter.py",
+        "engine/vvs_engine/source_rules/pipestudio/flow_assign.py",
+        "engine/vvs_engine/source_rules/pipestudio/final_bind.py"
+      ],
+      "assessment_sv": "Källans tilldelning följer riktiga leaderlandningar; inre kontakter delas i grafen. Detektion av oläsliga eller missade etiketter är ännu ofullständig."
+    },
+    {
+      "source_file": "vectorascore/data/styles/eon-hairline.json",
+      "style_id": "eon-hairline",
+      "archived": false,
+      "definition": {
+        "id": "reading-direction",
+        "stage": "binding",
+        "instruction": "Read from the system entry towards fixtures. For gravity systems S*/D* except SL, a higher VG establishes the inward direction and outranks other direction signals. CL serves this role only on gravity systems. Pressure-pipe CL is mounting height, not flow direction."
+      },
+      "runtime_status": "source_engine_partial_adapter",
+      "related_runtime_files": [
+        "engine/vvs_engine/source_rules/adapter.py",
+        "engine/vvs_engine/source_rules/pipestudio/flow_assign.py",
+        "engine/vvs_engine/source_rules/pipestudio/final_bind.py"
+      ],
+      "assessment_sv": "Dimensionsmotorn och modellmotorn kör källans olika prioriteringar separat. VG överförs. Systeminträden saknas ännu i adaptern."
+    },
+    {
+      "source_file": "vectorascore/data/styles/eon-hairline.json",
+      "style_id": "eon-hairline",
+      "archived": false,
+      "definition": {
+        "id": "branch-description",
+        "stage": "binding",
+        "instruction": "A main keeps its designation through an unmarked tee. A branch with its own label includes its approach from the main to its mark when supported by topology. Do not propagate the main label into that branch."
+      },
+      "runtime_status": "source_engine_partial_adapter",
+      "related_runtime_files": [
+        "engine/vvs_engine/source_rules/adapter.py",
+        "engine/vvs_engine/source_rules/pipestudio/flow_assign.py",
+        "engine/vvs_engine/source_rules/pipestudio/final_bind.py"
+      ],
+      "assessment_sv": "Originalkällans gren-/huvudledningsregler körs på den överförda grafen. Hela kedjans överensstämmelse mot handmängdning är inte verifierad."
+    },
+    {
+      "source_file": "vectorascore/data/styles/eon-hairline.json",
+      "style_id": "eon-hairline",
+      "archived": false,
+      "definition": {
+        "id": "solid-fixtures",
+        "stage": "binding",
+        "instruction": "R1 and K5 describe solid fixture connections in this style. An uninsulated split-form heating label typically describes a short rise or drop, not a long insulated distribution run."
+      },
+      "runtime_status": "source_engine_partial_adapter",
+      "related_runtime_files": [
+        "engine/vvs_engine/source_rules/adapter.py",
+        "engine/vvs_engine/source_rules/pipestudio/flow_assign.py",
+        "engine/vvs_engine/source_rules/pipestudio/final_bind.py"
+      ],
+      "assessment_sv": "Vald aktiv profils fullständiga instruktion skickas nu till modellen. Inte en universell R1/K5-regel; geometrikalibrering är fortfarande delvis värdens."
+    },
+    {
+      "source_file": "vectorascore/data/styles/eon-hairline.json",
+      "style_id": "eon-hairline",
+      "archived": false,
+      "definition": {
+        "id": "parallel-pairs",
+        "stage": "binding",
+        "instruction": "Use the designation line_count from the system table: only line_count 2 permits an unlabelled parallel twin. Nx describes a bundle. VV and VVC are distinct individually labelled systems."
+      },
+      "runtime_status": "source_engine_partial_adapter",
+      "related_runtime_files": [
+        "engine/vvs_engine/source_rules/adapter.py",
+        "engine/vvs_engine/source_rules/pipestudio/flow_assign.py",
+        "engine/vvs_engine/source_rules/pipestudio/final_bind.py"
+      ],
+      "assessment_sv": "Swedish VVS:s line_count används. PipeStudios Nx-komplettering körs före båda lägena; kvarstående underskott redovisas. Modellens kandidatkod har parallellkontext. Dimensionsläget saknar enligt källan tvillingpropagering."
+    },
+    {
+      "source_file": "vectorascore/data/styles/eon-hairline.json",
+      "style_id": "eon-hairline",
+      "archived": false,
+      "definition": {
+        "id": "mark-boundaries",
+        "stage": "binding",
+        "instruction": "Another designation's landing is a boundary, including an unreadable designation. A label may cover its own approach and continuation when topology supports one branch; never cross a competing designation merely to fill an unassigned stretch."
+      },
+      "runtime_status": "source_engine_partial_adapter",
+      "related_runtime_files": [
+        "engine/vvs_engine/source_rules/adapter.py",
+        "engine/vvs_engine/source_rules/pipestudio/flow_assign.py",
+        "engine/vvs_engine/source_rules/pipestudio/final_bind.py"
+      ],
+      "assessment_sv": "Källans tilldelning följer riktiga leaderlandningar; inre kontakter delas i grafen. Detektion av oläsliga eller missade etiketter är ännu ofullständig."
+    },
+    {
+      "source_file": "vectorascore/data/styles/style-1.json",
+      "style_id": "style-1",
+      "archived": false,
+      "definition": {
+        "id": "reading-direction",
+        "stage": "binding",
+        "instruction": "Read from the system entry towards fixtures. For gravity systems S*/D* except SL, a higher VG establishes the inward direction and outranks other direction signals. CL serves this role only on gravity systems. Pressure-pipe CL is mounting height, not flow direction."
+      },
+      "runtime_status": "source_engine_partial_adapter",
+      "related_runtime_files": [
+        "engine/vvs_engine/source_rules/adapter.py",
+        "engine/vvs_engine/source_rules/pipestudio/flow_assign.py",
+        "engine/vvs_engine/source_rules/pipestudio/final_bind.py"
+      ],
+      "assessment_sv": "Dimensionsmotorn och modellmotorn kör källans olika prioriteringar separat. VG överförs. Systeminträden saknas ännu i adaptern."
+    },
+    {
+      "source_file": "vectorascore/data/styles/style-1.json",
+      "style_id": "style-1",
+      "archived": false,
+      "definition": {
+        "id": "branch-description",
+        "stage": "binding",
+        "instruction": "A main keeps its designation through an unmarked tee. A branch with its own label includes its approach from the main to its mark when supported by topology. Do not propagate the main label into that branch."
+      },
+      "runtime_status": "source_engine_partial_adapter",
+      "related_runtime_files": [
+        "engine/vvs_engine/source_rules/adapter.py",
+        "engine/vvs_engine/source_rules/pipestudio/flow_assign.py",
+        "engine/vvs_engine/source_rules/pipestudio/final_bind.py"
+      ],
+      "assessment_sv": "Originalkällans gren-/huvudledningsregler körs på den överförda grafen. Hela kedjans överensstämmelse mot handmängdning är inte verifierad."
+    },
+    {
+      "source_file": "vectorascore/data/styles/style-1.json",
+      "style_id": "style-1",
+      "archived": false,
+      "definition": {
+        "id": "solid-fixtures",
+        "stage": "binding",
+        "instruction": "R1 and K5 describe solid fixture connections in this style. An uninsulated split-form heating label typically describes a short rise or drop, not a long insulated distribution run."
+      },
+      "runtime_status": "source_engine_partial_adapter",
+      "related_runtime_files": [
+        "engine/vvs_engine/source_rules/adapter.py",
+        "engine/vvs_engine/source_rules/pipestudio/flow_assign.py",
+        "engine/vvs_engine/source_rules/pipestudio/final_bind.py"
+      ],
+      "assessment_sv": "Vald aktiv profils fullständiga instruktion skickas nu till modellen. Inte en universell R1/K5-regel; geometrikalibrering är fortfarande delvis värdens."
+    },
+    {
+      "source_file": "vectorascore/data/styles/style-1.json",
+      "style_id": "style-1",
+      "archived": false,
+      "definition": {
+        "id": "parallel-pairs",
+        "stage": "binding",
+        "instruction": "Use the designation line_count from the system table: only line_count 2 permits an unlabelled parallel twin. Nx describes a bundle. VV and VVC are distinct individually labelled systems."
+      },
+      "runtime_status": "source_engine_partial_adapter",
+      "related_runtime_files": [
+        "engine/vvs_engine/source_rules/adapter.py",
+        "engine/vvs_engine/source_rules/pipestudio/flow_assign.py",
+        "engine/vvs_engine/source_rules/pipestudio/final_bind.py"
+      ],
+      "assessment_sv": "Swedish VVS:s line_count används. PipeStudios Nx-komplettering körs före båda lägena; kvarstående underskott redovisas. Modellens kandidatkod har parallellkontext. Dimensionsläget saknar enligt källan tvillingpropagering."
+    },
+    {
+      "source_file": "vectorascore/data/styles/style-1.json",
+      "style_id": "style-1",
+      "archived": false,
+      "definition": {
+        "id": "mark-boundaries",
+        "stage": "binding",
+        "instruction": "Another designation's landing is a boundary, including an unreadable designation. A label may cover its own approach and continuation when topology supports one branch; never cross a competing designation merely to fill an unassigned stretch."
+      },
+      "runtime_status": "source_engine_partial_adapter",
+      "related_runtime_files": [
+        "engine/vvs_engine/source_rules/adapter.py",
+        "engine/vvs_engine/source_rules/pipestudio/flow_assign.py",
+        "engine/vvs_engine/source_rules/pipestudio/final_bind.py"
+      ],
+      "assessment_sv": "Källans tilldelning följer riktiga leaderlandningar; inre kontakter delas i grafen. Detektion av oläsliga eller missade etiketter är ännu ofullständig."
+    },
+    {
+      "source_file": "vectorascore/data/styles/style4-heavy-dashed.json",
+      "style_id": "style4-heavy-dashed",
+      "archived": false,
+      "definition": {
+        "id": "reading-direction",
+        "stage": "binding",
+        "instruction": "Read from the system entry towards fixtures. For gravity systems S*/D* except SL, a higher VG establishes the inward direction and outranks other direction signals. CL serves this role only on gravity systems. Pressure-pipe CL is mounting height, not flow direction."
+      },
+      "runtime_status": "source_engine_partial_adapter",
+      "related_runtime_files": [
+        "engine/vvs_engine/source_rules/adapter.py",
+        "engine/vvs_engine/source_rules/pipestudio/flow_assign.py",
+        "engine/vvs_engine/source_rules/pipestudio/final_bind.py"
+      ],
+      "assessment_sv": "Dimensionsmotorn och modellmotorn kör källans olika prioriteringar separat. VG överförs. Systeminträden saknas ännu i adaptern."
+    },
+    {
+      "source_file": "vectorascore/data/styles/style4-heavy-dashed.json",
+      "style_id": "style4-heavy-dashed",
+      "archived": false,
+      "definition": {
+        "id": "branch-description",
+        "stage": "binding",
+        "instruction": "A main keeps its designation through an unmarked tee. A branch with its own label includes its approach from the main to its mark when supported by topology. Do not propagate the main label into that branch."
+      },
+      "runtime_status": "source_engine_partial_adapter",
+      "related_runtime_files": [
+        "engine/vvs_engine/source_rules/adapter.py",
+        "engine/vvs_engine/source_rules/pipestudio/flow_assign.py",
+        "engine/vvs_engine/source_rules/pipestudio/final_bind.py"
+      ],
+      "assessment_sv": "Originalkällans gren-/huvudledningsregler körs på den överförda grafen. Hela kedjans överensstämmelse mot handmängdning är inte verifierad."
+    },
+    {
+      "source_file": "vectorascore/data/styles/style4-heavy-dashed.json",
+      "style_id": "style4-heavy-dashed",
+      "archived": false,
+      "definition": {
+        "id": "solid-fixtures",
+        "stage": "binding",
+        "instruction": "R1 and K5 describe solid fixture connections in this style. An uninsulated split-form heating label typically describes a short rise or drop, not a long insulated distribution run."
+      },
+      "runtime_status": "source_engine_partial_adapter",
+      "related_runtime_files": [
+        "engine/vvs_engine/source_rules/adapter.py",
+        "engine/vvs_engine/source_rules/pipestudio/flow_assign.py",
+        "engine/vvs_engine/source_rules/pipestudio/final_bind.py"
+      ],
+      "assessment_sv": "Vald aktiv profils fullständiga instruktion skickas nu till modellen. Inte en universell R1/K5-regel; geometrikalibrering är fortfarande delvis värdens."
+    },
+    {
+      "source_file": "vectorascore/data/styles/style4-heavy-dashed.json",
+      "style_id": "style4-heavy-dashed",
+      "archived": false,
+      "definition": {
+        "id": "parallel-pairs",
+        "stage": "binding",
+        "instruction": "Use the designation line_count from the system table: only line_count 2 permits an unlabelled parallel twin. Nx describes a bundle. VV and VVC are distinct individually labelled systems."
+      },
+      "runtime_status": "source_engine_partial_adapter",
+      "related_runtime_files": [
+        "engine/vvs_engine/source_rules/adapter.py",
+        "engine/vvs_engine/source_rules/pipestudio/flow_assign.py",
+        "engine/vvs_engine/source_rules/pipestudio/final_bind.py"
+      ],
+      "assessment_sv": "Swedish VVS:s line_count används. PipeStudios Nx-komplettering körs före båda lägena; kvarstående underskott redovisas. Modellens kandidatkod har parallellkontext. Dimensionsläget saknar enligt källan tvillingpropagering."
+    },
+    {
+      "source_file": "vectorascore/data/styles/style4-heavy-dashed.json",
+      "style_id": "style4-heavy-dashed",
+      "archived": false,
+      "definition": {
+        "id": "mark-boundaries",
+        "stage": "binding",
+        "instruction": "Another designation's landing is a boundary, including an unreadable designation. A label may cover its own approach and continuation when topology supports one branch; never cross a competing designation merely to fill an unassigned stretch."
+      },
+      "runtime_status": "source_engine_partial_adapter",
+      "related_runtime_files": [
+        "engine/vvs_engine/source_rules/adapter.py",
+        "engine/vvs_engine/source_rules/pipestudio/flow_assign.py",
+        "engine/vvs_engine/source_rules/pipestudio/final_bind.py"
+      ],
+      "assessment_sv": "Källans tilldelning följer riktiga leaderlandningar; inre kontakter delas i grafen. Detektion av oläsliga eller missade etiketter är ännu ofullständig."
+    },
+    {
+      "source_file": "vectorascore/data/styles/style5-sewer-plan.json",
+      "style_id": "style5-sewer-plan",
+      "archived": false,
+      "definition": {
+        "id": "reading-direction",
+        "stage": "binding",
+        "instruction": "Read from the system entry towards fixtures. For gravity systems S*/D* except SL, a higher VG establishes the inward direction and outranks other direction signals. CL serves this role only on gravity systems. Pressure-pipe CL is mounting height, not flow direction."
+      },
+      "runtime_status": "source_engine_partial_adapter",
+      "related_runtime_files": [
+        "engine/vvs_engine/source_rules/adapter.py",
+        "engine/vvs_engine/source_rules/pipestudio/flow_assign.py",
+        "engine/vvs_engine/source_rules/pipestudio/final_bind.py"
+      ],
+      "assessment_sv": "Dimensionsmotorn och modellmotorn kör källans olika prioriteringar separat. VG överförs. Systeminträden saknas ännu i adaptern."
+    },
+    {
+      "source_file": "vectorascore/data/styles/style5-sewer-plan.json",
+      "style_id": "style5-sewer-plan",
+      "archived": false,
+      "definition": {
+        "id": "branch-description",
+        "stage": "binding",
+        "instruction": "A main keeps its designation through an unmarked tee. A branch with its own label includes its approach from the main to its mark when supported by topology. Do not propagate the main label into that branch."
+      },
+      "runtime_status": "source_engine_partial_adapter",
+      "related_runtime_files": [
+        "engine/vvs_engine/source_rules/adapter.py",
+        "engine/vvs_engine/source_rules/pipestudio/flow_assign.py",
+        "engine/vvs_engine/source_rules/pipestudio/final_bind.py"
+      ],
+      "assessment_sv": "Originalkällans gren-/huvudledningsregler körs på den överförda grafen. Hela kedjans överensstämmelse mot handmängdning är inte verifierad."
+    },
+    {
+      "source_file": "vectorascore/data/styles/style5-sewer-plan.json",
+      "style_id": "style5-sewer-plan",
+      "archived": false,
+      "definition": {
+        "id": "solid-fixtures",
+        "stage": "binding",
+        "instruction": "R1 and K5 describe solid fixture connections in this style. An uninsulated split-form heating label typically describes a short rise or drop, not a long insulated distribution run."
+      },
+      "runtime_status": "source_engine_partial_adapter",
+      "related_runtime_files": [
+        "engine/vvs_engine/source_rules/adapter.py",
+        "engine/vvs_engine/source_rules/pipestudio/flow_assign.py",
+        "engine/vvs_engine/source_rules/pipestudio/final_bind.py"
+      ],
+      "assessment_sv": "Vald aktiv profils fullständiga instruktion skickas nu till modellen. Inte en universell R1/K5-regel; geometrikalibrering är fortfarande delvis värdens."
+    },
+    {
+      "source_file": "vectorascore/data/styles/style5-sewer-plan.json",
+      "style_id": "style5-sewer-plan",
+      "archived": false,
+      "definition": {
+        "id": "parallel-pairs",
+        "stage": "binding",
+        "instruction": "Use the designation line_count from the system table: only line_count 2 permits an unlabelled parallel twin. Nx describes a bundle. VV and VVC are distinct individually labelled systems."
+      },
+      "runtime_status": "source_engine_partial_adapter",
+      "related_runtime_files": [
+        "engine/vvs_engine/source_rules/adapter.py",
+        "engine/vvs_engine/source_rules/pipestudio/flow_assign.py",
+        "engine/vvs_engine/source_rules/pipestudio/final_bind.py"
+      ],
+      "assessment_sv": "Swedish VVS:s line_count används. PipeStudios Nx-komplettering körs före båda lägena; kvarstående underskott redovisas. Modellens kandidatkod har parallellkontext. Dimensionsläget saknar enligt källan tvillingpropagering."
+    },
+    {
+      "source_file": "vectorascore/data/styles/style5-sewer-plan.json",
+      "style_id": "style5-sewer-plan",
+      "archived": false,
+      "definition": {
+        "id": "mark-boundaries",
+        "stage": "binding",
+        "instruction": "Another designation's landing is a boundary, including an unreadable designation. A label may cover its own approach and continuation when topology supports one branch; never cross a competing designation merely to fill an unassigned stretch."
+      },
+      "runtime_status": "source_engine_partial_adapter",
+      "related_runtime_files": [
+        "engine/vvs_engine/source_rules/adapter.py",
+        "engine/vvs_engine/source_rules/pipestudio/flow_assign.py",
+        "engine/vvs_engine/source_rules/pipestudio/final_bind.py"
+      ],
+      "assessment_sv": "Källans tilldelning följer riktiga leaderlandningar; inre kontakter delas i grafen. Detektion av oläsliga eller missade etiketter är ännu ofullständig."
+    },
+    {
+      "source_file": "vectorascore/data/styles/style6-single-width.json",
+      "style_id": "style6-single-width",
+      "archived": false,
+      "definition": {
+        "id": "reading-direction",
+        "stage": "binding",
+        "instruction": "Read from the system entry towards fixtures. For gravity systems S*/D* except SL, a higher VG establishes the inward direction and outranks other direction signals. CL serves this role only on gravity systems. Pressure-pipe CL is mounting height, not flow direction."
+      },
+      "runtime_status": "source_engine_partial_adapter",
+      "related_runtime_files": [
+        "engine/vvs_engine/source_rules/adapter.py",
+        "engine/vvs_engine/source_rules/pipestudio/flow_assign.py",
+        "engine/vvs_engine/source_rules/pipestudio/final_bind.py"
+      ],
+      "assessment_sv": "Dimensionsmotorn och modellmotorn kör källans olika prioriteringar separat. VG överförs. Systeminträden saknas ännu i adaptern."
+    },
+    {
+      "source_file": "vectorascore/data/styles/style6-single-width.json",
+      "style_id": "style6-single-width",
+      "archived": false,
+      "definition": {
+        "id": "branch-description",
+        "stage": "binding",
+        "instruction": "A main keeps its designation through an unmarked tee. A branch with its own label includes its approach from the main to its mark when supported by topology. Do not propagate the main label into that branch."
+      },
+      "runtime_status": "source_engine_partial_adapter",
+      "related_runtime_files": [
+        "engine/vvs_engine/source_rules/adapter.py",
+        "engine/vvs_engine/source_rules/pipestudio/flow_assign.py",
+        "engine/vvs_engine/source_rules/pipestudio/final_bind.py"
+      ],
+      "assessment_sv": "Originalkällans gren-/huvudledningsregler körs på den överförda grafen. Hela kedjans överensstämmelse mot handmängdning är inte verifierad."
+    },
+    {
+      "source_file": "vectorascore/data/styles/style6-single-width.json",
+      "style_id": "style6-single-width",
+      "archived": false,
+      "definition": {
+        "id": "solid-fixtures",
+        "stage": "binding",
+        "instruction": "R1 and K5 describe solid fixture connections in this style. An uninsulated split-form heating label typically describes a short rise or drop, not a long insulated distribution run."
+      },
+      "runtime_status": "source_engine_partial_adapter",
+      "related_runtime_files": [
+        "engine/vvs_engine/source_rules/adapter.py",
+        "engine/vvs_engine/source_rules/pipestudio/flow_assign.py",
+        "engine/vvs_engine/source_rules/pipestudio/final_bind.py"
+      ],
+      "assessment_sv": "Vald aktiv profils fullständiga instruktion skickas nu till modellen. Inte en universell R1/K5-regel; geometrikalibrering är fortfarande delvis värdens."
+    },
+    {
+      "source_file": "vectorascore/data/styles/style6-single-width.json",
+      "style_id": "style6-single-width",
+      "archived": false,
+      "definition": {
+        "id": "parallel-pairs",
+        "stage": "binding",
+        "instruction": "Use the designation line_count from the system table: only line_count 2 permits an unlabelled parallel twin. Nx describes a bundle. VV and VVC are distinct individually labelled systems."
+      },
+      "runtime_status": "source_engine_partial_adapter",
+      "related_runtime_files": [
+        "engine/vvs_engine/source_rules/adapter.py",
+        "engine/vvs_engine/source_rules/pipestudio/flow_assign.py",
+        "engine/vvs_engine/source_rules/pipestudio/final_bind.py"
+      ],
+      "assessment_sv": "Swedish VVS:s line_count används. PipeStudios Nx-komplettering körs före båda lägena; kvarstående underskott redovisas. Modellens kandidatkod har parallellkontext. Dimensionsläget saknar enligt källan tvillingpropagering."
+    },
+    {
+      "source_file": "vectorascore/data/styles/style6-single-width.json",
+      "style_id": "style6-single-width",
+      "archived": false,
+      "definition": {
+        "id": "mark-boundaries",
+        "stage": "binding",
+        "instruction": "Another designation's landing is a boundary, including an unreadable designation. A label may cover its own approach and continuation when topology supports one branch; never cross a competing designation merely to fill an unassigned stretch."
+      },
+      "runtime_status": "source_engine_partial_adapter",
+      "related_runtime_files": [
+        "engine/vvs_engine/source_rules/adapter.py",
+        "engine/vvs_engine/source_rules/pipestudio/flow_assign.py",
+        "engine/vvs_engine/source_rules/pipestudio/final_bind.py"
+      ],
+      "assessment_sv": "Källans tilldelning följer riktiga leaderlandningar; inre kontakter delas i grafen. Detektion av oläsliga eller missade etiketter är ännu ofullständig."
+    },
+    {
+      "source_file": "vectorascore/data/styles/style9-thin-dashdot.json",
+      "style_id": "style9-thin-dashdot",
+      "archived": false,
+      "definition": {
+        "id": "reading-direction",
+        "stage": "binding",
+        "instruction": "Read from the system entry towards fixtures. For gravity systems S*/D* except SL, a higher VG establishes the inward direction and outranks other direction signals. CL serves this role only on gravity systems. Pressure-pipe CL is mounting height, not flow direction."
+      },
+      "runtime_status": "source_engine_partial_adapter",
+      "related_runtime_files": [
+        "engine/vvs_engine/source_rules/adapter.py",
+        "engine/vvs_engine/source_rules/pipestudio/flow_assign.py",
+        "engine/vvs_engine/source_rules/pipestudio/final_bind.py"
+      ],
+      "assessment_sv": "Dimensionsmotorn och modellmotorn kör källans olika prioriteringar separat. VG överförs. Systeminträden saknas ännu i adaptern."
+    },
+    {
+      "source_file": "vectorascore/data/styles/style9-thin-dashdot.json",
+      "style_id": "style9-thin-dashdot",
+      "archived": false,
+      "definition": {
+        "id": "branch-description",
+        "stage": "binding",
+        "instruction": "A main keeps its designation through an unmarked tee. A branch with its own label includes its approach from the main to its mark when supported by topology. Do not propagate the main label into that branch."
+      },
+      "runtime_status": "source_engine_partial_adapter",
+      "related_runtime_files": [
+        "engine/vvs_engine/source_rules/adapter.py",
+        "engine/vvs_engine/source_rules/pipestudio/flow_assign.py",
+        "engine/vvs_engine/source_rules/pipestudio/final_bind.py"
+      ],
+      "assessment_sv": "Originalkällans gren-/huvudledningsregler körs på den överförda grafen. Hela kedjans överensstämmelse mot handmängdning är inte verifierad."
+    },
+    {
+      "source_file": "vectorascore/data/styles/style9-thin-dashdot.json",
+      "style_id": "style9-thin-dashdot",
+      "archived": false,
+      "definition": {
+        "id": "solid-fixtures",
+        "stage": "binding",
+        "instruction": "R1 and K5 describe solid fixture connections in this style. An uninsulated split-form heating label typically describes a short rise or drop, not a long insulated distribution run."
+      },
+      "runtime_status": "source_engine_partial_adapter",
+      "related_runtime_files": [
+        "engine/vvs_engine/source_rules/adapter.py",
+        "engine/vvs_engine/source_rules/pipestudio/flow_assign.py",
+        "engine/vvs_engine/source_rules/pipestudio/final_bind.py"
+      ],
+      "assessment_sv": "Vald aktiv profils fullständiga instruktion skickas nu till modellen. Inte en universell R1/K5-regel; geometrikalibrering är fortfarande delvis värdens."
+    },
+    {
+      "source_file": "vectorascore/data/styles/style9-thin-dashdot.json",
+      "style_id": "style9-thin-dashdot",
+      "archived": false,
+      "definition": {
+        "id": "parallel-pairs",
+        "stage": "binding",
+        "instruction": "Use the designation line_count from the system table: only line_count 2 permits an unlabelled parallel twin. Nx describes a bundle. VV and VVC are distinct individually labelled systems."
+      },
+      "runtime_status": "source_engine_partial_adapter",
+      "related_runtime_files": [
+        "engine/vvs_engine/source_rules/adapter.py",
+        "engine/vvs_engine/source_rules/pipestudio/flow_assign.py",
+        "engine/vvs_engine/source_rules/pipestudio/final_bind.py"
+      ],
+      "assessment_sv": "Swedish VVS:s line_count används. PipeStudios Nx-komplettering körs före båda lägena; kvarstående underskott redovisas. Modellens kandidatkod har parallellkontext. Dimensionsläget saknar enligt källan tvillingpropagering."
+    },
+    {
+      "source_file": "vectorascore/data/styles/style9-thin-dashdot.json",
+      "style_id": "style9-thin-dashdot",
+      "archived": false,
+      "definition": {
+        "id": "mark-boundaries",
+        "stage": "binding",
+        "instruction": "Another designation's landing is a boundary, including an unreadable designation. A label may cover its own approach and continuation when topology supports one branch; never cross a competing designation merely to fill an unassigned stretch."
+      },
+      "runtime_status": "source_engine_partial_adapter",
+      "related_runtime_files": [
+        "engine/vvs_engine/source_rules/adapter.py",
+        "engine/vvs_engine/source_rules/pipestudio/flow_assign.py",
+        "engine/vvs_engine/source_rules/pipestudio/final_bind.py"
+      ],
+      "assessment_sv": "Källans tilldelning följer riktiga leaderlandningar; inre kontakter delas i grafen. Detektion av oläsliga eller missade etiketter är ännu ofullständig."
+    },
+    {
+      "source_file": "vectorascore/data/styles/sweco-pdfplot-text.json",
+      "style_id": "sweco-pdfplot-text",
+      "archived": false,
+      "definition": {
+        "id": "reading-direction",
+        "stage": "binding",
+        "instruction": "Read from the system entry towards fixtures. For gravity systems S*/D* except SL, a higher VG establishes the inward direction and outranks other direction signals. CL serves this role only on gravity systems. Pressure-pipe CL is mounting height, not flow direction."
+      },
+      "runtime_status": "source_engine_partial_adapter",
+      "related_runtime_files": [
+        "engine/vvs_engine/source_rules/adapter.py",
+        "engine/vvs_engine/source_rules/pipestudio/flow_assign.py",
+        "engine/vvs_engine/source_rules/pipestudio/final_bind.py"
+      ],
+      "assessment_sv": "Dimensionsmotorn och modellmotorn kör källans olika prioriteringar separat. VG överförs. Systeminträden saknas ännu i adaptern."
+    },
+    {
+      "source_file": "vectorascore/data/styles/sweco-pdfplot-text.json",
+      "style_id": "sweco-pdfplot-text",
+      "archived": false,
+      "definition": {
+        "id": "branch-description",
+        "stage": "binding",
+        "instruction": "A main keeps its designation through an unmarked tee. A branch with its own label includes its approach from the main to its mark when supported by topology. Do not propagate the main label into that branch."
+      },
+      "runtime_status": "source_engine_partial_adapter",
+      "related_runtime_files": [
+        "engine/vvs_engine/source_rules/adapter.py",
+        "engine/vvs_engine/source_rules/pipestudio/flow_assign.py",
+        "engine/vvs_engine/source_rules/pipestudio/final_bind.py"
+      ],
+      "assessment_sv": "Originalkällans gren-/huvudledningsregler körs på den överförda grafen. Hela kedjans överensstämmelse mot handmängdning är inte verifierad."
+    },
+    {
+      "source_file": "vectorascore/data/styles/sweco-pdfplot-text.json",
+      "style_id": "sweco-pdfplot-text",
+      "archived": false,
+      "definition": {
+        "id": "solid-fixtures",
+        "stage": "binding",
+        "instruction": "R1 and K5 describe solid fixture connections in this style. An uninsulated split-form heating label typically describes a short rise or drop, not a long insulated distribution run."
+      },
+      "runtime_status": "source_engine_partial_adapter",
+      "related_runtime_files": [
+        "engine/vvs_engine/source_rules/adapter.py",
+        "engine/vvs_engine/source_rules/pipestudio/flow_assign.py",
+        "engine/vvs_engine/source_rules/pipestudio/final_bind.py"
+      ],
+      "assessment_sv": "Vald aktiv profils fullständiga instruktion skickas nu till modellen. Inte en universell R1/K5-regel; geometrikalibrering är fortfarande delvis värdens."
+    },
+    {
+      "source_file": "vectorascore/data/styles/sweco-pdfplot-text.json",
+      "style_id": "sweco-pdfplot-text",
+      "archived": false,
+      "definition": {
+        "id": "parallel-pairs",
+        "stage": "binding",
+        "instruction": "Use the designation line_count from the system table: only line_count 2 permits an unlabelled parallel twin. Nx describes a bundle. VV and VVC are distinct individually labelled systems."
+      },
+      "runtime_status": "source_engine_partial_adapter",
+      "related_runtime_files": [
+        "engine/vvs_engine/source_rules/adapter.py",
+        "engine/vvs_engine/source_rules/pipestudio/flow_assign.py",
+        "engine/vvs_engine/source_rules/pipestudio/final_bind.py"
+      ],
+      "assessment_sv": "Swedish VVS:s line_count används. PipeStudios Nx-komplettering körs före båda lägena; kvarstående underskott redovisas. Modellens kandidatkod har parallellkontext. Dimensionsläget saknar enligt källan tvillingpropagering."
+    },
+    {
+      "source_file": "vectorascore/data/styles/sweco-pdfplot-text.json",
+      "style_id": "sweco-pdfplot-text",
+      "archived": false,
+      "definition": {
+        "id": "mark-boundaries",
+        "stage": "binding",
+        "instruction": "Another designation's landing is a boundary, including an unreadable designation. A label may cover its own approach and continuation when topology supports one branch; never cross a competing designation merely to fill an unassigned stretch."
+      },
+      "runtime_status": "source_engine_partial_adapter",
+      "related_runtime_files": [
+        "engine/vvs_engine/source_rules/adapter.py",
+        "engine/vvs_engine/source_rules/pipestudio/flow_assign.py",
+        "engine/vvs_engine/source_rules/pipestudio/final_bind.py"
+      ],
+      "assessment_sv": "Källans tilldelning följer riktiga leaderlandningar; inre kontakter delas i grafen. Detektion av oläsliga eller missade etiketter är ännu ofullständig."
+    }
+  ],
+  "other_domains": [
+    {
+      "source": "swedish-vvs-drawings-main/data/*.json",
+      "status": "full_reference_import",
+      "runtime": "backend/app/knowledge.py",
+      "note": "All 24 JSON documents, including non-code rule tables and all original fields."
+    },
+    {
+      "source": "swedish-vvs-drawings-main/scripts/*.py",
+      "status": "source_preserved_not_executed",
+      "runtime": "engine/vvs_engine/semantics/grammar.py",
+      "note": "Original parsers/assignment helpers retained. Local grammar has its own implementation; not asserted equivalent."
+    },
+    {
+      "source": "pipestudio-main/vectorascore/data/styles/**",
+      "status": "full_reference_import",
+      "runtime": "engine/vvs_engine/profile/styles.py",
+      "note": "11 active profiles, 5 archived profiles, 14 library references. Profile calibration ratios belong to a different engine; not blindly applied."
+    },
+    {
+      "source": "pipestudio-main/studio/{global_rules,learning,style_rules,evidence}.py",
+      "status": "source_preserved_not_ported",
+      "runtime": "engine/vvs_engine/learning.py",
+      "note": "No claim of an equivalent automatic global rule promotion or model-training loop."
+    },
+    {
+      "source": "pipestudio-main/models/model_dynamic.onnx",
+      "status": "optional_detector_available",
+      "runtime": "engine/vvs_engine/label_detector.py",
+      "note": "Byte-identical model at models/pipestudio-labels.onnx; optional label suggestions only."
+    },
+    {
+      "source": "supplied ZIP annotation data",
+      "status": "not_present",
+      "note": "Neither ZIP contains CVAT XML or annotation JSONL. Documentation refers to feedback/ground truth not included in the ZIPs."
+    },
+    {
+      "source": "Drawings 2 XML",
+      "status": "lossless_indexed_development",
+      "runtime": "tools/build_training_index.py",
+      "note": "107 raw XMLs retained, 1297 CVAT shapes with nested attributes and 9368 Bluebeam records. Not training or independent acceptance evidence."
+    }
+  ],
+  "policy": "A related runtime file is not a claim of complete rule equivalence. Every source file is preserved/accounted for in manifest.json; this assessment identifies known semantic gaps.",
+  "authority": [
+    "swedish-vvs-drawings-main",
+    "pipestudio-main"
+  ],
+  "runtime_modes": {
+    "dimension": "source_rules/pipestudio/flow_assign.py",
+    "model": "source_rules/pipestudio/final_bind.py",
+    "compare": "separate results, no consensus merge"
+  },
+  "validation_status": "development_only_not_unattended"
+}

@@ -1,0 +1,14 @@
+{
+  "category": "pipe_symbol",
+  "description": "Ritningssymboler för rörledningar m m — drawing symbols placed on or along a pipe run.",
+  "entries": [
+    { "code": null,   "term_sv": "Flexibel slang",                      "term_en": "Flexible hose",                                  "symbol_description": "Wavy line inserted in the pipe run." },
+    { "code": null,   "term_sv": "Ledning som ska rivas",               "term_en": "Pipe to be demolished / removed",                "symbol_description": "Line with repeated X marks along it.", "takeoff_implication": "Counts as demolition quantity, not new installation." },
+    { "code": null,   "term_sv": "Fallriktning för ledning",            "term_en": "Fall direction (gradient) of the pipe",          "symbol_description": "Arrow above the line pointing in the direction of fall." },
+    { "code": null,   "term_sv": "Strömningsriktning",                  "term_en": "Flow direction",                                 "symbol_description": "Arrowhead drawn on the line itself." },
+    { "code": "KP",   "term_sv": "Kompensator",                         "term_en": "Expansion compensator",                          "symbol_description": "Small rectangle inserted in the pipe run.", "notes": "Code collision: KP is also used as an alternative designation for köldbärare." },
+    { "code": "PR",   "term_sv": "Proppad ledning",                     "term_en": "Plugged / capped pipe end",                      "symbol_description": "Pipe terminating in a short perpendicular cap." },
+    { "code": "INK",  "term_sv": "Inkoppling - inskärning i befintlig ledning", "term_en": "Connection made by cutting into an existing pipe", "symbol_description": "T-junction on an existing line, labelled INK." },
+    { "code": "ANSL", "term_sv": "Anslutning till befintlig avstickare", "term_en": "Connection to an existing branch/spur",         "symbol_description": "T-junction on an existing line, labelled ANSL." }
+  ]
+}

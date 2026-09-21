@@ -1,0 +1,318 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://futurecalc.ai/contracts/detection-result.v2.schema.json",
+  "title": "Pipe detection callback, protocol 2",
+  "description": "What the microservice posts back. Two disjoint variants, told apart by `status`. Closed throughout: this is untrusted input, and an unknown property is refused rather than stored, so nothing outside the application decides what ends up in a document it renders and bills from. The cost of that is release ordering — a new field is a breaking change — and it is why `length` is reserved here rather than added later.\n\nThe service reports what it read. A label arrives as one `name` string, never split into fields; resolving a name into catalogue identifiers is the application's job.",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/succeeded"
+    },
+    {
+      "$ref": "#/$defs/failed"
+    }
+  ],
+  "$defs": {
+    "succeeded": {
+      "type": "object",
+      "properties": {
+        "protocolVersion": {
+          "const": 2
+        },
+        "status": {
+          "const": "succeeded"
+        },
+        "drawingId": {
+          "$ref": "drawing-space.schema.json#/$defs/uuid"
+        },
+        "runId": {
+          "$ref": "drawing-space.schema.json#/$defs/uuid"
+        },
+        "coordinateSpace": {
+          "$ref": "drawing-space.schema.json#/$defs/coordinateSpace"
+        },
+        "scale": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/detectedScale"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "The scale the service determined, or null for 'not determined' — which is still a success, with scale_not_found in metadata.warnings. Null too whenever the request did not ask for one. Where the number comes from is the service's business."
+        },
+        "pipes": {
+          "type": "array",
+          "maxItems": 5000,
+          "items": {
+            "$ref": "#/$defs/pipe"
+          }
+        },
+        "labels": {
+          "type": "array",
+          "maxItems": 2000,
+          "items": {
+            "$ref": "#/$defs/label"
+          }
+        },
+        "markers": {
+          "type": "array",
+          "maxItems": 2000,
+          "items": {
+            "$ref": "#/$defs/marker"
+          },
+          "description": "Optional in the response and normalised to []; the collection is mandatory in the stored document. This is what lets the service start sending markers without a protocol bump."
+        },
+        "metadata": {
+          "$ref": "#/$defs/metadata"
+        }
+      },
+      "required": [
+        "protocolVersion",
+        "status",
+        "drawingId",
+        "runId",
+        "coordinateSpace",
+        "scale",
+        "pipes",
+        "labels",
+        "metadata"
+      ],
+      "additionalProperties": false
+    },
+    "failed": {
+      "type": "object",
+      "properties": {
+        "protocolVersion": {
+          "const": 2
+        },
+        "status": {
+          "const": "failed"
+        },
+        "drawingId": {
+          "$ref": "drawing-space.schema.json#/$defs/uuid"
+        },
+        "runId": {
+          "$ref": "drawing-space.schema.json#/$defs/uuid"
+        },
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "maxLength": 256
+            },
+            "message": {
+              "type": "string",
+              "maxLength": 2048
+            },
+            "retryable": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "code",
+            "message"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "protocolVersion",
+        "status",
+        "drawingId",
+        "runId",
+        "error"
+      ],
+      "additionalProperties": false
+    },
+    "detectedScale": {
+      "type": "object",
+      "properties": {
+        "pixelsPerMm": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "source": {
+          "type": "string",
+          "maxLength": 256
+        },
+        "confidence": {
+          "$ref": "drawing-space.schema.json#/$defs/confidence"
+        },
+        "evidence": {
+          "type": "object",
+          "description": "Named fields only, never a free-form object: this is untrusted input that ends up in scale_detection.",
+          "properties": {
+            "barBox": {
+              "$ref": "drawing-space.schema.json#/$defs/box"
+            },
+            "tickSpacingPx": {
+              "type": "number"
+            },
+            "intervals": {
+              "type": "number"
+            },
+            "impliedRatio": {
+              "type": "number"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "pixelsPerMm"
+      ],
+      "additionalProperties": false
+    },
+    "pipe": {
+      "type": "object",
+      "description": "A graph and a link, never a copy of the label's parameters.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 256,
+          "description": "Local to this response; mapped to a UUID on first acceptance."
+        },
+        "geometry": {
+          "$ref": "drawing-space.schema.json#/$defs/geometry"
+        },
+        "length": {
+          "type": "object",
+          "properties": {
+            "px": {
+              "type": "number",
+              "minimum": 0,
+              "description": "A distance in pixels of coordinateSpace."
+            },
+            "planView": {
+              "type": "number",
+              "minimum": 0,
+              "description": "Millimetres. Absent without a scale — unknown, never zero."
+            }
+          },
+          "required": [
+            "px"
+          ],
+          "additionalProperties": false,
+          "description": "Present only when the request set output.includeScaleAndLengths, and then this is the number the application stores: the flag decides which side owns the physical length, so there is exactly one authoritative answer rather than two to reconcile. How it is computed is the owner's business; this contract states the unit and nothing else."
+        },
+        "labelId": {
+          "oneOf": [
+            {
+              "type": "string",
+              "maxLength": 256
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "confidence": {
+          "$ref": "drawing-space.schema.json#/$defs/confidence"
+        }
+      },
+      "required": [
+        "id",
+        "geometry",
+        "labelId"
+      ],
+      "additionalProperties": false
+    },
+    "label": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 256
+        },
+        "box": {
+          "$ref": "drawing-space.schema.json#/$defs/box"
+        },
+        "name": {
+          "type": "string",
+          "maxLength": 256,
+          "description": "The whole code as read, system index kept, with any height note the service could attach to it. Never split into fields here."
+        },
+        "confidence": {
+          "$ref": "drawing-space.schema.json#/$defs/confidence"
+        }
+      },
+      "required": [
+        "id",
+        "box",
+        "name"
+      ],
+      "additionalProperties": false
+    },
+    "marker": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 256
+        },
+        "symbol": {
+          "type": "string",
+          "maxLength": 256
+        },
+        "box": {
+          "$ref": "drawing-space.schema.json#/$defs/box"
+        },
+        "labelId": {
+          "oneOf": [
+            {
+              "type": "string",
+              "maxLength": 256
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "confidence": {
+          "$ref": "drawing-space.schema.json#/$defs/confidence"
+        }
+      },
+      "required": [
+        "id",
+        "symbol",
+        "box"
+      ],
+      "additionalProperties": false
+    },
+    "metadata": {
+      "type": "object",
+      "properties": {
+        "sourceFormat": {
+          "type": "string",
+          "maxLength": 256
+        },
+        "vectorGeometry": {
+          "type": "boolean"
+        },
+        "pipesDetectedTotal": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "labelsDetected": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "markersDetected": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "warnings": {
+          "type": "array",
+          "maxItems": 100,
+          "items": {
+            "type": "string",
+            "maxLength": 256
+          }
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

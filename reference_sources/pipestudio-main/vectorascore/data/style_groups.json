@@ -1,0 +1,36 @@
+[
+  {
+    "id": "style-1",
+    "name": "AutoCAD - pdfplot14-16 - Ghostscript 9.21",
+    "members": [
+      "style-1",
+      "priorn-shx",
+      "hyllie-ghostscript"
+    ],
+    "library_ids": [
+      "sweco-pdfplot-strokes",
+      "priorn-shx",
+      "hyllie-ghostscript"
+    ],
+    "pipe_widths": [
+      1.44,
+      2.04
+    ]
+  },
+  {
+    "id": "bd-ghostscript",
+    "name": "Bengt Dahlgren - Ghostscript 9.21",
+    "members": [
+      "bd-ghostscript",
+      "lopoglan-booklet"
+    ],
+    "library_ids": [
+      "bd-ghostscript",
+      "lopoglan-booklet"
+    ],
+    "pipe_widths": [
+      1.41,
+      2.82
+    ]
+  }
+]

@@ -1,0 +1,16 @@
+const fs=require('fs'),assert=require('node:assert/strict');
+const source=fs.readFileSync('vectorascore/static/studio.js','utf8');
+let overview={improvements:{candidates:[],implementation_requests:[]}};
+eval(source.slice(source.indexOf('  function feedbackArchiveReason('),source.indexOf('  function renderFeedbackResults(')));
+const row={id:'f1',snapshot:'s1',status:'open',type:'wrong_binding'};
+assert.equal(feedbackArchiveReason(row),'');
+assert.ok(feedbackArchiveReason({...row,status:'dismissed'}));
+assert.ok(feedbackArchiveReason({...row,type:'correct',status:'confirmed'}));
+overview.improvements.candidates=[{workflow_status:'ready_to_publish',feedback_ids:['f1'],report:{cases:[{feedback_id:'f1',after:true}]}}];
+assert.equal(feedbackArchiveReason(row),'');
+overview.improvements.candidates[0].workflow_status='published';assert.ok(feedbackArchiveReason(row));
+assert.equal(feedbackArchiveReason({...row,id:'f2'}),'');
+overview.improvements.candidates[0].report.cases[0].after=false;assert.equal(feedbackArchiveReason(row),'');
+overview.improvements.implementation_requests=[{status:'technical_review',training_ids:['f1'],comparisons:[{before:'s1'}]}];assert.equal(feedbackArchiveReason(row),'');
+overview.improvements.implementation_requests[0].status='verified';assert.ok(feedbackArchiveReason(row));assert.equal(feedbackArchiveReason({...row,snapshot:'s2'}),'');
+console.log('Feedback lifecycle: 10 checks passed');

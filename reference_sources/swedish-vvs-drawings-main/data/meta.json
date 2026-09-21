@@ -1,0 +1,49 @@
+{
+  "knowledge_base": "Swedish VVS drawing conventions, symbols and designations",
+  "language_policy": "English glosses and explanations; Swedish codes (beteckningar) and Swedish terms preserved verbatim. Industry terms (VVS, ritning, mängdavtagning, systembeteckning, isometri) are not translated.",
+  "version": "1.0.0",
+  "source_type": "Swedish VVS trade handbook chapter: 'Ritningar och beskrivningar' (drawings and specifications)",
+  "standards_referenced": [
+    {
+      "id": "SIS 32260",
+      "scope": "Swedish standard for drawing symbols on VVS-ritningar",
+      "note": "Deviates somewhat from the European standard."
+    },
+    {
+      "id": "Bygghandlingar 90",
+      "scope": "Swedish framework for how ritningar and beskrivningar are produced and structured."
+    },
+    {
+      "id": "AMA",
+      "scope": "Reference work that tekniska beskrivningar link to via codes and headings.",
+      "note": "A code plus its heading in the beskrivning invokes both the text under that heading in AMA and the text of superordinate headings, per the so-called pyramidregeln (pyramid rule)."
+    },
+    {
+      "id": "CoClass",
+      "scope": "Swedish classification system used together with BIP (Building Information Properties) for systematic designations and properties."
+    },
+    {
+      "id": "BIP / BIP QTO",
+      "scope": "Building Information Properties. BIP QTO allows quantities to be extracted, sorted and summed for other systems.",
+      "reference": "www.bipkoder.se"
+    }
+  ],
+  "caveat": "Beyond the standards there is industry praxis that can differ case by case, depending on the routines of the individual consultant (konsult) and client (byggherre). Any automated interpretation of a ritning must tolerate deviations from the tables in this knowledge base.",
+  "categories": [
+    "system_designation",
+    "pipe_marking_rule",
+    "line_type",
+    "vertical_pipe_notation",
+    "pipe_symbol",
+    "sanitary_fixture",
+    "apparatus",
+    "valve",
+    "control_device",
+    "sensor_instrument",
+    "level_reference",
+    "side_contractor_equipment",
+    "contractor_code",
+    "drainage_well",
+    "document_rule"
+  ]
+}

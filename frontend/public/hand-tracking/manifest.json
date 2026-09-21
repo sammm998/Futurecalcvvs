@@ -1,0 +1,16 @@
+{
+  "package": "@mediapipe/tasks-vision",
+  "version": "1.0.1",
+  "files": {
+    "vision_bundle.js": "98db72469ffb176f5e9f2687be0f70783893aca681f7789c34b872b0a764371a",
+    "worker.js": "4886f505a92213aded9f9d30dffd28d32bbd8448c0f44db2e34e904a080f3530",
+    "hand_landmarker.task": "fbc2a30080c3c557093b5ddfc334698132eb341044ccee322ccf8bcf3607cde1",
+    "NOTICE.md": "134c9e49b07188ebf6f573e45bf6b6a80cf4c1980b9ae39c14b4f34ad4190084",
+    "wasm/vision_wasm_nosimd_internal.wasm": "a28483cd42e74e855bf5ebdb6b40d9b66a5b49e35e95020bc97669e6822a3192",
+    "wasm/vision_wasm_nosimd_internal.js": "e81d715a3d42cc3373602eb2f7aff795d164934db680e32496b65dab537f9658",
+    "wasm/vision_wasm_module_internal.wasm": "2dabd8e23c60984628beb7bb338764c81a08e6837145273f59578684b5d53c1b",
+    "wasm/vision_wasm_internal.wasm": "8da277a733926eacd0474b8704b36742d6ec3231c57a860c5b889dff8f1df886",
+    "wasm/vision_wasm_module_internal.js": "da8934057f147b622e82cfb4c0dbd85461c598e268588b5a8ba9ca963a8ff82d",
+    "wasm/vision_wasm_internal.js": "e170ee67dd4e16c1a6fcd8840a206687e5a59b22c20e4a902bc445b095454d73"
+  }
+}

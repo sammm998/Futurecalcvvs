@@ -1,0 +1,13 @@
+const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
+const source=fs.readFileSync('vectorascore/static/app.js','utf8');
+const fn=source.slice(source.indexOf('  function layoutLayerTabs(){'),source.indexOf('  new ResizeObserver(layoutLayerTabs)'));
+const classes=new Set();
+const settings={open:true,classList:{contains:c=>classes.has(c),add:c=>classes.add(c),toggle:(c,on)=>on?classes.add(c):classes.delete(c)},getBoundingClientRect:()=>({width:440})};
+const nav={clientWidth:1400,querySelectorAll:()=>Array.from({length:7},()=>({getBoundingClientRect:()=>({width:105})}))};
+const context={layerNav:nav,viewSettings:settings,getComputedStyle:()=>({columnGap:'4px',paddingLeft:'24px',paddingRight:'24px'})};
+vm.createContext(context);vm.runInContext(fn,context);
+context.layoutLayerTabs();assert(classes.has('inline-options'));assert.equal(settings.open,true);
+nav.clientWidth=1100;context.layoutLayerTabs();assert(!classes.has('inline-options'));
+settings.open=true;nav.clientWidth=1500;context.layoutLayerTabs();assert(classes.has('inline-options'));assert.equal(settings.open,true);
+const html=fs.readFileSync('vectorascore/static/index.html','utf8');assert(!html.includes('More layers'));assert(html.includes('data-tab="unknown"'));assert(html.includes('data-tab="noise"'));
+console.log('Toolbar: inline when controls fit, menu when narrow, all layers visible');

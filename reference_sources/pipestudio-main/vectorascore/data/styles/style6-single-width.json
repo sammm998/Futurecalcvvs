@@ -1,0 +1,65 @@
+{
+ "id": "style6-single-width",
+ "name": "Sweco - Bluebeam Brewery 5.0 - Uniform Stroke",
+ "description": "Every stroke 0.36 pt and no text objects: not solvable by width, labels only from the detector. Baseline derived from one sample sheet of the style survey (2026-09-08); not a measured accuracy claim.",
+ "version": 1,
+ "calibration": {
+  "assemble.snap": 0.833,
+  "assemble.lateral": 0.833,
+  "assemble.wall_gap": 111.111,
+  "assemble.mark_merge": 8.333,
+  "assemble.small_ring": 9.722,
+  "associate.anchor": 22.222,
+  "associate.landing": 8.333,
+  "associate.twin_gap": 55.556,
+  "bucket.tick_rel_min": 1.8
+ },
+ "signatures": [
+  {
+   "pipe_ratios": [],
+   "ring_ratio": 0,
+   "layered": false
+  }
+ ],
+ "rules": [
+  {
+   "id": "reading-direction",
+   "stage": "binding",
+   "instruction": "Read from the system entry towards fixtures. For gravity systems S*/D* except SL, a higher VG establishes the inward direction and outranks other direction signals. CL serves this role only on gravity systems. Pressure-pipe CL is mounting height, not flow direction."
+  },
+  {
+   "id": "branch-description",
+   "stage": "binding",
+   "instruction": "A main keeps its designation through an unmarked tee. A branch with its own label includes its approach from the main to its mark when supported by topology. Do not propagate the main label into that branch."
+  },
+  {
+   "id": "solid-fixtures",
+   "stage": "binding",
+   "instruction": "R1 and K5 describe solid fixture connections in this style. An uninsulated split-form heating label typically describes a short rise or drop, not a long insulated distribution run."
+  },
+  {
+   "id": "parallel-pairs",
+   "stage": "binding",
+   "instruction": "Use the designation line_count from the system table: only line_count 2 permits an unlabelled parallel twin. Nx describes a bundle. VV and VVC are distinct individually labelled systems."
+  },
+  {
+   "id": "mark-boundaries",
+   "stage": "binding",
+   "instruction": "Another designation's landing is a boundary, including an unreadable designation. A label may cover its own approach and continuation when topology supports one branch; never cross a competing designation merely to fill an unassigned stretch."
+  }
+ ],
+ "library_id": "style6-single-width",
+ "pen_table": {
+  "sheet": "R1502.pdf",
+  "page_no": 0,
+  "pipe_widths": [
+   0.36
+  ],
+  "leader_width": 0.36,
+  "text_height": 11.0,
+  "u_paper": 1.0,
+  "hairline": false,
+  "family_method": "heaviest common black class (no class passed the width rule, only 0 leader landings)",
+  "derivation": "Adjustments are the engine's derived tolerances on this sheet as ratios of the 0.36 pt leader pen (pipe family by heaviest common black class (no class passed the width rule, only 0 leader landings); label boxes from the PDF text only)."
+ }
+}

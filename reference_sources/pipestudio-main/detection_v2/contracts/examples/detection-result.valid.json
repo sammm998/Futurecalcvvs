@@ -1,0 +1,49 @@
+{
+  "protocolVersion": 2,
+  "status": "succeeded",
+  "drawingId": "44444444-4444-4444-8444-444444444444",
+  "runId": "55555555-5555-4555-8555-555555555555",
+  "coordinateSpace": { "width": 4961, "height": 3508 },
+  "scale": {
+    "pixelsPerMm": 0.1968556,
+    "source": "vector:scale_bar",
+    "confidence": "high",
+    "evidence": { "barBox": { "x": 3900, "y": 3300, "width": 400, "height": 20 }, "tickSpacingPx": 39.37, "intervals": 10, "impliedRatio": 100 }
+  },
+  "pipes": [
+    {
+      "id": "p1",
+      "geometry": {
+        "nodes": [
+          { "id": 1, "x": 120.5, "y": 340 },
+          { "id": 2, "x": 450, "y": 340 },
+          { "id": 3, "x": 450, "y": 580.5 },
+          { "id": 4, "x": 780, "y": 340 }
+        ],
+        "edges": [[1, 2], [2, 3], [2, 4]]
+      },
+      "length": { "px": 900, "planView": 4571.879082942015 },
+      "labelId": "l3",
+      "confidence": "high"
+    }
+  ],
+  "labels": [
+    {
+      "id": "l3",
+      "box": { "x": 621.04, "y": 610.88, "width": 120, "height": 7.29, "rotation": 0 },
+      "name": "VS1-S13-12/W CL 3200 ÖFG",
+      "confidence": "high"
+    }
+  ],
+  "markers": [
+    { "id": "m1", "symbol": "WC", "box": { "x": 900, "y": 1200, "width": 40, "height": 40 }, "labelId": null, "confidence": "medium" }
+  ],
+  "metadata": {
+    "sourceFormat": "svg",
+    "vectorGeometry": true,
+    "pipesDetectedTotal": 1,
+    "labelsDetected": 1,
+    "markersDetected": 1,
+    "warnings": []
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "category": "drawing_category",
+  "description": "Klassificering av ritning (redovisningssätt, ritningskategorier) — the single-digit code that states the type of drawing. Source: SS 32266.",
+  "source": "SS 32266",
+  "entries": [
+    { "code": "-0", "term_sv": "Sammansatta ritningar",   "term_en": "Composite drawings" },
+    { "code": "-1", "term_sv": "Planritningar",           "term_en": "Plan drawings" },
+    { "code": "-2", "term_sv": "Sektioner",               "term_en": "Sections" },
+    { "code": "-3", "term_sv": "Fasadritningar",          "term_en": "Elevation drawings" },
+    { "code": "-4", "term_sv": "Uppställningsritningar",  "term_en": "Arrangement / installation layout drawings" },
+    { "code": "-5", "term_sv": "Förteckningsritningar",   "term_en": "Schedule drawings" },
+    { "code": "-6", "term_sv": "Detaljritningar",         "term_en": "Detail drawings" },
+    { "code": "-7", "term_sv": "Samordningsritningar",    "term_en": "Coordination drawings" },
+    { "code": "-8", "term_sv": "Scheman",                 "term_en": "Schematics / diagrams" }
+  ]
+}

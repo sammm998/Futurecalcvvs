@@ -1,0 +1,2880 @@
+{
+  "schema_version": 1,
+  "engine_version": "f864ddd94b934ecf",
+  "registry": {
+    "styles": {
+      "axis-bluebeam": {
+        "active": 1,
+        "releases": [
+          {
+            "id": "axis-bluebeam",
+            "name": "VVS Konsulterna - Revit - Bluebeam Brewery 5.0",
+            "description": "Tyréns via Bluebeam Brewery: pipes 0.66, stroked text 0.48, fixtures 0.96, wall strokes 1.38; labels underlined, the leader continues the underline in the pipe pen. Baseline derived from one sample sheet of the style survey (2026-09-08); not a measured accuracy claim.",
+            "version": 1,
+            "calibration": {
+              "assemble.snap": 0.455,
+              "assemble.lateral": 0.5,
+              "assemble.wall_gap": 60.606,
+              "assemble.mark_merge": 4.545,
+              "assemble.small_ring": 5.303,
+              "associate.anchor": 12.121,
+              "associate.landing": 4.545,
+              "associate.twin_gap": 30.303,
+              "bucket.tick_rel_min": 1.8
+            },
+            "signatures": [
+              {
+                "pipe_ratios": [
+                  2.88
+                ],
+                "ring_ratio": 5.94,
+                "layered": false
+              }
+            ],
+            "rules": [
+              {
+                "id": "reading-direction",
+                "stage": "binding",
+                "instruction": "Read from the system entry towards fixtures. For gravity systems S*/D* except SL, a higher VG establishes the inward direction and outranks other direction signals. CL serves this role only on gravity systems. Pressure-pipe CL is mounting height, not flow direction."
+              },
+              {
+                "id": "branch-description",
+                "stage": "binding",
+                "instruction": "A main keeps its designation through an unmarked tee. A branch with its own label includes its approach from the main to its mark when supported by topology. Do not propagate the main label into that branch."
+              },
+              {
+                "id": "solid-fixtures",
+                "stage": "binding",
+                "instruction": "R1 and K5 describe solid fixture connections in this style. An uninsulated split-form heating label typically describes a short rise or drop, not a long insulated distribution run."
+              },
+              {
+                "id": "parallel-pairs",
+                "stage": "binding",
+                "instruction": "Use the designation line_count from the system table: only line_count 2 permits an unlabelled parallel twin. Nx describes a bundle. VV and VVC are distinct individually labelled systems."
+              },
+              {
+                "id": "mark-boundaries",
+                "stage": "binding",
+                "instruction": "Another designation's landing is a boundary, including an unreadable designation. A label may cover its own approach and continuation when topology supports one branch; never cross a competing designation merely to fill an unassigned stretch."
+              }
+            ],
+            "library_id": "axis-bluebeam",
+            "pen_table": {
+              "sheet": "V50-1-0842 - Plan B2, Del 42, Värme & Sanitäranlägg-.pdf",
+              "page_no": 0,
+              "pipe_widths": [
+                0.66
+              ],
+              "leader_width": 0.66,
+              "text_height": 11.0,
+              "u_paper": 1.0,
+              "hairline": false,
+              "family_method": "library starting values (axis-bluebeam) confirmed by the sheet, against the width rule's [1.38]",
+              "derivation": "Adjustments are the engine's derived tolerances on this sheet as ratios of the 0.66 pt leader pen (pipe family by library starting values (axis-bluebeam) confirmed by the sheet, against the width rule's [1.38]; detector boxes and OCR labels)."
+            }
+          }
+        ],
+        "draft": {
+          "id": "axis-bluebeam",
+          "name": "VVS Konsulterna - Revit - Bluebeam Brewery 5.0",
+          "description": "Tyréns via Bluebeam Brewery: pipes 0.66, stroked text 0.48, fixtures 0.96, wall strokes 1.38; labels underlined, the leader continues the underline in the pipe pen. Baseline derived from one sample sheet of the style survey (2026-09-08); not a measured accuracy claim.",
+          "version": 1,
+          "calibration": {
+            "assemble.snap": 0.455,
+            "assemble.lateral": 0.5,
+            "assemble.wall_gap": 60.606,
+            "assemble.mark_merge": 4.545,
+            "assemble.small_ring": 5.303,
+            "associate.anchor": 12.121,
+            "associate.landing": 4.545,
+            "associate.twin_gap": 30.303,
+            "bucket.tick_rel_min": 1.8
+          },
+          "signatures": [
+            {
+              "pipe_ratios": [
+                2.88
+              ],
+              "ring_ratio": 5.94,
+              "layered": false
+            }
+          ],
+          "rules": [
+            {
+              "id": "reading-direction",
+              "stage": "binding",
+              "instruction": "Read from the system entry towards fixtures. For gravity systems S*/D* except SL, a higher VG establishes the inward direction and outranks other direction signals. CL serves this role only on gravity systems. Pressure-pipe CL is mounting height, not flow direction."
+            },
+            {
+              "id": "branch-description",
+              "stage": "binding",
+              "instruction": "A main keeps its designation through an unmarked tee. A branch with its own label includes its approach from the main to its mark when supported by topology. Do not propagate the main label into that branch."
+            },
+            {
+              "id": "solid-fixtures",
+              "stage": "binding",
+              "instruction": "R1 and K5 describe solid fixture connections in this style. An uninsulated split-form heating label typically describes a short rise or drop, not a long insulated distribution run."
+            },
+            {
+              "id": "parallel-pairs",
+              "stage": "binding",
+              "instruction": "Use the designation line_count from the system table: only line_count 2 permits an unlabelled parallel twin. Nx describes a bundle. VV and VVC are distinct individually labelled systems."
+            },
+            {
+              "id": "mark-boundaries",
+              "stage": "binding",
+              "instruction": "Another designation's landing is a boundary, including an unreadable designation. A label may cover its own approach and continuation when topology supports one branch; never cross a competing designation merely to fill an unassigned stretch."
+            }
+          ],
+          "library_id": "axis-bluebeam",
+          "pen_table": {
+            "sheet": "V50-1-0842 - Plan B2, Del 42, Värme & Sanitäranlägg-.pdf",
+            "page_no": 0,
+            "pipe_widths": [
+              0.66
+            ],
+            "leader_width": 0.66,
+            "text_height": 11.0,
+            "u_paper": 1.0,
+            "hairline": false,
+            "family_method": "library starting values (axis-bluebeam) confirmed by the sheet, against the width rule's [1.38]",
+            "derivation": "Adjustments are the engine's derived tolerances on this sheet as ratios of the 0.66 pt leader pen (pipe family by library starting values (axis-bluebeam) confirmed by the sheet, against the width rule's [1.38]; detector boxes and OCR labels)."
+          }
+        }
+      },
+      "badskon-a3-booklet": {
+        "active": 1,
+        "releases": [
+          {
+            "id": "badskon-a3-booklet",
+            "name": "PO Andersson - Ghostscript 9.21",
+            "description": "Ghostscript booklet, A3 plans at half size: pipes 0.48, text 5.5 pt, ring still 3 pt. Baseline derived from one sample sheet of the style survey (2026-09-08); not a measured accuracy claim.",
+            "version": 1,
+            "calibration": {
+              "assemble.snap": 1.25,
+              "assemble.lateral": 1.25,
+              "assemble.wall_gap": 83.333,
+              "assemble.mark_merge": 6.25,
+              "assemble.small_ring": 7.292,
+              "associate.anchor": 16.667,
+              "associate.landing": 12.5,
+              "associate.twin_gap": 83.333,
+              "bucket.tick_rel_min": 1.8
+            },
+            "signatures": [
+              {
+                "pipe_ratios": [
+                  3.0
+                ],
+                "ring_ratio": 5.5,
+                "layered": false
+              }
+            ],
+            "rules": [
+              {
+                "id": "reading-direction",
+                "stage": "binding",
+                "instruction": "Read from the system entry towards fixtures. For gravity systems S*/D* except SL, a higher VG establishes the inward direction and outranks other direction signals. CL serves this role only on gravity systems. Pressure-pipe CL is mounting height, not flow direction."
+              },
+              {
+                "id": "branch-description",
+                "stage": "binding",
+                "instruction": "A main keeps its designation through an unmarked tee. A branch with its own label includes its approach from the main to its mark when supported by topology. Do not propagate the main label into that branch."
+              },
+              {
+                "id": "solid-fixtures",
+                "stage": "binding",
+                "instruction": "R1 and K5 describe solid fixture connections in this style. An uninsulated split-form heating label typically describes a short rise or drop, not a long insulated distribution run."
+              },
+              {
+                "id": "parallel-pairs",
+                "stage": "binding",
+                "instruction": "Use the designation line_count from the system table: only line_count 2 permits an unlabelled parallel twin. Nx describes a bundle. VV and VVC are distinct individually labelled systems."
+              },
+              {
+                "id": "mark-boundaries",
+                "stage": "binding",
+                "instruction": "Another designation's landing is a boundary, including an unreadable designation. A label may cover its own approach and continuation when topology supports one branch; never cross a competing designation merely to fill an unassigned stretch."
+              }
+            ],
+            "library_id": "badskon-a3-booklet",
+            "pen_table": {
+              "sheet": "Badskon 1.pdf",
+              "page_no": 2,
+              "pipe_widths": [
+                0.48,
+                0.72
+              ],
+              "leader_width": 0.24,
+              "text_height": 5.5,
+              "u_paper": 0.5,
+              "hairline": false,
+              "family_method": "width rule, confirmed by 22 leader landings, plus landed-on [0.48] (sheet off the reference size)",
+              "derivation": "Adjustments are the engine's derived tolerances on this sheet as ratios of the 0.24 pt leader pen (pipe family by width rule, confirmed by 22 leader landings, plus landed-on [0.48] (sheet off the reference size); detector boxes and OCR labels)."
+            }
+          }
+        ],
+        "draft": {
+          "id": "badskon-a3-booklet",
+          "name": "PO Andersson - Ghostscript 9.21",
+          "description": "Ghostscript booklet, A3 plans at half size: pipes 0.48, text 5.5 pt, ring still 3 pt. Baseline derived from one sample sheet of the style survey (2026-09-08); not a measured accuracy claim.",
+          "version": 1,
+          "calibration": {
+            "assemble.snap": 1.25,
+            "assemble.lateral": 1.25,
+            "assemble.wall_gap": 83.333,
+            "assemble.mark_merge": 6.25,
+            "assemble.small_ring": 7.292,
+            "associate.anchor": 16.667,
+            "associate.landing": 12.5,
+            "associate.twin_gap": 83.333,
+            "bucket.tick_rel_min": 1.8
+          },
+          "signatures": [
+            {
+              "pipe_ratios": [
+                3.0
+              ],
+              "ring_ratio": 5.5,
+              "layered": false
+            }
+          ],
+          "rules": [
+            {
+              "id": "reading-direction",
+              "stage": "binding",
+              "instruction": "Read from the system entry towards fixtures. For gravity systems S*/D* except SL, a higher VG establishes the inward direction and outranks other direction signals. CL serves this role only on gravity systems. Pressure-pipe CL is mounting height, not flow direction."
+            },
+            {
+              "id": "branch-description",
+              "stage": "binding",
+              "instruction": "A main keeps its designation through an unmarked tee. A branch with its own label includes its approach from the main to its mark when supported by topology. Do not propagate the main label into that branch."
+            },
+            {
+              "id": "solid-fixtures",
+              "stage": "binding",
+              "instruction": "R1 and K5 describe solid fixture connections in this style. An uninsulated split-form heating label typically describes a short rise or drop, not a long insulated distribution run."
+            },
+            {
+              "id": "parallel-pairs",
+              "stage": "binding",
+              "instruction": "Use the designation line_count from the system table: only line_count 2 permits an unlabelled parallel twin. Nx describes a bundle. VV and VVC are distinct individually labelled systems."
+            },
+            {
+              "id": "mark-boundaries",
+              "stage": "binding",
+              "instruction": "Another designation's landing is a boundary, including an unreadable designation. A label may cover its own approach and continuation when topology supports one branch; never cross a competing designation merely to fill an unassigned stretch."
+            }
+          ],
+          "library_id": "badskon-a3-booklet",
+          "pen_table": {
+            "sheet": "Badskon 1.pdf",
+            "page_no": 2,
+            "pipe_widths": [
+              0.48,
+              0.72
+            ],
+            "leader_width": 0.24,
+            "text_height": 5.5,
+            "u_paper": 0.5,
+            "hairline": false,
+            "family_method": "width rule, confirmed by 22 leader landings, plus landed-on [0.48] (sheet off the reference size)",
+            "derivation": "Adjustments are the engine's derived tolerances on this sheet as ratios of the 0.24 pt leader pen (pipe family by width rule, confirmed by 22 leader landings, plus landed-on [0.48] (sheet off the reference size); detector boxes and OCR labels)."
+          }
+        }
+      },
+      "bd-ghostscript": {
+        "active": 3,
+        "releases": [
+          {
+            "id": "bd-ghostscript",
+            "name": "Bengt Dahlgren - Ghostscript 9.21",
+            "description": "Bengt Dahlgren via Ghostscript 9.21: pipes 1.41 / 2.82, leader 0.51, glyphs 0.72, the leader ends in a ring. Baseline derived from one sample sheet of the style survey (2026-09-08); not a measured accuracy claim.",
+            "version": 1,
+            "calibration": {
+              "assemble.snap": 0.98,
+              "assemble.lateral": 1.176,
+              "assemble.wall_gap": 78.431,
+              "assemble.mark_merge": 5.882,
+              "assemble.small_ring": 6.863,
+              "associate.anchor": 15.686,
+              "associate.landing": 5.882,
+              "associate.twin_gap": 39.216,
+              "bucket.tick_rel_min": 1.8
+            },
+            "signatures": [
+              {
+                "pipe_ratios": [
+                  2.76,
+                  3.88,
+                  5.53
+                ],
+                "ring_ratio": 5.59,
+                "layered": false
+              }
+            ],
+            "rules": [
+              {
+                "id": "reading-direction",
+                "stage": "binding",
+                "instruction": "Read from the system entry towards fixtures. For gravity systems S*/D* except SL, a higher VG establishes the inward direction and outranks other direction signals. CL serves this role only on gravity systems. Pressure-pipe CL is mounting height, not flow direction."
+              },
+              {
+                "id": "branch-description",
+                "stage": "binding",
+                "instruction": "A main keeps its designation through an unmarked tee. A branch with its own label includes its approach from the main to its mark when supported by topology. Do not propagate the main label into that branch."
+              },
+              {
+                "id": "solid-fixtures",
+                "stage": "binding",
+                "instruction": "R1 and K5 describe solid fixture connections in this style. An uninsulated split-form heating label typically describes a short rise or drop, not a long insulated distribution run."
+              },
+              {
+                "id": "parallel-pairs",
+                "stage": "binding",
+                "instruction": "Use the designation line_count from the system table: only line_count 2 permits an unlabelled parallel twin. Nx describes a bundle. VV and VVC are distinct individually labelled systems."
+              },
+              {
+                "id": "mark-boundaries",
+                "stage": "binding",
+                "instruction": "Another designation's landing is a boundary, including an unreadable designation. A label may cover its own approach and continuation when topology supports one branch; never cross a competing designation merely to fill an unassigned stretch."
+              }
+            ],
+            "library_id": "bd-ghostscript",
+            "pen_table": {
+              "sheet": "1760279_1.pdf",
+              "page_no": 0,
+              "pipe_widths": [
+                1.41,
+                1.98,
+                2.82
+              ],
+              "leader_width": 0.51,
+              "text_height": 11.0,
+              "u_paper": 1.0,
+              "hairline": false,
+              "family_method": "width rule, confirmed by 5 leader landings",
+              "derivation": "Adjustments are the engine's derived tolerances on this sheet as ratios of the 0.51 pt leader pen (pipe family by width rule, confirmed by 5 leader landings; detector boxes and OCR labels)."
+            }
+          },
+          {
+            "id": "bd-ghostscript",
+            "name": "Bengt Dahlgren Syd - Ghostscript 9.21",
+            "description": "Ghostscript booklet with A4 covers, A1 plans: pipes 0.72, grid lines 0.27. Baseline derived from one sample sheet of the style survey (2026-09-08); not a measured accuracy claim.",
+            "version": 2,
+            "calibration": {
+              "assemble.snap": 1.111,
+              "assemble.lateral": 1.333,
+              "assemble.wall_gap": 148.148,
+              "assemble.mark_merge": 11.111,
+              "assemble.small_ring": 12.963,
+              "associate.anchor": 29.63,
+              "associate.landing": 11.111,
+              "associate.twin_gap": 74.074,
+              "bucket.tick_rel_min": 1.8
+            },
+            "signatures": [
+              {
+                "pipe_ratios": [],
+                "ring_ratio": 7.89,
+                "layered": false
+              }
+            ],
+            "rules": [
+              {
+                "id": "reading-direction",
+                "stage": "binding",
+                "instruction": "Read from the system entry towards fixtures. For gravity systems S*/D* except SL, a higher VG establishes the inward direction and outranks other direction signals. CL serves this role only on gravity systems. Pressure-pipe CL is mounting height, not flow direction."
+              },
+              {
+                "id": "branch-description",
+                "stage": "binding",
+                "instruction": "A main keeps its designation through an unmarked tee. A branch with its own label includes its approach from the main to its mark when supported by topology. Do not propagate the main label into that branch."
+              },
+              {
+                "id": "solid-fixtures",
+                "stage": "binding",
+                "instruction": "R1 and K5 describe solid fixture connections in this style. An uninsulated split-form heating label typically describes a short rise or drop, not a long insulated distribution run."
+              },
+              {
+                "id": "parallel-pairs",
+                "stage": "binding",
+                "instruction": "Use the designation line_count from the system table: only line_count 2 permits an unlabelled parallel twin. Nx describes a bundle. VV and VVC are distinct individually labelled systems."
+              },
+              {
+                "id": "mark-boundaries",
+                "stage": "binding",
+                "instruction": "Another designation's landing is a boundary, including an unreadable designation. A label may cover its own approach and continuation when topology supports one branch; never cross a competing designation merely to fill an unassigned stretch."
+              }
+            ],
+            "library_id": "lopoglan-booklet",
+            "pen_table": {
+              "sheet": "Löpöglan 2.pdf",
+              "page_no": 3,
+              "pipe_widths": [
+                0.72
+              ],
+              "leader_width": 0.27,
+              "text_height": 11.0,
+              "u_paper": 1.0,
+              "hairline": false,
+              "family_method": "library starting values (lopoglan-booklet) confirmed by the sheet",
+              "derivation": "Adjustments are the engine's derived tolerances on this sheet as ratios of the 0.27 pt leader pen (pipe family by library starting values (lopoglan-booklet) confirmed by the sheet; detector boxes and OCR labels)."
+            },
+            "source_style_id": "lopoglan-booklet",
+            "source_version": 1
+          },
+          {
+            "id": "bd-ghostscript",
+            "name": "Bengt Dahlgren - Ghostscript 9.21",
+            "description": "Merged drawing family. Confirmed pipe stroke widths in the supplied samples: 1.41 / 2.82 pt. Solid, dashed, dash-dot and dash-double-dot pipes belong to this same style. Text and label formats do not define separate styles. Historical sample profiles remain archived.",
+            "version": 3,
+            "calibration": {
+              "assemble.snap": 0.98,
+              "assemble.lateral": 1.176,
+              "assemble.wall_gap": 78.431,
+              "assemble.mark_merge": 5.882,
+              "assemble.small_ring": 6.863,
+              "associate.anchor": 15.686,
+              "associate.landing": 5.882,
+              "associate.twin_gap": 39.216,
+              "bucket.tick_rel_min": 1.8
+            },
+            "signatures": [
+              {
+                "pipe_ratios": [
+                  2.76,
+                  3.88,
+                  5.53
+                ],
+                "ring_ratio": 5.59,
+                "layered": false
+              }
+            ],
+            "rules": [
+              {
+                "id": "reading-direction",
+                "stage": "binding",
+                "instruction": "Read from the system entry towards fixtures. For gravity systems S*/D* except SL, a higher VG establishes the inward direction and outranks other direction signals. CL serves this role only on gravity systems. Pressure-pipe CL is mounting height, not flow direction."
+              },
+              {
+                "id": "branch-description",
+                "stage": "binding",
+                "instruction": "A main keeps its designation through an unmarked tee. A branch with its own label includes its approach from the main to its mark when supported by topology. Do not propagate the main label into that branch."
+              },
+              {
+                "id": "solid-fixtures",
+                "stage": "binding",
+                "instruction": "R1 and K5 describe solid fixture connections in this style. An uninsulated split-form heating label typically describes a short rise or drop, not a long insulated distribution run."
+              },
+              {
+                "id": "parallel-pairs",
+                "stage": "binding",
+                "instruction": "Use the designation line_count from the system table: only line_count 2 permits an unlabelled parallel twin. Nx describes a bundle. VV and VVC are distinct individually labelled systems."
+              },
+              {
+                "id": "mark-boundaries",
+                "stage": "binding",
+                "instruction": "Another designation's landing is a boundary, including an unreadable designation. A label may cover its own approach and continuation when topology supports one branch; never cross a competing designation merely to fill an unassigned stretch."
+              }
+            ],
+            "library_id": "bd-ghostscript",
+            "merged_members": [
+              "bd-ghostscript",
+              "lopoglan-booklet"
+            ],
+            "library_ids": [
+              "bd-ghostscript",
+              "lopoglan-booklet"
+            ],
+            "verified_pipe_widths": [
+              1.41,
+              2.82
+            ],
+            "source_drafts": {
+              "bd-ghostscript": {
+                "id": "bd-ghostscript",
+                "name": "Bengt Dahlgren - Ghostscript 9.21",
+                "description": "Bengt Dahlgren via Ghostscript 9.21: pipes 1.41 / 2.82, leader 0.51, glyphs 0.72, the leader ends in a ring. Baseline derived from one sample sheet of the style survey (2026-09-08); not a measured accuracy claim.",
+                "version": 1,
+                "calibration": {
+                  "assemble.snap": 0.98,
+                  "assemble.lateral": 1.176,
+                  "assemble.wall_gap": 78.431,
+                  "assemble.mark_merge": 5.882,
+                  "assemble.small_ring": 6.863,
+                  "associate.anchor": 15.686,
+                  "associate.landing": 5.882,
+                  "associate.twin_gap": 39.216,
+                  "bucket.tick_rel_min": 1.8
+                },
+                "signatures": [
+                  {
+                    "pipe_ratios": [
+                      2.76,
+                      3.88,
+                      5.53
+                    ],
+                    "ring_ratio": 5.59,
+                    "layered": false
+                  }
+                ],
+                "rules": [
+                  {
+                    "id": "reading-direction",
+                    "stage": "binding",
+                    "instruction": "Read from the system entry towards fixtures. For gravity systems S*/D* except SL, a higher VG establishes the inward direction and outranks other direction signals. CL serves this role only on gravity systems. Pressure-pipe CL is mounting height, not flow direction."
+                  },
+                  {
+                    "id": "branch-description",
+                    "stage": "binding",
+                    "instruction": "A main keeps its designation through an unmarked tee. A branch with its own label includes its approach from the main to its mark when supported by topology. Do not propagate the main label into that branch."
+                  },
+                  {
+                    "id": "solid-fixtures",
+                    "stage": "binding",
+                    "instruction": "R1 and K5 describe solid fixture connections in this style. An uninsulated split-form heating label typically describes a short rise or drop, not a long insulated distribution run."
+                  },
+                  {
+                    "id": "parallel-pairs",
+                    "stage": "binding",
+                    "instruction": "Use the designation line_count from the system table: only line_count 2 permits an unlabelled parallel twin. Nx describes a bundle. VV and VVC are distinct individually labelled systems."
+                  },
+                  {
+                    "id": "mark-boundaries",
+                    "stage": "binding",
+                    "instruction": "Another designation's landing is a boundary, including an unreadable designation. A label may cover its own approach and continuation when topology supports one branch; never cross a competing designation merely to fill an unassigned stretch."
+                  }
+                ],
+                "library_id": "bd-ghostscript",
+                "pen_table": {
+                  "sheet": "1760279_1.pdf",
+                  "page_no": 0,
+                  "pipe_widths": [
+                    1.41,
+                    1.98,
+                    2.82
+                  ],
+                  "leader_width": 0.51,
+                  "text_height": 11.0,
+                  "u_paper": 1.0,
+                  "hairline": false,
+                  "family_method": "width rule, confirmed by 5 leader landings",
+                  "derivation": "Adjustments are the engine's derived tolerances on this sheet as ratios of the 0.51 pt leader pen (pipe family by width rule, confirmed by 5 leader landings; detector boxes and OCR labels)."
+                }
+              },
+              "lopoglan-booklet": {
+                "id": "lopoglan-booklet",
+                "name": "Bengt Dahlgren Syd - Ghostscript 9.21",
+                "description": "Ghostscript booklet with A4 covers, A1 plans: pipes 0.72, grid lines 0.27. Baseline derived from one sample sheet of the style survey (2026-09-08); not a measured accuracy claim.",
+                "version": 1,
+                "calibration": {
+                  "assemble.snap": 1.111,
+                  "assemble.lateral": 1.333,
+                  "assemble.wall_gap": 148.148,
+                  "assemble.mark_merge": 11.111,
+                  "assemble.small_ring": 12.963,
+                  "associate.anchor": 29.63,
+                  "associate.landing": 11.111,
+                  "associate.twin_gap": 74.074,
+                  "bucket.tick_rel_min": 1.8
+                },
+                "signatures": [
+                  {
+                    "pipe_ratios": [],
+                    "ring_ratio": 7.89,
+                    "layered": false
+                  }
+                ],
+                "rules": [
+                  {
+                    "id": "reading-direction",
+                    "stage": "binding",
+                    "instruction": "Read from the system entry towards fixtures. For gravity systems S*/D* except SL, a higher VG establishes the inward direction and outranks other direction signals. CL serves this role only on gravity systems. Pressure-pipe CL is mounting height, not flow direction."
+                  },
+                  {
+                    "id": "branch-description",
+                    "stage": "binding",
+                    "instruction": "A main keeps its designation through an unmarked tee. A branch with its own label includes its approach from the main to its mark when supported by topology. Do not propagate the main label into that branch."
+                  },
+                  {
+                    "id": "solid-fixtures",
+                    "stage": "binding",
+                    "instruction": "R1 and K5 describe solid fixture connections in this style. An uninsulated split-form heating label typically describes a short rise or drop, not a long insulated distribution run."
+                  },
+                  {
+                    "id": "parallel-pairs",
+                    "stage": "binding",
+                    "instruction": "Use the designation line_count from the system table: only line_count 2 permits an unlabelled parallel twin. Nx describes a bundle. VV and VVC are distinct individually labelled systems."
+                  },
+                  {
+                    "id": "mark-boundaries",
+                    "stage": "binding",
+                    "instruction": "Another designation's landing is a boundary, including an unreadable designation. A label may cover its own approach and continuation when topology supports one branch; never cross a competing designation merely to fill an unassigned stretch."
+                  }
+                ],
+                "library_id": "lopoglan-booklet",
+                "pen_table": {
+                  "sheet": "Löpöglan 2.pdf",
+                  "page_no": 3,
+                  "pipe_widths": [
+                    0.72
+                  ],
+                  "leader_width": 0.27,
+                  "text_height": 11.0,
+                  "u_paper": 1.0,
+                  "hairline": false,
+                  "family_method": "library starting values (lopoglan-booklet) confirmed by the sheet",
+                  "derivation": "Adjustments are the engine's derived tolerances on this sheet as ratios of the 0.27 pt leader pen (pipe family by library starting values (lopoglan-booklet) confirmed by the sheet; detector boxes and OCR labels)."
+                }
+              }
+            }
+          }
+        ],
+        "draft": {
+          "id": "bd-ghostscript",
+          "name": "Bengt Dahlgren - Ghostscript 9.21",
+          "description": "Merged drawing family. Confirmed pipe stroke widths in the supplied samples: 1.41 / 2.82 pt. Solid, dashed, dash-dot and dash-double-dot pipes belong to this same style. Text and label formats do not define separate styles. Historical sample profiles remain archived.",
+          "version": 3,
+          "calibration": {
+            "assemble.snap": 0.98,
+            "assemble.lateral": 1.176,
+            "assemble.wall_gap": 78.431,
+            "assemble.mark_merge": 5.882,
+            "assemble.small_ring": 6.863,
+            "associate.anchor": 15.686,
+            "associate.landing": 5.882,
+            "associate.twin_gap": 39.216,
+            "bucket.tick_rel_min": 1.8
+          },
+          "signatures": [
+            {
+              "pipe_ratios": [
+                2.76,
+                3.88,
+                5.53
+              ],
+              "ring_ratio": 5.59,
+              "layered": false
+            }
+          ],
+          "rules": [
+            {
+              "id": "reading-direction",
+              "stage": "binding",
+              "instruction": "Read from the system entry towards fixtures. For gravity systems S*/D* except SL, a higher VG establishes the inward direction and outranks other direction signals. CL serves this role only on gravity systems. Pressure-pipe CL is mounting height, not flow direction."
+            },
+            {
+              "id": "branch-description",
+              "stage": "binding",
+              "instruction": "A main keeps its designation through an unmarked tee. A branch with its own label includes its approach from the main to its mark when supported by topology. Do not propagate the main label into that branch."
+            },
+            {
+              "id": "solid-fixtures",
+              "stage": "binding",
+              "instruction": "R1 and K5 describe solid fixture connections in this style. An uninsulated split-form heating label typically describes a short rise or drop, not a long insulated distribution run."
+            },
+            {
+              "id": "parallel-pairs",
+              "stage": "binding",
+              "instruction": "Use the designation line_count from the system table: only line_count 2 permits an unlabelled parallel twin. Nx describes a bundle. VV and VVC are distinct individually labelled systems."
+            },
+            {
+              "id": "mark-boundaries",
+              "stage": "binding",
+              "instruction": "Another designation's landing is a boundary, including an unreadable designation. A label may cover its own approach and continuation when topology supports one branch; never cross a competing designation merely to fill an unassigned stretch."
+            }
+          ],
+          "library_id": "bd-ghostscript",
+          "merged_members": [
+            "bd-ghostscript",
+            "lopoglan-booklet"
+          ],
+          "library_ids": [
+            "bd-ghostscript",
+            "lopoglan-booklet"
+          ],
+          "verified_pipe_widths": [
+            1.41,
+            2.82
+          ],
+          "source_drafts": {
+            "bd-ghostscript": {
+              "id": "bd-ghostscript",
+              "name": "Bengt Dahlgren - Ghostscript 9.21",
+              "description": "Bengt Dahlgren via Ghostscript 9.21: pipes 1.41 / 2.82, leader 0.51, glyphs 0.72, the leader ends in a ring. Baseline derived from one sample sheet of the style survey (2026-09-08); not a measured accuracy claim.",
+              "version": 1,
+              "calibration": {
+                "assemble.snap": 0.98,
+                "assemble.lateral": 1.176,
+                "assemble.wall_gap": 78.431,
+                "assemble.mark_merge": 5.882,
+                "assemble.small_ring": 6.863,
+                "associate.anchor": 15.686,
+                "associate.landing": 5.882,
+                "associate.twin_gap": 39.216,
+                "bucket.tick_rel_min": 1.8
+              },
+              "signatures": [
+                {
+                  "pipe_ratios": [
+                    2.76,
+                    3.88,
+                    5.53
+                  ],
+                  "ring_ratio": 5.59,
+                  "layered": false
+                }
+              ],
+              "rules": [
+                {
+                  "id": "reading-direction",
+                  "stage": "binding",
+                  "instruction": "Read from the system entry towards fixtures. For gravity systems S*/D* except SL, a higher VG establishes the inward direction and outranks other direction signals. CL serves this role only on gravity systems. Pressure-pipe CL is mounting height, not flow direction."
+                },
+                {
+                  "id": "branch-description",
+                  "stage": "binding",
+                  "instruction": "A main keeps its designation through an unmarked tee. A branch with its own label includes its approach from the main to its mark when supported by topology. Do not propagate the main label into that branch."
+                },
+                {
+                  "id": "solid-fixtures",
+                  "stage": "binding",
+                  "instruction": "R1 and K5 describe solid fixture connections in this style. An uninsulated split-form heating label typically describes a short rise or drop, not a long insulated distribution run."
+                },
+                {
+                  "id": "parallel-pairs",
+                  "stage": "binding",
+                  "instruction": "Use the designation line_count from the system table: only line_count 2 permits an unlabelled parallel twin. Nx describes a bundle. VV and VVC are distinct individually labelled systems."
+                },
+                {
+                  "id": "mark-boundaries",
+                  "stage": "binding",
+                  "instruction": "Another designation's landing is a boundary, including an unreadable designation. A label may cover its own approach and continuation when topology supports one branch; never cross a competing designation merely to fill an unassigned stretch."
+                }
+              ],
+              "library_id": "bd-ghostscript",
+              "pen_table": {
+                "sheet": "1760279_1.pdf",
+                "page_no": 0,
+                "pipe_widths": [
+                  1.41,
+                  1.98,
+                  2.82
+                ],
+                "leader_width": 0.51,
+                "text_height": 11.0,
+                "u_paper": 1.0,
+                "hairline": false,
+                "family_method": "width rule, confirmed by 5 leader landings",
+                "derivation": "Adjustments are the engine's derived tolerances on this sheet as ratios of the 0.51 pt leader pen (pipe family by width rule, confirmed by 5 leader landings; detector boxes and OCR labels)."
+              }
+            },
+            "lopoglan-booklet": {
+              "id": "lopoglan-booklet",
+              "name": "Bengt Dahlgren Syd - Ghostscript 9.21",
+              "description": "Ghostscript booklet with A4 covers, A1 plans: pipes 0.72, grid lines 0.27. Baseline derived from one sample sheet of the style survey (2026-09-08); not a measured accuracy claim.",
+              "version": 1,
+              "calibration": {
+                "assemble.snap": 1.111,
+                "assemble.lateral": 1.333,
+                "assemble.wall_gap": 148.148,
+                "assemble.mark_merge": 11.111,
+                "assemble.small_ring": 12.963,
+                "associate.anchor": 29.63,
+                "associate.landing": 11.111,
+                "associate.twin_gap": 74.074,
+                "bucket.tick_rel_min": 1.8
+              },
+              "signatures": [
+                {
+                  "pipe_ratios": [],
+                  "ring_ratio": 7.89,
+                  "layered": false
+                }
+              ],
+              "rules": [
+                {
+                  "id": "reading-direction",
+                  "stage": "binding",
+                  "instruction": "Read from the system entry towards fixtures. For gravity systems S*/D* except SL, a higher VG establishes the inward direction and outranks other direction signals. CL serves this role only on gravity systems. Pressure-pipe CL is mounting height, not flow direction."
+                },
+                {
+                  "id": "branch-description",
+                  "stage": "binding",
+                  "instruction": "A main keeps its designation through an unmarked tee. A branch with its own label includes its approach from the main to its mark when supported by topology. Do not propagate the main label into that branch."
+                },
+                {
+                  "id": "solid-fixtures",
+                  "stage": "binding",
+                  "instruction": "R1 and K5 describe solid fixture connections in this style. An uninsulated split-form heating label typically describes a short rise or drop, not a long insulated distribution run."
+                },
+                {
+                  "id": "parallel-pairs",
+                  "stage": "binding",
+                  "instruction": "Use the designation line_count from the system table: only line_count 2 permits an unlabelled parallel twin. Nx describes a bundle. VV and VVC are distinct individually labelled systems."
+                },
+                {
+                  "id": "mark-boundaries",
+                  "stage": "binding",
+                  "instruction": "Another designation's landing is a boundary, including an unreadable designation. A label may cover its own approach and continuation when topology supports one branch; never cross a competing designation merely to fill an unassigned stretch."
+                }
+              ],
+              "library_id": "lopoglan-booklet",
+              "pen_table": {
+                "sheet": "Löpöglan 2.pdf",
+                "page_no": 3,
+                "pipe_widths": [
+                  0.72
+                ],
+                "leader_width": 0.27,
+                "text_height": 11.0,
+                "u_paper": 1.0,
+                "hairline": false,
+                "family_method": "library starting values (lopoglan-booklet) confirmed by the sheet",
+                "derivation": "Adjustments are the engine's derived tolerances on this sheet as ratios of the 0.27 pt leader pen (pipe family by library starting values (lopoglan-booklet) confirmed by the sheet; detector boxes and OCR labels)."
+              }
+            }
+          }
+        },
+        "merge_revision": 1
+      },
+      "blackhornet-2xa0": {
+        "active": 1,
+        "releases": [
+          {
+            "id": "blackhornet-2xa0",
+            "name": "Arildssons Rör - Ghostscript 9.21",
+            "description": "Ghostscript booklet, double A0 sheets, lettering in heavy strokes (1.42 / 1.98 are glyphs): pipes 0.71. Baseline derived from one sample sheet of the style survey (2026-09-08); not a measured accuracy claim.",
+            "version": 1,
+            "calibration": {
+              "assemble.snap": 0.704,
+              "assemble.lateral": 0.845,
+              "assemble.wall_gap": 56.338,
+              "assemble.mark_merge": 4.225,
+              "assemble.small_ring": 4.93,
+              "associate.anchor": 11.268,
+              "associate.landing": 4.225,
+              "associate.twin_gap": 28.169,
+              "bucket.tick_rel_min": 1.8
+            },
+            "signatures": [
+              {
+                "pipe_ratios": [
+                  2.78
+                ],
+                "ring_ratio": 0,
+                "layered": false
+              }
+            ],
+            "rules": [
+              {
+                "id": "reading-direction",
+                "stage": "binding",
+                "instruction": "Read from the system entry towards fixtures. For gravity systems S*/D* except SL, a higher VG establishes the inward direction and outranks other direction signals. CL serves this role only on gravity systems. Pressure-pipe CL is mounting height, not flow direction."
+              },
+              {
+                "id": "branch-description",
+                "stage": "binding",
+                "instruction": "A main keeps its designation through an unmarked tee. A branch with its own label includes its approach from the main to its mark when supported by topology. Do not propagate the main label into that branch."
+              },
+              {
+                "id": "solid-fixtures",
+                "stage": "binding",
+                "instruction": "R1 and K5 describe solid fixture connections in this style. An uninsulated split-form heating label typically describes a short rise or drop, not a long insulated distribution run."
+              },
+              {
+                "id": "parallel-pairs",
+                "stage": "binding",
+                "instruction": "Use the designation line_count from the system table: only line_count 2 permits an unlabelled parallel twin. Nx describes a bundle. VV and VVC are distinct individually labelled systems."
+              },
+              {
+                "id": "mark-boundaries",
+                "stage": "binding",
+                "instruction": "Another designation's landing is a boundary, including an unreadable designation. A label may cover its own approach and continuation when topology supports one branch; never cross a competing designation merely to fill an unassigned stretch."
+              }
+            ],
+            "library_id": "blackhornet-2xa0",
+            "pen_table": {
+              "sheet": "Bläckhornet.pdf",
+              "page_no": 1,
+              "pipe_widths": [
+                1.42
+              ],
+              "leader_width": 0.71,
+              "text_height": 11.0,
+              "u_paper": 1.0,
+              "hairline": false,
+              "family_method": "width rule, confirmed by 26 leader landings; leader pen 0.71 (45 leaders reach a label, 2 of the 0.51 class)",
+              "derivation": "Adjustments are the engine's derived tolerances on this sheet as ratios of the 0.71 pt leader pen (pipe family by width rule, confirmed by 26 leader landings; leader pen 0.71 (45 leaders reach a label, 2 of the 0.51 class); detector boxes and OCR labels)."
+            }
+          }
+        ],
+        "draft": {
+          "id": "blackhornet-2xa0",
+          "name": "Arildssons Rör - Ghostscript 9.21",
+          "description": "Ghostscript booklet, double A0 sheets, lettering in heavy strokes (1.42 / 1.98 are glyphs): pipes 0.71. Baseline derived from one sample sheet of the style survey (2026-09-08); not a measured accuracy claim.",
+          "version": 1,
+          "calibration": {
+            "assemble.snap": 0.704,
+            "assemble.lateral": 0.845,
+            "assemble.wall_gap": 56.338,
+            "assemble.mark_merge": 4.225,
+            "assemble.small_ring": 4.93,
+            "associate.anchor": 11.268,
+            "associate.landing": 4.225,
+            "associate.twin_gap": 28.169,
+            "bucket.tick_rel_min": 1.8
+          },
+          "signatures": [
+            {
+              "pipe_ratios": [
+                2.78
+              ],
+              "ring_ratio": 0,
+              "layered": false
+            }
+          ],
+          "rules": [
+            {
+              "id": "reading-direction",
+              "stage": "binding",
+              "instruction": "Read from the system entry towards fixtures. For gravity systems S*/D* except SL, a higher VG establishes the inward direction and outranks other direction signals. CL serves this role only on gravity systems. Pressure-pipe CL is mounting height, not flow direction."
+            },
+            {
+              "id": "branch-description",
+              "stage": "binding",
+              "instruction": "A main keeps its designation through an unmarked tee. A branch with its own label includes its approach from the main to its mark when supported by topology. Do not propagate the main label into that branch."
+            },
+            {
+              "id": "solid-fixtures",
+              "stage": "binding",
+              "instruction": "R1 and K5 describe solid fixture connections in this style. An uninsulated split-form heating label typically describes a short rise or drop, not a long insulated distribution run."
+            },
+            {
+              "id": "parallel-pairs",
+              "stage": "binding",
+              "instruction": "Use the designation line_count from the system table: only line_count 2 permits an unlabelled parallel twin. Nx describes a bundle. VV and VVC are distinct individually labelled systems."
+            },
+            {
+              "id": "mark-boundaries",
+              "stage": "binding",
+              "instruction": "Another designation's landing is a boundary, including an unreadable designation. A label may cover its own approach and continuation when topology supports one branch; never cross a competing designation merely to fill an unassigned stretch."
+            }
+          ],
+          "library_id": "blackhornet-2xa0",
+          "pen_table": {
+            "sheet": "Bläckhornet.pdf",
+            "page_no": 1,
+            "pipe_widths": [
+              1.42
+            ],
+            "leader_width": 0.71,
+            "text_height": 11.0,
+            "u_paper": 1.0,
+            "hairline": false,
+            "family_method": "width rule, confirmed by 26 leader landings; leader pen 0.71 (45 leaders reach a label, 2 of the 0.51 class)",
+            "derivation": "Adjustments are the engine's derived tolerances on this sheet as ratios of the 0.71 pt leader pen (pipe family by width rule, confirmed by 26 leader landings; leader pen 0.71 (45 leaders reach a label, 2 of the 0.51 class); detector boxes and OCR labels)."
+          }
+        }
+      },
+      "eon-hairline": {
+        "active": 1,
+        "releases": [
+          {
+            "id": "eon-hairline",
+            "name": "Sweco - AutoCAD 2023 - pdfplot16 - Hairline",
+            "description": "Sweco / AutoCAD 2023 via pdfplot16, every width 0: families by (colour, layer), pipes on the V layers. Baseline derived from one sample sheet of the style survey (2026-09-08); not a measured accuracy claim.",
+            "version": 1,
+            "calibration": {
+              "assemble.snap": 1.041,
+              "assemble.lateral": 1.25,
+              "assemble.wall_gap": 83.314,
+              "assemble.mark_merge": 6.249,
+              "assemble.small_ring": 7.29,
+              "associate.anchor": 16.663,
+              "associate.landing": 6.792,
+              "associate.twin_gap": 45.28,
+              "bucket.tick_rel_min": 1.8
+            },
+            "signatures": [
+              {
+                "pipe_ratios": [],
+                "ring_ratio": 5.75,
+                "layered": true
+              }
+            ],
+            "rules": [
+              {
+                "id": "reading-direction",
+                "stage": "binding",
+                "instruction": "Read from the system entry towards fixtures. For gravity systems S*/D* except SL, a higher VG establishes the inward direction and outranks other direction signals. CL serves this role only on gravity systems. Pressure-pipe CL is mounting height, not flow direction."
+              },
+              {
+                "id": "branch-description",
+                "stage": "binding",
+                "instruction": "A main keeps its designation through an unmarked tee. A branch with its own label includes its approach from the main to its mark when supported by topology. Do not propagate the main label into that branch."
+              },
+              {
+                "id": "solid-fixtures",
+                "stage": "binding",
+                "instruction": "R1 and K5 describe solid fixture connections in this style. An uninsulated split-form heating label typically describes a short rise or drop, not a long insulated distribution run."
+              },
+              {
+                "id": "parallel-pairs",
+                "stage": "binding",
+                "instruction": "Use the designation line_count from the system table: only line_count 2 permits an unlabelled parallel twin. Nx describes a bundle. VV and VVC are distinct individually labelled systems."
+              },
+              {
+                "id": "mark-boundaries",
+                "stage": "binding",
+                "instruction": "Another designation's landing is a boundary, including an unreadable designation. A label may cover its own approach and continuation when topology supports one branch; never cross a competing designation merely to fill an unassigned stretch."
+              }
+            ],
+            "library_id": "eon-hairline",
+            "pen_table": {
+              "sheet": "R9UHA10-CLB001-002.pdf",
+              "page_no": 0,
+              "pipe_widths": [
+                0.0
+              ],
+              "leader_width": 0.0,
+              "text_height": 10.12,
+              "u_paper": 0.92,
+              "hairline": true,
+              "family_method": "leader landings",
+              "derivation": "Adjustments are the engine's derived tolerances on this sheet as ratios of the 0.4417 pt leader pen (pipe family by leader landings; detector boxes and OCR labels)."
+            }
+          }
+        ],
+        "draft": {
+          "id": "eon-hairline",
+          "name": "Sweco - AutoCAD 2023 - pdfplot16 - Hairline",
+          "description": "Sweco / AutoCAD 2023 via pdfplot16, every width 0: families by (colour, layer), pipes on the V layers. Baseline derived from one sample sheet of the style survey (2026-09-08); not a measured accuracy claim.",
+          "version": 1,
+          "calibration": {
+            "assemble.snap": 1.041,
+            "assemble.lateral": 1.25,
+            "assemble.wall_gap": 83.314,
+            "assemble.mark_merge": 6.249,
+            "assemble.small_ring": 7.29,
+            "associate.anchor": 16.663,
+            "associate.landing": 6.792,
+            "associate.twin_gap": 45.28,
+            "bucket.tick_rel_min": 1.8
+          },
+          "signatures": [
+            {
+              "pipe_ratios": [],
+              "ring_ratio": 5.75,
+              "layered": true
+            }
+          ],
+          "rules": [
+            {
+              "id": "reading-direction",
+              "stage": "binding",
+              "instruction": "Read from the system entry towards fixtures. For gravity systems S*/D* except SL, a higher VG establishes the inward direction and outranks other direction signals. CL serves this role only on gravity systems. Pressure-pipe CL is mounting height, not flow direction."
+            },
+            {
+              "id": "branch-description",
+              "stage": "binding",
+              "instruction": "A main keeps its designation through an unmarked tee. A branch with its own label includes its approach from the main to its mark when supported by topology. Do not propagate the main label into that branch."
+            },
+            {
+              "id": "solid-fixtures",
+              "stage": "binding",
+              "instruction": "R1 and K5 describe solid fixture connections in this style. An uninsulated split-form heating label typically describes a short rise or drop, not a long insulated distribution run."
+            },
+            {
+              "id": "parallel-pairs",
+              "stage": "binding",
+              "instruction": "Use the designation line_count from the system table: only line_count 2 permits an unlabelled parallel twin. Nx describes a bundle. VV and VVC are distinct individually labelled systems."
+            },
+            {
+              "id": "mark-boundaries",
+              "stage": "binding",
+              "instruction": "Another designation's landing is a boundary, including an unreadable designation. A label may cover its own approach and continuation when topology supports one branch; never cross a competing designation merely to fill an unassigned stretch."
+            }
+          ],
+          "library_id": "eon-hairline",
+          "pen_table": {
+            "sheet": "R9UHA10-CLB001-002.pdf",
+            "page_no": 0,
+            "pipe_widths": [
+              0.0
+            ],
+            "leader_width": 0.0,
+            "text_height": 10.12,
+            "u_paper": 0.92,
+            "hairline": true,
+            "family_method": "leader landings",
+            "derivation": "Adjustments are the engine's derived tolerances on this sheet as ratios of the 0.4417 pt leader pen (pipe family by leader landings; detector boxes and OCR labels)."
+          }
+        }
+      },
+      "style-1": {
+        "active": 4,
+        "releases": [
+          {
+            "id": "style-1",
+            "name": "Vinnergi - AutoCAD 2023 - pdfplot16",
+            "description": "Current VVS vector drawing conventions. Baseline migrated from the existing review engine; not a measured accuracy claim.",
+            "version": 1,
+            "calibration": {},
+            "signatures": [],
+            "rules": [
+              {
+                "id": "reading-direction",
+                "stage": "binding",
+                "instruction": "Read from the system entry towards fixtures. For gravity systems S*/D* except SL, a higher VG establishes the inward direction and outranks other direction signals. CL serves this role only on gravity systems. Pressure-pipe CL is mounting height, not flow direction."
+              },
+              {
+                "id": "branch-description",
+                "stage": "binding",
+                "instruction": "A main keeps its designation through an unmarked tee. A branch with its own label includes its approach from the main to its mark when supported by topology. Do not propagate the main label into that branch."
+              },
+              {
+                "id": "solid-fixtures",
+                "stage": "binding",
+                "instruction": "R1 and K5 describe solid fixture connections in this style. An uninsulated split-form heating label typically describes a short rise or drop, not a long insulated distribution run."
+              },
+              {
+                "id": "parallel-pairs",
+                "stage": "binding",
+                "instruction": "Use the designation line_count from the system table: only line_count 2 permits an unlabelled parallel twin. Nx describes a bundle. VV and VVC are distinct individually labelled systems."
+              },
+              {
+                "id": "mark-boundaries",
+                "stage": "binding",
+                "instruction": "Another designation's landing is a boundary, including an unreadable designation. A label may cover its own approach and continuation when topology supports one branch; never cross a competing designation merely to fill an unassigned stretch."
+              }
+            ]
+          },
+          {
+            "id": "style-1",
+            "name": "Sweco - AutoCAD 2018 - pdfplot14",
+            "description": "Sweco / AutoCAD 2018 via pdfplot14, SHX text as stroked glyphs (7 text objects), pipes 1.44. Baseline derived from one sample sheet of the style survey (2026-09-08); not a measured accuracy claim.",
+            "version": 2,
+            "calibration": {
+              "assemble.snap": 0.694,
+              "assemble.lateral": 0.833,
+              "assemble.wall_gap": 55.556,
+              "assemble.mark_merge": 4.167,
+              "assemble.small_ring": 4.861,
+              "associate.anchor": 11.111,
+              "associate.landing": 4.167,
+              "associate.twin_gap": 27.778,
+              "bucket.tick_rel_min": 1.8
+            },
+            "signatures": [
+              {
+                "pipe_ratios": [
+                  4.0
+                ],
+                "ring_ratio": 7.5,
+                "layered": true
+              }
+            ],
+            "rules": [
+              {
+                "id": "reading-direction",
+                "stage": "binding",
+                "instruction": "Read from the system entry towards fixtures. For gravity systems S*/D* except SL, a higher VG establishes the inward direction and outranks other direction signals. CL serves this role only on gravity systems. Pressure-pipe CL is mounting height, not flow direction."
+              },
+              {
+                "id": "branch-description",
+                "stage": "binding",
+                "instruction": "A main keeps its designation through an unmarked tee. A branch with its own label includes its approach from the main to its mark when supported by topology. Do not propagate the main label into that branch."
+              },
+              {
+                "id": "solid-fixtures",
+                "stage": "binding",
+                "instruction": "R1 and K5 describe solid fixture connections in this style. An uninsulated split-form heating label typically describes a short rise or drop, not a long insulated distribution run."
+              },
+              {
+                "id": "parallel-pairs",
+                "stage": "binding",
+                "instruction": "Use the designation line_count from the system table: only line_count 2 permits an unlabelled parallel twin. Nx describes a bundle. VV and VVC are distinct individually labelled systems."
+              },
+              {
+                "id": "mark-boundaries",
+                "stage": "binding",
+                "instruction": "Another designation's landing is a boundary, including an unreadable designation. A label may cover its own approach and continuation when topology supports one branch; never cross a competing designation merely to fill an unassigned stretch."
+              }
+            ],
+            "library_id": "priorn-shx",
+            "pen_table": {
+              "sheet": "V-50-1-A0101.pdf",
+              "page_no": 0,
+              "pipe_widths": [
+                1.44
+              ],
+              "leader_width": 0.72,
+              "text_height": 11.0,
+              "u_paper": 1.0,
+              "hairline": false,
+              "family_method": "width rule, confirmed by 30 leader landings; leader pen 0.72 (38 leaders reach a label, 2 of the 0.36 class)",
+              "derivation": "Adjustments are the engine's derived tolerances on this sheet as ratios of the 0.72 pt leader pen (pipe family by width rule, confirmed by 30 leader landings; leader pen 0.72 (38 leaders reach a label, 2 of the 0.36 class); detector boxes and OCR labels)."
+            },
+            "source_style_id": "priorn-shx",
+            "source_version": 1
+          },
+          {
+            "id": "style-1",
+            "name": "Vinnergi - Bluebeam Revu - Ghostscript 9.21",
+            "description": "Otto Magnusson / Bengt Dahlgren via Ghostscript: pipes 1.44 / 2.04, architecture in grey, leader 0.48. Baseline derived from one sample sheet of the style survey (2026-09-08); not a measured accuracy claim.",
+            "version": 3,
+            "calibration": {
+              "assemble.snap": 1.042,
+              "assemble.lateral": 1.25,
+              "assemble.wall_gap": 83.333,
+              "assemble.mark_merge": 6.25,
+              "assemble.small_ring": 7.292,
+              "associate.anchor": 16.667,
+              "associate.landing": 6.25,
+              "associate.twin_gap": 41.667,
+              "bucket.tick_rel_min": 1.8
+            },
+            "signatures": [
+              {
+                "pipe_ratios": [
+                  3.0,
+                  4.25
+                ],
+                "ring_ratio": 5.75,
+                "layered": false
+              }
+            ],
+            "rules": [
+              {
+                "id": "reading-direction",
+                "stage": "binding",
+                "instruction": "Read from the system entry towards fixtures. For gravity systems S*/D* except SL, a higher VG establishes the inward direction and outranks other direction signals. CL serves this role only on gravity systems. Pressure-pipe CL is mounting height, not flow direction."
+              },
+              {
+                "id": "branch-description",
+                "stage": "binding",
+                "instruction": "A main keeps its designation through an unmarked tee. A branch with its own label includes its approach from the main to its mark when supported by topology. Do not propagate the main label into that branch."
+              },
+              {
+                "id": "solid-fixtures",
+                "stage": "binding",
+                "instruction": "R1 and K5 describe solid fixture connections in this style. An uninsulated split-form heating label typically describes a short rise or drop, not a long insulated distribution run."
+              },
+              {
+                "id": "parallel-pairs",
+                "stage": "binding",
+                "instruction": "Use the designation line_count from the system table: only line_count 2 permits an unlabelled parallel twin. Nx describes a bundle. VV and VVC are distinct individually labelled systems."
+              },
+              {
+                "id": "mark-boundaries",
+                "stage": "binding",
+                "instruction": "Another designation's landing is a boundary, including an unreadable designation. A label may cover its own approach and continuation when topology supports one branch; never cross a competing designation merely to fill an unassigned stretch."
+              }
+            ],
+            "library_id": "hyllie-ghostscript",
+            "pen_table": {
+              "sheet": "10.pdf",
+              "page_no": 0,
+              "pipe_widths": [
+                1.44,
+                2.04
+              ],
+              "leader_width": 0.48,
+              "text_height": 11.0,
+              "u_paper": 1.0,
+              "hairline": false,
+              "family_method": "width rule, confirmed by 55 leader landings",
+              "derivation": "Adjustments are the engine's derived tolerances on this sheet as ratios of the 0.48 pt leader pen (pipe family by width rule, confirmed by 55 leader landings; detector boxes and OCR labels)."
+            },
+            "source_style_id": "hyllie-ghostscript",
+            "source_version": 1
+          },
+          {
+            "id": "style-1",
+            "name": "AutoCAD - pdfplot14-16 - Ghostscript 9.21",
+            "description": "Merged drawing family. Confirmed pipe stroke widths in the supplied samples: 1.44 / 2.04 pt. Solid, dashed, dash-dot and dash-double-dot pipes belong to this same style. Text and label formats do not define separate styles. Historical sample profiles remain archived.",
+            "version": 4,
+            "calibration": {},
+            "signatures": [
+              {
+                "pipe_ratios": [
+                  4.0
+                ],
+                "ring_ratio": 7.5,
+                "layered": true
+              },
+              {
+                "pipe_ratios": [
+                  3.0,
+                  4.25
+                ],
+                "ring_ratio": 5.75,
+                "layered": false
+              }
+            ],
+            "rules": [
+              {
+                "id": "reading-direction",
+                "stage": "binding",
+                "instruction": "Read from the system entry towards fixtures. For gravity systems S*/D* except SL, a higher VG establishes the inward direction and outranks other direction signals. CL serves this role only on gravity systems. Pressure-pipe CL is mounting height, not flow direction."
+              },
+              {
+                "id": "branch-description",
+                "stage": "binding",
+                "instruction": "A main keeps its designation through an unmarked tee. A branch with its own label includes its approach from the main to its mark when supported by topology. Do not propagate the main label into that branch."
+              },
+              {
+                "id": "solid-fixtures",
+                "stage": "binding",
+                "instruction": "R1 and K5 describe solid fixture connections in this style. An uninsulated split-form heating label typically describes a short rise or drop, not a long insulated distribution run."
+              },
+              {
+                "id": "parallel-pairs",
+                "stage": "binding",
+                "instruction": "Use the designation line_count from the system table: only line_count 2 permits an unlabelled parallel twin. Nx describes a bundle. VV and VVC are distinct individually labelled systems."
+              },
+              {
+                "id": "mark-boundaries",
+                "stage": "binding",
+                "instruction": "Another designation's landing is a boundary, including an unreadable designation. A label may cover its own approach and continuation when topology supports one branch; never cross a competing designation merely to fill an unassigned stretch."
+              }
+            ],
+            "merged_members": [
+              "style-1",
+              "priorn-shx",
+              "hyllie-ghostscript"
+            ],
+            "library_ids": [
+              "sweco-pdfplot-strokes",
+              "priorn-shx",
+              "hyllie-ghostscript"
+            ],
+            "verified_pipe_widths": [
+              1.44,
+              2.04
+            ],
+            "source_drafts": {
+              "style-1": {
+                "id": "style-1",
+                "name": "Vinnergi - AutoCAD 2023 - pdfplot16",
+                "description": "Current VVS vector drawing conventions. Baseline migrated from the existing review engine; not a measured accuracy claim.",
+                "version": 1,
+                "calibration": {},
+                "signatures": [],
+                "rules": [
+                  {
+                    "id": "reading-direction",
+                    "stage": "binding",
+                    "instruction": "Read from the system entry towards fixtures. For gravity systems S*/D* except SL, a higher VG establishes the inward direction and outranks other direction signals. CL serves this role only on gravity systems. Pressure-pipe CL is mounting height, not flow direction."
+                  },
+                  {
+                    "id": "branch-description",
+                    "stage": "binding",
+                    "instruction": "A main keeps its designation through an unmarked tee. A branch with its own label includes its approach from the main to its mark when supported by topology. Do not propagate the main label into that branch."
+                  },
+                  {
+                    "id": "solid-fixtures",
+                    "stage": "binding",
+                    "instruction": "R1 and K5 describe solid fixture connections in this style. An uninsulated split-form heating label typically describes a short rise or drop, not a long insulated distribution run."
+                  },
+                  {
+                    "id": "parallel-pairs",
+                    "stage": "binding",
+                    "instruction": "Use the designation line_count from the system table: only line_count 2 permits an unlabelled parallel twin. Nx describes a bundle. VV and VVC are distinct individually labelled systems."
+                  },
+                  {
+                    "id": "mark-boundaries",
+                    "stage": "binding",
+                    "instruction": "Another designation's landing is a boundary, including an unreadable designation. A label may cover its own approach and continuation when topology supports one branch; never cross a competing designation merely to fill an unassigned stretch."
+                  }
+                ]
+              },
+              "priorn-shx": {
+                "id": "priorn-shx",
+                "name": "Sweco - AutoCAD 2018 - pdfplot14",
+                "description": "Sweco / AutoCAD 2018 via pdfplot14, SHX text as stroked glyphs (7 text objects), pipes 1.44. Baseline derived from one sample sheet of the style survey (2026-09-08); not a measured accuracy claim.",
+                "version": 1,
+                "calibration": {
+                  "assemble.snap": 0.694,
+                  "assemble.lateral": 0.833,
+                  "assemble.wall_gap": 55.556,
+                  "assemble.mark_merge": 4.167,
+                  "assemble.small_ring": 4.861,
+                  "associate.anchor": 11.111,
+                  "associate.landing": 4.167,
+                  "associate.twin_gap": 27.778,
+                  "bucket.tick_rel_min": 1.8
+                },
+                "signatures": [
+                  {
+                    "pipe_ratios": [
+                      4.0
+                    ],
+                    "ring_ratio": 7.5,
+                    "layered": true
+                  }
+                ],
+                "rules": [
+                  {
+                    "id": "reading-direction",
+                    "stage": "binding",
+                    "instruction": "Read from the system entry towards fixtures. For gravity systems S*/D* except SL, a higher VG establishes the inward direction and outranks other direction signals. CL serves this role only on gravity systems. Pressure-pipe CL is mounting height, not flow direction."
+                  },
+                  {
+                    "id": "branch-description",
+                    "stage": "binding",
+                    "instruction": "A main keeps its designation through an unmarked tee. A branch with its own label includes its approach from the main to its mark when supported by topology. Do not propagate the main label into that branch."
+                  },
+                  {
+                    "id": "solid-fixtures",
+                    "stage": "binding",
+                    "instruction": "R1 and K5 describe solid fixture connections in this style. An uninsulated split-form heating label typically describes a short rise or drop, not a long insulated distribution run."
+                  },
+                  {
+                    "id": "parallel-pairs",
+                    "stage": "binding",
+                    "instruction": "Use the designation line_count from the system table: only line_count 2 permits an unlabelled parallel twin. Nx describes a bundle. VV and VVC are distinct individually labelled systems."
+                  },
+                  {
+                    "id": "mark-boundaries",
+                    "stage": "binding",
+                    "instruction": "Another designation's landing is a boundary, including an unreadable designation. A label may cover its own approach and continuation when topology supports one branch; never cross a competing designation merely to fill an unassigned stretch."
+                  }
+                ],
+                "library_id": "priorn-shx",
+                "pen_table": {
+                  "sheet": "V-50-1-A0101.pdf",
+                  "page_no": 0,
+                  "pipe_widths": [
+                    1.44
+                  ],
+                  "leader_width": 0.72,
+                  "text_height": 11.0,
+                  "u_paper": 1.0,
+                  "hairline": false,
+                  "family_method": "width rule, confirmed by 30 leader landings; leader pen 0.72 (38 leaders reach a label, 2 of the 0.36 class)",
+                  "derivation": "Adjustments are the engine's derived tolerances on this sheet as ratios of the 0.72 pt leader pen (pipe family by width rule, confirmed by 30 leader landings; leader pen 0.72 (38 leaders reach a label, 2 of the 0.36 class); detector boxes and OCR labels)."
+                }
+              },
+              "hyllie-ghostscript": {
+                "id": "hyllie-ghostscript",
+                "name": "Vinnergi - Bluebeam Revu - Ghostscript 9.21",
+                "description": "Otto Magnusson / Bengt Dahlgren via Ghostscript: pipes 1.44 / 2.04, architecture in grey, leader 0.48. Baseline derived from one sample sheet of the style survey (2026-09-08); not a measured accuracy claim.",
+                "version": 1,
+                "calibration": {
+                  "assemble.snap": 1.042,
+                  "assemble.lateral": 1.25,
+                  "assemble.wall_gap": 83.333,
+                  "assemble.mark_merge": 6.25,
+                  "assemble.small_ring": 7.292,
+                  "associate.anchor": 16.667,
+                  "associate.landing": 6.25,
+                  "associate.twin_gap": 41.667,
+                  "bucket.tick_rel_min": 1.8
+                },
+                "signatures": [
+                  {
+                    "pipe_ratios": [
+                      3.0,
+                      4.25
+                    ],
+                    "ring_ratio": 5.75,
+                    "layered": false
+                  }
+                ],
+                "rules": [
+                  {
+                    "id": "reading-direction",
+                    "stage": "binding",
+                    "instruction": "Read from the system entry towards fixtures. For gravity systems S*/D* except SL, a higher VG establishes the inward direction and outranks other direction signals. CL serves this role only on gravity systems. Pressure-pipe CL is mounting height, not flow direction."
+                  },
+                  {
+                    "id": "branch-description",
+                    "stage": "binding",
+                    "instruction": "A main keeps its designation through an unmarked tee. A branch with its own label includes its approach from the main to its mark when supported by topology. Do not propagate the main label into that branch."
+                  },
+                  {
+                    "id": "solid-fixtures",
+                    "stage": "binding",
+                    "instruction": "R1 and K5 describe solid fixture connections in this style. An uninsulated split-form heating label typically describes a short rise or drop, not a long insulated distribution run."
+                  },
+                  {
+                    "id": "parallel-pairs",
+                    "stage": "binding",
+                    "instruction": "Use the designation line_count from the system table: only line_count 2 permits an unlabelled parallel twin. Nx describes a bundle. VV and VVC are distinct individually labelled systems."
+                  },
+                  {
+                    "id": "mark-boundaries",
+                    "stage": "binding",
+                    "instruction": "Another designation's landing is a boundary, including an unreadable designation. A label may cover its own approach and continuation when topology supports one branch; never cross a competing designation merely to fill an unassigned stretch."
+                  }
+                ],
+                "library_id": "hyllie-ghostscript",
+                "pen_table": {
+                  "sheet": "10.pdf",
+                  "page_no": 0,
+                  "pipe_widths": [
+                    1.44,
+                    2.04
+                  ],
+                  "leader_width": 0.48,
+                  "text_height": 11.0,
+                  "u_paper": 1.0,
+                  "hairline": false,
+                  "family_method": "width rule, confirmed by 55 leader landings",
+                  "derivation": "Adjustments are the engine's derived tolerances on this sheet as ratios of the 0.48 pt leader pen (pipe family by width rule, confirmed by 55 leader landings; detector boxes and OCR labels)."
+                }
+              }
+            }
+          }
+        ],
+        "draft": {
+          "id": "style-1",
+          "name": "AutoCAD - pdfplot14-16 - Ghostscript 9.21",
+          "description": "Merged drawing family. Confirmed pipe stroke widths in the supplied samples: 1.44 / 2.04 pt. Solid, dashed, dash-dot and dash-double-dot pipes belong to this same style. Text and label formats do not define separate styles. Historical sample profiles remain archived.",
+          "version": 4,
+          "calibration": {},
+          "signatures": [
+            {
+              "pipe_ratios": [
+                4.0
+              ],
+              "ring_ratio": 7.5,
+              "layered": true
+            },
+            {
+              "pipe_ratios": [
+                3.0,
+                4.25
+              ],
+              "ring_ratio": 5.75,
+              "layered": false
+            }
+          ],
+          "rules": [
+            {
+              "id": "reading-direction",
+              "stage": "binding",
+              "instruction": "Read from the system entry towards fixtures. For gravity systems S*/D* except SL, a higher VG establishes the inward direction and outranks other direction signals. CL serves this role only on gravity systems. Pressure-pipe CL is mounting height, not flow direction."
+            },
+            {
+              "id": "branch-description",
+              "stage": "binding",
+              "instruction": "A main keeps its designation through an unmarked tee. A branch with its own label includes its approach from the main to its mark when supported by topology. Do not propagate the main label into that branch."
+            },
+            {
+              "id": "solid-fixtures",
+              "stage": "binding",
+              "instruction": "R1 and K5 describe solid fixture connections in this style. An uninsulated split-form heating label typically describes a short rise or drop, not a long insulated distribution run."
+            },
+            {
+              "id": "parallel-pairs",
+              "stage": "binding",
+              "instruction": "Use the designation line_count from the system table: only line_count 2 permits an unlabelled parallel twin. Nx describes a bundle. VV and VVC are distinct individually labelled systems."
+            },
+            {
+              "id": "mark-boundaries",
+              "stage": "binding",
+              "instruction": "Another designation's landing is a boundary, including an unreadable designation. A label may cover its own approach and continuation when topology supports one branch; never cross a competing designation merely to fill an unassigned stretch."
+            }
+          ],
+          "merged_members": [
+            "style-1",
+            "priorn-shx",
+            "hyllie-ghostscript"
+          ],
+          "library_ids": [
+            "sweco-pdfplot-strokes",
+            "priorn-shx",
+            "hyllie-ghostscript"
+          ],
+          "verified_pipe_widths": [
+            1.44,
+            2.04
+          ],
+          "source_drafts": {
+            "style-1": {
+              "id": "style-1",
+              "name": "Vinnergi - AutoCAD 2023 - pdfplot16",
+              "description": "Current VVS vector drawing conventions. Baseline migrated from the existing review engine; not a measured accuracy claim.",
+              "version": 1,
+              "calibration": {},
+              "signatures": [],
+              "rules": [
+                {
+                  "id": "reading-direction",
+                  "stage": "binding",
+                  "instruction": "Read from the system entry towards fixtures. For gravity systems S*/D* except SL, a higher VG establishes the inward direction and outranks other direction signals. CL serves this role only on gravity systems. Pressure-pipe CL is mounting height, not flow direction."
+                },
+                {
+                  "id": "branch-description",
+                  "stage": "binding",
+                  "instruction": "A main keeps its designation through an unmarked tee. A branch with its own label includes its approach from the main to its mark when supported by topology. Do not propagate the main label into that branch."
+                },
+                {
+                  "id": "solid-fixtures",
+                  "stage": "binding",
+                  "instruction": "R1 and K5 describe solid fixture connections in this style. An uninsulated split-form heating label typically describes a short rise or drop, not a long insulated distribution run."
+                },
+                {
+                  "id": "parallel-pairs",
+                  "stage": "binding",
+                  "instruction": "Use the designation line_count from the system table: only line_count 2 permits an unlabelled parallel twin. Nx describes a bundle. VV and VVC are distinct individually labelled systems."
+                },
+                {
+                  "id": "mark-boundaries",
+                  "stage": "binding",
+                  "instruction": "Another designation's landing is a boundary, including an unreadable designation. A label may cover its own approach and continuation when topology supports one branch; never cross a competing designation merely to fill an unassigned stretch."
+                }
+              ]
+            },
+            "priorn-shx": {
+              "id": "priorn-shx",
+              "name": "Sweco - AutoCAD 2018 - pdfplot14",
+              "description": "Sweco / AutoCAD 2018 via pdfplot14, SHX text as stroked glyphs (7 text objects), pipes 1.44. Baseline derived from one sample sheet of the style survey (2026-09-08); not a measured accuracy claim.",
+              "version": 1,
+              "calibration": {
+                "assemble.snap": 0.694,
+                "assemble.lateral": 0.833,
+                "assemble.wall_gap": 55.556,
+                "assemble.mark_merge": 4.167,
+                "assemble.small_ring": 4.861,
+                "associate.anchor": 11.111,
+                "associate.landing": 4.167,
+                "associate.twin_gap": 27.778,
+                "bucket.tick_rel_min": 1.8
+              },
+              "signatures": [
+                {
+                  "pipe_ratios": [
+                    4.0
+                  ],
+                  "ring_ratio": 7.5,
+                  "layered": true
+                }
+              ],
+              "rules": [
+                {
+                  "id": "reading-direction",
+                  "stage": "binding",
+                  "instruction": "Read from the system entry towards fixtures. For gravity systems S*/D* except SL, a higher VG establishes the inward direction and outranks other direction signals. CL serves this role only on gravity systems. Pressure-pipe CL is mounting height, not flow direction."
+                },
+                {
+                  "id": "branch-description",
+                  "stage": "binding",
+                  "instruction": "A main keeps its designation through an unmarked tee. A branch with its own label includes its approach from the main to its mark when supported by topology. Do not propagate the main label into that branch."
+                },
+                {
+                  "id": "solid-fixtures",
+                  "stage": "binding",
+                  "instruction": "R1 and K5 describe solid fixture connections in this style. An uninsulated split-form heating label typically describes a short rise or drop, not a long insulated distribution run."
+                },
+                {
+                  "id": "parallel-pairs",
+                  "stage": "binding",
+                  "instruction": "Use the designation line_count from the system table: only line_count 2 permits an unlabelled parallel twin. Nx describes a bundle. VV and VVC are distinct individually labelled systems."
+                },
+                {
+                  "id": "mark-boundaries",
+                  "stage": "binding",
+                  "instruction": "Another designation's landing is a boundary, including an unreadable designation. A label may cover its own approach and continuation when topology supports one branch; never cross a competing designation merely to fill an unassigned stretch."
+                }
+              ],
+              "library_id": "priorn-shx",
+              "pen_table": {
+                "sheet": "V-50-1-A0101.pdf",
+                "page_no": 0,
+                "pipe_widths": [
+                  1.44
+                ],
+                "leader_width": 0.72,
+                "text_height": 11.0,
+                "u_paper": 1.0,
+                "hairline": false,
+                "family_method": "width rule, confirmed by 30 leader landings; leader pen 0.72 (38 leaders reach a label, 2 of the 0.36 class)",
+                "derivation": "Adjustments are the engine's derived tolerances on this sheet as ratios of the 0.72 pt leader pen (pipe family by width rule, confirmed by 30 leader landings; leader pen 0.72 (38 leaders reach a label, 2 of the 0.36 class); detector boxes and OCR labels)."
+              }
+            },
+            "hyllie-ghostscript": {
+              "id": "hyllie-ghostscript",
+              "name": "Vinnergi - Bluebeam Revu - Ghostscript 9.21",
+              "description": "Otto Magnusson / Bengt Dahlgren via Ghostscript: pipes 1.44 / 2.04, architecture in grey, leader 0.48. Baseline derived from one sample sheet of the style survey (2026-09-08); not a measured accuracy claim.",
+              "version": 1,
+              "calibration": {
+                "assemble.snap": 1.042,
+                "assemble.lateral": 1.25,
+                "assemble.wall_gap": 83.333,
+                "assemble.mark_merge": 6.25,
+                "assemble.small_ring": 7.292,
+                "associate.anchor": 16.667,
+                "associate.landing": 6.25,
+                "associate.twin_gap": 41.667,
+                "bucket.tick_rel_min": 1.8
+              },
+              "signatures": [
+                {
+                  "pipe_ratios": [
+                    3.0,
+                    4.25
+                  ],
+                  "ring_ratio": 5.75,
+                  "layered": false
+                }
+              ],
+              "rules": [
+                {
+                  "id": "reading-direction",
+                  "stage": "binding",
+                  "instruction": "Read from the system entry towards fixtures. For gravity systems S*/D* except SL, a higher VG establishes the inward direction and outranks other direction signals. CL serves this role only on gravity systems. Pressure-pipe CL is mounting height, not flow direction."
+                },
+                {
+                  "id": "branch-description",
+                  "stage": "binding",
+                  "instruction": "A main keeps its designation through an unmarked tee. A branch with its own label includes its approach from the main to its mark when supported by topology. Do not propagate the main label into that branch."
+                },
+                {
+                  "id": "solid-fixtures",
+                  "stage": "binding",
+                  "instruction": "R1 and K5 describe solid fixture connections in this style. An uninsulated split-form heating label typically describes a short rise or drop, not a long insulated distribution run."
+                },
+                {
+                  "id": "parallel-pairs",
+                  "stage": "binding",
+                  "instruction": "Use the designation line_count from the system table: only line_count 2 permits an unlabelled parallel twin. Nx describes a bundle. VV and VVC are distinct individually labelled systems."
+                },
+                {
+                  "id": "mark-boundaries",
+                  "stage": "binding",
+                  "instruction": "Another designation's landing is a boundary, including an unreadable designation. A label may cover its own approach and continuation when topology supports one branch; never cross a competing designation merely to fill an unassigned stretch."
+                }
+              ],
+              "library_id": "hyllie-ghostscript",
+              "pen_table": {
+                "sheet": "10.pdf",
+                "page_no": 0,
+                "pipe_widths": [
+                  1.44,
+                  2.04
+                ],
+                "leader_width": 0.48,
+                "text_height": 11.0,
+                "u_paper": 1.0,
+                "hairline": false,
+                "family_method": "width rule, confirmed by 55 leader landings",
+                "derivation": "Adjustments are the engine's derived tolerances on this sheet as ratios of the 0.48 pt leader pen (pipe family by width rule, confirmed by 55 leader landings; detector boxes and OCR labels)."
+              }
+            }
+          }
+        },
+        "merge_revision": 1
+      },
+      "style4-heavy-dashed": {
+        "active": 1,
+        "releases": [
+          {
+            "id": "style4-heavy-dashed",
+            "name": "PQR Malmö - Bluebeam Revu - Ghostscript 9.21",
+            "description": "Ghostscript export, two-line labels (code over underlined dimension), pipes 0.96 solid and dashed, leader 0.48. Baseline derived from one sample sheet of the style survey (2026-09-08); not a measured accuracy claim.",
+            "version": 1,
+            "calibration": {
+              "assemble.snap": 0.833,
+              "assemble.lateral": 1.0,
+              "assemble.wall_gap": 83.333,
+              "assemble.mark_merge": 6.25,
+              "assemble.small_ring": 7.292,
+              "associate.anchor": 16.667,
+              "associate.landing": 6.25,
+              "associate.twin_gap": 41.667,
+              "bucket.tick_rel_min": 1.8
+            },
+            "signatures": [
+              {
+                "pipe_ratios": [
+                  6.0
+                ],
+                "ring_ratio": 11.5,
+                "layered": false
+              }
+            ],
+            "rules": [
+              {
+                "id": "reading-direction",
+                "stage": "binding",
+                "instruction": "Read from the system entry towards fixtures. For gravity systems S*/D* except SL, a higher VG establishes the inward direction and outranks other direction signals. CL serves this role only on gravity systems. Pressure-pipe CL is mounting height, not flow direction."
+              },
+              {
+                "id": "branch-description",
+                "stage": "binding",
+                "instruction": "A main keeps its designation through an unmarked tee. A branch with its own label includes its approach from the main to its mark when supported by topology. Do not propagate the main label into that branch."
+              },
+              {
+                "id": "solid-fixtures",
+                "stage": "binding",
+                "instruction": "R1 and K5 describe solid fixture connections in this style. An uninsulated split-form heating label typically describes a short rise or drop, not a long insulated distribution run."
+              },
+              {
+                "id": "parallel-pairs",
+                "stage": "binding",
+                "instruction": "Use the designation line_count from the system table: only line_count 2 permits an unlabelled parallel twin. Nx describes a bundle. VV and VVC are distinct individually labelled systems."
+              },
+              {
+                "id": "mark-boundaries",
+                "stage": "binding",
+                "instruction": "Another designation's landing is a boundary, including an unreadable designation. A label may cover its own approach and continuation when topology supports one branch; never cross a competing designation merely to fill an unassigned stretch."
+              }
+            ],
+            "library_id": "style4-heavy-dashed",
+            "pen_table": {
+              "sheet": "6.pdf",
+              "page_no": 0,
+              "pipe_widths": [
+                0.96
+              ],
+              "leader_width": 0.48,
+              "text_height": 11.0,
+              "u_paper": 1.0,
+              "hairline": false,
+              "family_method": "library starting values (style4-heavy-dashed) confirmed by the sheet, against the width rule's [1.44]",
+              "derivation": "Adjustments are the engine's derived tolerances on this sheet as ratios of the 0.48 pt leader pen (pipe family by library starting values (style4-heavy-dashed) confirmed by the sheet, against the width rule's [1.44]; detector boxes and OCR labels)."
+            }
+          }
+        ],
+        "draft": {
+          "id": "style4-heavy-dashed",
+          "name": "PQR Malmö - Bluebeam Revu - Ghostscript 9.21",
+          "description": "Ghostscript export, two-line labels (code over underlined dimension), pipes 0.96 solid and dashed, leader 0.48. Baseline derived from one sample sheet of the style survey (2026-09-08); not a measured accuracy claim.",
+          "version": 1,
+          "calibration": {
+            "assemble.snap": 0.833,
+            "assemble.lateral": 1.0,
+            "assemble.wall_gap": 83.333,
+            "assemble.mark_merge": 6.25,
+            "assemble.small_ring": 7.292,
+            "associate.anchor": 16.667,
+            "associate.landing": 6.25,
+            "associate.twin_gap": 41.667,
+            "bucket.tick_rel_min": 1.8
+          },
+          "signatures": [
+            {
+              "pipe_ratios": [
+                6.0
+              ],
+              "ring_ratio": 11.5,
+              "layered": false
+            }
+          ],
+          "rules": [
+            {
+              "id": "reading-direction",
+              "stage": "binding",
+              "instruction": "Read from the system entry towards fixtures. For gravity systems S*/D* except SL, a higher VG establishes the inward direction and outranks other direction signals. CL serves this role only on gravity systems. Pressure-pipe CL is mounting height, not flow direction."
+            },
+            {
+              "id": "branch-description",
+              "stage": "binding",
+              "instruction": "A main keeps its designation through an unmarked tee. A branch with its own label includes its approach from the main to its mark when supported by topology. Do not propagate the main label into that branch."
+            },
+            {
+              "id": "solid-fixtures",
+              "stage": "binding",
+              "instruction": "R1 and K5 describe solid fixture connections in this style. An uninsulated split-form heating label typically describes a short rise or drop, not a long insulated distribution run."
+            },
+            {
+              "id": "parallel-pairs",
+              "stage": "binding",
+              "instruction": "Use the designation line_count from the system table: only line_count 2 permits an unlabelled parallel twin. Nx describes a bundle. VV and VVC are distinct individually labelled systems."
+            },
+            {
+              "id": "mark-boundaries",
+              "stage": "binding",
+              "instruction": "Another designation's landing is a boundary, including an unreadable designation. A label may cover its own approach and continuation when topology supports one branch; never cross a competing designation merely to fill an unassigned stretch."
+            }
+          ],
+          "library_id": "style4-heavy-dashed",
+          "pen_table": {
+            "sheet": "6.pdf",
+            "page_no": 0,
+            "pipe_widths": [
+              0.96
+            ],
+            "leader_width": 0.48,
+            "text_height": 11.0,
+            "u_paper": 1.0,
+            "hairline": false,
+            "family_method": "library starting values (style4-heavy-dashed) confirmed by the sheet, against the width rule's [1.44]",
+            "derivation": "Adjustments are the engine's derived tolerances on this sheet as ratios of the 0.48 pt leader pen (pipe family by library starting values (style4-heavy-dashed) confirmed by the sheet, against the width rule's [1.44]; detector boxes and OCR labels)."
+          }
+        }
+      },
+      "style5-sewer-plan": {
+        "active": 1,
+        "releases": [
+          {
+            "id": "style5-sewer-plan",
+            "name": "Rejlers - Bluebeam Revu - Ghostscript 9.21",
+            "description": "Ghostscript export, S1 sewer runs 0.96 dashed with VG levels, leader 0.24. Baseline derived from one sample sheet of the style survey (2026-09-08); not a measured accuracy claim.",
+            "version": 1,
+            "calibration": {
+              "assemble.snap": 1.667,
+              "assemble.lateral": 2.0,
+              "assemble.wall_gap": 166.667,
+              "assemble.mark_merge": 12.5,
+              "assemble.small_ring": 14.583,
+              "associate.anchor": 33.333,
+              "associate.landing": 12.5,
+              "associate.twin_gap": 83.333,
+              "bucket.tick_rel_min": 1.8
+            },
+            "signatures": [
+              {
+                "pipe_ratios": [],
+                "ring_ratio": 17.0,
+                "layered": false
+              }
+            ],
+            "rules": [
+              {
+                "id": "reading-direction",
+                "stage": "binding",
+                "instruction": "Read from the system entry towards fixtures. For gravity systems S*/D* except SL, a higher VG establishes the inward direction and outranks other direction signals. CL serves this role only on gravity systems. Pressure-pipe CL is mounting height, not flow direction."
+              },
+              {
+                "id": "branch-description",
+                "stage": "binding",
+                "instruction": "A main keeps its designation through an unmarked tee. A branch with its own label includes its approach from the main to its mark when supported by topology. Do not propagate the main label into that branch."
+              },
+              {
+                "id": "solid-fixtures",
+                "stage": "binding",
+                "instruction": "R1 and K5 describe solid fixture connections in this style. An uninsulated split-form heating label typically describes a short rise or drop, not a long insulated distribution run."
+              },
+              {
+                "id": "parallel-pairs",
+                "stage": "binding",
+                "instruction": "Use the designation line_count from the system table: only line_count 2 permits an unlabelled parallel twin. Nx describes a bundle. VV and VVC are distinct individually labelled systems."
+              },
+              {
+                "id": "mark-boundaries",
+                "stage": "binding",
+                "instruction": "Another designation's landing is a boundary, including an unreadable designation. A label may cover its own approach and continuation when topology supports one branch; never cross a competing designation merely to fill an unassigned stretch."
+              }
+            ],
+            "library_id": "style5-sewer-plan",
+            "pen_table": {
+              "sheet": "2.pdf",
+              "page_no": 0,
+              "pipe_widths": [
+                0.96
+              ],
+              "leader_width": 0.24,
+              "text_height": 11.0,
+              "u_paper": 1.0,
+              "hairline": false,
+              "family_method": "library starting values (style5-sewer-plan) confirmed by the sheet",
+              "derivation": "Adjustments are the engine's derived tolerances on this sheet as ratios of the 0.24 pt leader pen (pipe family by library starting values (style5-sewer-plan) confirmed by the sheet; detector boxes and OCR labels)."
+            }
+          }
+        ],
+        "draft": {
+          "id": "style5-sewer-plan",
+          "name": "Rejlers - Bluebeam Revu - Ghostscript 9.21",
+          "description": "Ghostscript export, S1 sewer runs 0.96 dashed with VG levels, leader 0.24. Baseline derived from one sample sheet of the style survey (2026-09-08); not a measured accuracy claim.",
+          "version": 1,
+          "calibration": {
+            "assemble.snap": 1.667,
+            "assemble.lateral": 2.0,
+            "assemble.wall_gap": 166.667,
+            "assemble.mark_merge": 12.5,
+            "assemble.small_ring": 14.583,
+            "associate.anchor": 33.333,
+            "associate.landing": 12.5,
+            "associate.twin_gap": 83.333,
+            "bucket.tick_rel_min": 1.8
+          },
+          "signatures": [
+            {
+              "pipe_ratios": [],
+              "ring_ratio": 17.0,
+              "layered": false
+            }
+          ],
+          "rules": [
+            {
+              "id": "reading-direction",
+              "stage": "binding",
+              "instruction": "Read from the system entry towards fixtures. For gravity systems S*/D* except SL, a higher VG establishes the inward direction and outranks other direction signals. CL serves this role only on gravity systems. Pressure-pipe CL is mounting height, not flow direction."
+            },
+            {
+              "id": "branch-description",
+              "stage": "binding",
+              "instruction": "A main keeps its designation through an unmarked tee. A branch with its own label includes its approach from the main to its mark when supported by topology. Do not propagate the main label into that branch."
+            },
+            {
+              "id": "solid-fixtures",
+              "stage": "binding",
+              "instruction": "R1 and K5 describe solid fixture connections in this style. An uninsulated split-form heating label typically describes a short rise or drop, not a long insulated distribution run."
+            },
+            {
+              "id": "parallel-pairs",
+              "stage": "binding",
+              "instruction": "Use the designation line_count from the system table: only line_count 2 permits an unlabelled parallel twin. Nx describes a bundle. VV and VVC are distinct individually labelled systems."
+            },
+            {
+              "id": "mark-boundaries",
+              "stage": "binding",
+              "instruction": "Another designation's landing is a boundary, including an unreadable designation. A label may cover its own approach and continuation when topology supports one branch; never cross a competing designation merely to fill an unassigned stretch."
+            }
+          ],
+          "library_id": "style5-sewer-plan",
+          "pen_table": {
+            "sheet": "2.pdf",
+            "page_no": 0,
+            "pipe_widths": [
+              0.96
+            ],
+            "leader_width": 0.24,
+            "text_height": 11.0,
+            "u_paper": 1.0,
+            "hairline": false,
+            "family_method": "library starting values (style5-sewer-plan) confirmed by the sheet",
+            "derivation": "Adjustments are the engine's derived tolerances on this sheet as ratios of the 0.24 pt leader pen (pipe family by library starting values (style5-sewer-plan) confirmed by the sheet; detector boxes and OCR labels)."
+          }
+        }
+      },
+      "style6-single-width": {
+        "active": 1,
+        "releases": [
+          {
+            "id": "style6-single-width",
+            "name": "Sweco - Bluebeam Brewery 5.0 - Uniform Stroke",
+            "description": "Every stroke 0.36 pt and no text objects: not solvable by width, labels only from the detector. Baseline derived from one sample sheet of the style survey (2026-09-08); not a measured accuracy claim.",
+            "version": 1,
+            "calibration": {
+              "assemble.snap": 0.833,
+              "assemble.lateral": 0.833,
+              "assemble.wall_gap": 111.111,
+              "assemble.mark_merge": 8.333,
+              "assemble.small_ring": 9.722,
+              "associate.anchor": 22.222,
+              "associate.landing": 8.333,
+              "associate.twin_gap": 55.556,
+              "bucket.tick_rel_min": 1.8
+            },
+            "signatures": [
+              {
+                "pipe_ratios": [],
+                "ring_ratio": 0,
+                "layered": false
+              }
+            ],
+            "rules": [
+              {
+                "id": "reading-direction",
+                "stage": "binding",
+                "instruction": "Read from the system entry towards fixtures. For gravity systems S*/D* except SL, a higher VG establishes the inward direction and outranks other direction signals. CL serves this role only on gravity systems. Pressure-pipe CL is mounting height, not flow direction."
+              },
+              {
+                "id": "branch-description",
+                "stage": "binding",
+                "instruction": "A main keeps its designation through an unmarked tee. A branch with its own label includes its approach from the main to its mark when supported by topology. Do not propagate the main label into that branch."
+              },
+              {
+                "id": "solid-fixtures",
+                "stage": "binding",
+                "instruction": "R1 and K5 describe solid fixture connections in this style. An uninsulated split-form heating label typically describes a short rise or drop, not a long insulated distribution run."
+              },
+              {
+                "id": "parallel-pairs",
+                "stage": "binding",
+                "instruction": "Use the designation line_count from the system table: only line_count 2 permits an unlabelled parallel twin. Nx describes a bundle. VV and VVC are distinct individually labelled systems."
+              },
+              {
+                "id": "mark-boundaries",
+                "stage": "binding",
+                "instruction": "Another designation's landing is a boundary, including an unreadable designation. A label may cover its own approach and continuation when topology supports one branch; never cross a competing designation merely to fill an unassigned stretch."
+              }
+            ],
+            "library_id": "style6-single-width",
+            "pen_table": {
+              "sheet": "R1502.pdf",
+              "page_no": 0,
+              "pipe_widths": [
+                0.36
+              ],
+              "leader_width": 0.36,
+              "text_height": 11.0,
+              "u_paper": 1.0,
+              "hairline": false,
+              "family_method": "heaviest common black class (no class passed the width rule, only 0 leader landings)",
+              "derivation": "Adjustments are the engine's derived tolerances on this sheet as ratios of the 0.36 pt leader pen (pipe family by heaviest common black class (no class passed the width rule, only 0 leader landings); label boxes from the PDF text only)."
+            }
+          }
+        ],
+        "draft": {
+          "id": "style6-single-width",
+          "name": "Sweco - Bluebeam Brewery 5.0 - Uniform Stroke",
+          "description": "Every stroke 0.36 pt and no text objects: not solvable by width, labels only from the detector. Baseline derived from one sample sheet of the style survey (2026-09-08); not a measured accuracy claim.",
+          "version": 1,
+          "calibration": {
+            "assemble.snap": 0.833,
+            "assemble.lateral": 0.833,
+            "assemble.wall_gap": 111.111,
+            "assemble.mark_merge": 8.333,
+            "assemble.small_ring": 9.722,
+            "associate.anchor": 22.222,
+            "associate.landing": 8.333,
+            "associate.twin_gap": 55.556,
+            "bucket.tick_rel_min": 1.8
+          },
+          "signatures": [
+            {
+              "pipe_ratios": [],
+              "ring_ratio": 0,
+              "layered": false
+            }
+          ],
+          "rules": [
+            {
+              "id": "reading-direction",
+              "stage": "binding",
+              "instruction": "Read from the system entry towards fixtures. For gravity systems S*/D* except SL, a higher VG establishes the inward direction and outranks other direction signals. CL serves this role only on gravity systems. Pressure-pipe CL is mounting height, not flow direction."
+            },
+            {
+              "id": "branch-description",
+              "stage": "binding",
+              "instruction": "A main keeps its designation through an unmarked tee. A branch with its own label includes its approach from the main to its mark when supported by topology. Do not propagate the main label into that branch."
+            },
+            {
+              "id": "solid-fixtures",
+              "stage": "binding",
+              "instruction": "R1 and K5 describe solid fixture connections in this style. An uninsulated split-form heating label typically describes a short rise or drop, not a long insulated distribution run."
+            },
+            {
+              "id": "parallel-pairs",
+              "stage": "binding",
+              "instruction": "Use the designation line_count from the system table: only line_count 2 permits an unlabelled parallel twin. Nx describes a bundle. VV and VVC are distinct individually labelled systems."
+            },
+            {
+              "id": "mark-boundaries",
+              "stage": "binding",
+              "instruction": "Another designation's landing is a boundary, including an unreadable designation. A label may cover its own approach and continuation when topology supports one branch; never cross a competing designation merely to fill an unassigned stretch."
+            }
+          ],
+          "library_id": "style6-single-width",
+          "pen_table": {
+            "sheet": "R1502.pdf",
+            "page_no": 0,
+            "pipe_widths": [
+              0.36
+            ],
+            "leader_width": 0.36,
+            "text_height": 11.0,
+            "u_paper": 1.0,
+            "hairline": false,
+            "family_method": "heaviest common black class (no class passed the width rule, only 0 leader landings)",
+            "derivation": "Adjustments are the engine's derived tolerances on this sheet as ratios of the 0.36 pt leader pen (pipe family by heaviest common black class (no class passed the width rule, only 0 leader landings); label boxes from the PDF text only)."
+          }
+        }
+      },
+      "style9-thin-dashdot": {
+        "active": 1,
+        "releases": [
+          {
+            "id": "style9-thin-dashdot",
+            "name": "Kjell Petersson - Bluebeam Revu - Ghostscript 9.21",
+            "description": "Bluebeam Revu export, few labels, walls 0.99, dash-dot pipes 0.72: pipe family unresolved, recognition only. Baseline derived from one sample sheet of the style survey (2026-09-08); not a measured accuracy claim.",
+            "version": 1,
+            "calibration": {
+              "assemble.snap": 0.458,
+              "assemble.lateral": 0.55,
+              "assemble.wall_gap": 44.444,
+              "assemble.mark_merge": 3.333,
+              "assemble.small_ring": 3.889,
+              "associate.anchor": 8.889,
+              "associate.landing": 4.167,
+              "associate.twin_gap": 27.778,
+              "bucket.tick_rel_min": 1.8
+            },
+            "signatures": [
+              {
+                "pipe_ratios": [],
+                "ring_ratio": 5.59,
+                "layered": false
+              }
+            ],
+            "rules": [
+              {
+                "id": "reading-direction",
+                "stage": "binding",
+                "instruction": "Read from the system entry towards fixtures. For gravity systems S*/D* except SL, a higher VG establishes the inward direction and outranks other direction signals. CL serves this role only on gravity systems. Pressure-pipe CL is mounting height, not flow direction."
+              },
+              {
+                "id": "branch-description",
+                "stage": "binding",
+                "instruction": "A main keeps its designation through an unmarked tee. A branch with its own label includes its approach from the main to its mark when supported by topology. Do not propagate the main label into that branch."
+              },
+              {
+                "id": "solid-fixtures",
+                "stage": "binding",
+                "instruction": "R1 and K5 describe solid fixture connections in this style. An uninsulated split-form heating label typically describes a short rise or drop, not a long insulated distribution run."
+              },
+              {
+                "id": "parallel-pairs",
+                "stage": "binding",
+                "instruction": "Use the designation line_count from the system table: only line_count 2 permits an unlabelled parallel twin. Nx describes a bundle. VV and VVC are distinct individually labelled systems."
+              },
+              {
+                "id": "mark-boundaries",
+                "stage": "binding",
+                "instruction": "Another designation's landing is a boundary, including an unreadable designation. A label may cover its own approach and continuation when topology supports one branch; never cross a competing designation merely to fill an unassigned stretch."
+              }
+            ],
+            "library_id": "style9-thin-dashdot",
+            "pen_table": {
+              "sheet": "10.pdf",
+              "page_no": 0,
+              "pipe_widths": [
+                0.99
+              ],
+              "leader_width": 0.72,
+              "text_height": 8.8,
+              "u_paper": 0.8,
+              "hairline": false,
+              "family_method": "width rule, confirmed by 13 leader landings; leader pen 0.72 (12 leaders reach a label, 0 of the 0.51 class)",
+              "derivation": "Adjustments are the engine's derived tolerances on this sheet as ratios of the 0.72 pt leader pen (pipe family by width rule, confirmed by 13 leader landings; leader pen 0.72 (12 leaders reach a label, 0 of the 0.51 class); label boxes from the PDF text only)."
+            }
+          }
+        ],
+        "draft": {
+          "id": "style9-thin-dashdot",
+          "name": "Kjell Petersson - Bluebeam Revu - Ghostscript 9.21",
+          "description": "Bluebeam Revu export, few labels, walls 0.99, dash-dot pipes 0.72: pipe family unresolved, recognition only. Baseline derived from one sample sheet of the style survey (2026-09-08); not a measured accuracy claim.",
+          "version": 1,
+          "calibration": {
+            "assemble.snap": 0.458,
+            "assemble.lateral": 0.55,
+            "assemble.wall_gap": 44.444,
+            "assemble.mark_merge": 3.333,
+            "assemble.small_ring": 3.889,
+            "associate.anchor": 8.889,
+            "associate.landing": 4.167,
+            "associate.twin_gap": 27.778,
+            "bucket.tick_rel_min": 1.8
+          },
+          "signatures": [
+            {
+              "pipe_ratios": [],
+              "ring_ratio": 5.59,
+              "layered": false
+            }
+          ],
+          "rules": [
+            {
+              "id": "reading-direction",
+              "stage": "binding",
+              "instruction": "Read from the system entry towards fixtures. For gravity systems S*/D* except SL, a higher VG establishes the inward direction and outranks other direction signals. CL serves this role only on gravity systems. Pressure-pipe CL is mounting height, not flow direction."
+            },
+            {
+              "id": "branch-description",
+              "stage": "binding",
+              "instruction": "A main keeps its designation through an unmarked tee. A branch with its own label includes its approach from the main to its mark when supported by topology. Do not propagate the main label into that branch."
+            },
+            {
+              "id": "solid-fixtures",
+              "stage": "binding",
+              "instruction": "R1 and K5 describe solid fixture connections in this style. An uninsulated split-form heating label typically describes a short rise or drop, not a long insulated distribution run."
+            },
+            {
+              "id": "parallel-pairs",
+              "stage": "binding",
+              "instruction": "Use the designation line_count from the system table: only line_count 2 permits an unlabelled parallel twin. Nx describes a bundle. VV and VVC are distinct individually labelled systems."
+            },
+            {
+              "id": "mark-boundaries",
+              "stage": "binding",
+              "instruction": "Another designation's landing is a boundary, including an unreadable designation. A label may cover its own approach and continuation when topology supports one branch; never cross a competing designation merely to fill an unassigned stretch."
+            }
+          ],
+          "library_id": "style9-thin-dashdot",
+          "pen_table": {
+            "sheet": "10.pdf",
+            "page_no": 0,
+            "pipe_widths": [
+              0.99
+            ],
+            "leader_width": 0.72,
+            "text_height": 8.8,
+            "u_paper": 0.8,
+            "hairline": false,
+            "family_method": "width rule, confirmed by 13 leader landings; leader pen 0.72 (12 leaders reach a label, 0 of the 0.51 class)",
+            "derivation": "Adjustments are the engine's derived tolerances on this sheet as ratios of the 0.72 pt leader pen (pipe family by width rule, confirmed by 13 leader landings; leader pen 0.72 (12 leaders reach a label, 0 of the 0.51 class); label boxes from the PDF text only)."
+          }
+        }
+      },
+      "sweco-pdfplot-text": {
+        "active": 1,
+        "releases": [
+          {
+            "id": "sweco-pdfplot-text",
+            "name": "Sweco - AutoCAD MEP 2020 - pdfplot15",
+            "description": "Sweco / AutoCAD MEP via pdfplot, real ISOCPEUR text, pipes 1.44 / 2.28, leader 0.72 (0.36 is revision clouds). Baseline derived from one sample sheet of the style survey (2026-09-08); not a measured accuracy claim.",
+            "version": 1,
+            "calibration": {
+              "assemble.snap": 0.694,
+              "assemble.lateral": 0.833,
+              "assemble.wall_gap": 55.556,
+              "assemble.mark_merge": 4.167,
+              "assemble.small_ring": 4.861,
+              "associate.anchor": 11.111,
+              "associate.landing": 4.167,
+              "associate.twin_gap": 27.778,
+              "bucket.tick_rel_min": 1.8
+            },
+            "signatures": [
+              {
+                "pipe_ratios": [
+                  4.0,
+                  6.33
+                ],
+                "ring_ratio": 7.14,
+                "layered": true
+              }
+            ],
+            "rules": [
+              {
+                "id": "reading-direction",
+                "stage": "binding",
+                "instruction": "Read from the system entry towards fixtures. For gravity systems S*/D* except SL, a higher VG establishes the inward direction and outranks other direction signals. CL serves this role only on gravity systems. Pressure-pipe CL is mounting height, not flow direction."
+              },
+              {
+                "id": "branch-description",
+                "stage": "binding",
+                "instruction": "A main keeps its designation through an unmarked tee. A branch with its own label includes its approach from the main to its mark when supported by topology. Do not propagate the main label into that branch."
+              },
+              {
+                "id": "solid-fixtures",
+                "stage": "binding",
+                "instruction": "R1 and K5 describe solid fixture connections in this style. An uninsulated split-form heating label typically describes a short rise or drop, not a long insulated distribution run."
+              },
+              {
+                "id": "parallel-pairs",
+                "stage": "binding",
+                "instruction": "Use the designation line_count from the system table: only line_count 2 permits an unlabelled parallel twin. Nx describes a bundle. VV and VVC are distinct individually labelled systems."
+              },
+              {
+                "id": "mark-boundaries",
+                "stage": "binding",
+                "instruction": "Another designation's landing is a boundary, including an unreadable designation. A label may cover its own approach and continuation when topology supports one branch; never cross a competing designation merely to fill an unassigned stretch."
+              }
+            ],
+            "library_id": "sweco-pdfplot-text",
+            "pen_table": {
+              "sheet": "V-50-1-A0122.pdf",
+              "page_no": 0,
+              "pipe_widths": [
+                1.44,
+                2.28
+              ],
+              "leader_width": 0.72,
+              "text_height": 11.0,
+              "u_paper": 1.0,
+              "hairline": false,
+              "family_method": "width rule, confirmed by 31 leader landings; leader pen 0.72 (49 leaders reach a label, 2 of the 0.36 class)",
+              "derivation": "Adjustments are the engine's derived tolerances on this sheet as ratios of the 0.72 pt leader pen (pipe family by width rule, confirmed by 31 leader landings; leader pen 0.72 (49 leaders reach a label, 2 of the 0.36 class); detector boxes and OCR labels)."
+            }
+          }
+        ],
+        "draft": {
+          "id": "sweco-pdfplot-text",
+          "name": "Sweco - AutoCAD MEP 2020 - pdfplot15",
+          "description": "Sweco / AutoCAD MEP via pdfplot, real ISOCPEUR text, pipes 1.44 / 2.28, leader 0.72 (0.36 is revision clouds). Baseline derived from one sample sheet of the style survey (2026-09-08); not a measured accuracy claim.",
+          "version": 1,
+          "calibration": {
+            "assemble.snap": 0.694,
+            "assemble.lateral": 0.833,
+            "assemble.wall_gap": 55.556,
+            "assemble.mark_merge": 4.167,
+            "assemble.small_ring": 4.861,
+            "associate.anchor": 11.111,
+            "associate.landing": 4.167,
+            "associate.twin_gap": 27.778,
+            "bucket.tick_rel_min": 1.8
+          },
+          "signatures": [
+            {
+              "pipe_ratios": [
+                4.0,
+                6.33
+              ],
+              "ring_ratio": 7.14,
+              "layered": true
+            }
+          ],
+          "rules": [
+            {
+              "id": "reading-direction",
+              "stage": "binding",
+              "instruction": "Read from the system entry towards fixtures. For gravity systems S*/D* except SL, a higher VG establishes the inward direction and outranks other direction signals. CL serves this role only on gravity systems. Pressure-pipe CL is mounting height, not flow direction."
+            },
+            {
+              "id": "branch-description",
+              "stage": "binding",
+              "instruction": "A main keeps its designation through an unmarked tee. A branch with its own label includes its approach from the main to its mark when supported by topology. Do not propagate the main label into that branch."
+            },
+            {
+              "id": "solid-fixtures",
+              "stage": "binding",
+              "instruction": "R1 and K5 describe solid fixture connections in this style. An uninsulated split-form heating label typically describes a short rise or drop, not a long insulated distribution run."
+            },
+            {
+              "id": "parallel-pairs",
+              "stage": "binding",
+              "instruction": "Use the designation line_count from the system table: only line_count 2 permits an unlabelled parallel twin. Nx describes a bundle. VV and VVC are distinct individually labelled systems."
+            },
+            {
+              "id": "mark-boundaries",
+              "stage": "binding",
+              "instruction": "Another designation's landing is a boundary, including an unreadable designation. A label may cover its own approach and continuation when topology supports one branch; never cross a competing designation merely to fill an unassigned stretch."
+            }
+          ],
+          "library_id": "sweco-pdfplot-text",
+          "pen_table": {
+            "sheet": "V-50-1-A0122.pdf",
+            "page_no": 0,
+            "pipe_widths": [
+              1.44,
+              2.28
+            ],
+            "leader_width": 0.72,
+            "text_height": 11.0,
+            "u_paper": 1.0,
+            "hairline": false,
+            "family_method": "width rule, confirmed by 31 leader landings; leader pen 0.72 (49 leaders reach a label, 2 of the 0.36 class)",
+            "derivation": "Adjustments are the engine's derived tolerances on this sheet as ratios of the 0.72 pt leader pen (pipe family by width rule, confirmed by 31 leader landings; leader pen 0.72 (49 leaders reach a label, 2 of the 0.36 class); detector boxes and OCR labels)."
+          }
+        }
+      },
+      "hyllie-ghostscript": {
+        "active": 1,
+        "releases": [
+          {
+            "id": "hyllie-ghostscript",
+            "name": "Vinnergi - Bluebeam Revu - Ghostscript 9.21",
+            "description": "Otto Magnusson / Bengt Dahlgren via Ghostscript: pipes 1.44 / 2.04, architecture in grey, leader 0.48. Baseline derived from one sample sheet of the style survey (2026-09-08); not a measured accuracy claim.",
+            "version": 1,
+            "calibration": {
+              "assemble.snap": 1.042,
+              "assemble.lateral": 1.25,
+              "assemble.wall_gap": 83.333,
+              "assemble.mark_merge": 6.25,
+              "assemble.small_ring": 7.292,
+              "associate.anchor": 16.667,
+              "associate.landing": 6.25,
+              "associate.twin_gap": 41.667,
+              "bucket.tick_rel_min": 1.8
+            },
+            "signatures": [
+              {
+                "pipe_ratios": [
+                  3.0,
+                  4.25
+                ],
+                "ring_ratio": 5.75,
+                "layered": false
+              }
+            ],
+            "rules": [
+              {
+                "id": "reading-direction",
+                "stage": "binding",
+                "instruction": "Read from the system entry towards fixtures. For gravity systems S*/D* except SL, a higher VG establishes the inward direction and outranks other direction signals. CL serves this role only on gravity systems. Pressure-pipe CL is mounting height, not flow direction."
+              },
+              {
+                "id": "branch-description",
+                "stage": "binding",
+                "instruction": "A main keeps its designation through an unmarked tee. A branch with its own label includes its approach from the main to its mark when supported by topology. Do not propagate the main label into that branch."
+              },
+              {
+                "id": "solid-fixtures",
+                "stage": "binding",
+                "instruction": "R1 and K5 describe solid fixture connections in this style. An uninsulated split-form heating label typically describes a short rise or drop, not a long insulated distribution run."
+              },
+              {
+                "id": "parallel-pairs",
+                "stage": "binding",
+                "instruction": "Use the designation line_count from the system table: only line_count 2 permits an unlabelled parallel twin. Nx describes a bundle. VV and VVC are distinct individually labelled systems."
+              },
+              {
+                "id": "mark-boundaries",
+                "stage": "binding",
+                "instruction": "Another designation's landing is a boundary, including an unreadable designation. A label may cover its own approach and continuation when topology supports one branch; never cross a competing designation merely to fill an unassigned stretch."
+              }
+            ],
+            "library_id": "hyllie-ghostscript",
+            "pen_table": {
+              "sheet": "10.pdf",
+              "page_no": 0,
+              "pipe_widths": [
+                1.44,
+                2.04
+              ],
+              "leader_width": 0.48,
+              "text_height": 11.0,
+              "u_paper": 1.0,
+              "hairline": false,
+              "family_method": "width rule, confirmed by 55 leader landings",
+              "derivation": "Adjustments are the engine's derived tolerances on this sheet as ratios of the 0.48 pt leader pen (pipe family by width rule, confirmed by 55 leader landings; detector boxes and OCR labels)."
+            }
+          }
+        ],
+        "draft": {
+          "id": "hyllie-ghostscript",
+          "name": "Vinnergi - Bluebeam Revu - Ghostscript 9.21",
+          "description": "Otto Magnusson / Bengt Dahlgren via Ghostscript: pipes 1.44 / 2.04, architecture in grey, leader 0.48. Baseline derived from one sample sheet of the style survey (2026-09-08); not a measured accuracy claim.",
+          "version": 1,
+          "calibration": {
+            "assemble.snap": 1.042,
+            "assemble.lateral": 1.25,
+            "assemble.wall_gap": 83.333,
+            "assemble.mark_merge": 6.25,
+            "assemble.small_ring": 7.292,
+            "associate.anchor": 16.667,
+            "associate.landing": 6.25,
+            "associate.twin_gap": 41.667,
+            "bucket.tick_rel_min": 1.8
+          },
+          "signatures": [
+            {
+              "pipe_ratios": [
+                3.0,
+                4.25
+              ],
+              "ring_ratio": 5.75,
+              "layered": false
+            }
+          ],
+          "rules": [
+            {
+              "id": "reading-direction",
+              "stage": "binding",
+              "instruction": "Read from the system entry towards fixtures. For gravity systems S*/D* except SL, a higher VG establishes the inward direction and outranks other direction signals. CL serves this role only on gravity systems. Pressure-pipe CL is mounting height, not flow direction."
+            },
+            {
+              "id": "branch-description",
+              "stage": "binding",
+              "instruction": "A main keeps its designation through an unmarked tee. A branch with its own label includes its approach from the main to its mark when supported by topology. Do not propagate the main label into that branch."
+            },
+            {
+              "id": "solid-fixtures",
+              "stage": "binding",
+              "instruction": "R1 and K5 describe solid fixture connections in this style. An uninsulated split-form heating label typically describes a short rise or drop, not a long insulated distribution run."
+            },
+            {
+              "id": "parallel-pairs",
+              "stage": "binding",
+              "instruction": "Use the designation line_count from the system table: only line_count 2 permits an unlabelled parallel twin. Nx describes a bundle. VV and VVC are distinct individually labelled systems."
+            },
+            {
+              "id": "mark-boundaries",
+              "stage": "binding",
+              "instruction": "Another designation's landing is a boundary, including an unreadable designation. A label may cover its own approach and continuation when topology supports one branch; never cross a competing designation merely to fill an unassigned stretch."
+            }
+          ],
+          "library_id": "hyllie-ghostscript",
+          "pen_table": {
+            "sheet": "10.pdf",
+            "page_no": 0,
+            "pipe_widths": [
+              1.44,
+              2.04
+            ],
+            "leader_width": 0.48,
+            "text_height": 11.0,
+            "u_paper": 1.0,
+            "hairline": false,
+            "family_method": "width rule, confirmed by 55 leader landings",
+            "derivation": "Adjustments are the engine's derived tolerances on this sheet as ratios of the 0.48 pt leader pen (pipe family by width rule, confirmed by 55 leader landings; detector boxes and OCR labels)."
+          }
+        }
+      },
+      "lopoglan-booklet": {
+        "active": 1,
+        "releases": [
+          {
+            "id": "lopoglan-booklet",
+            "name": "Bengt Dahlgren Syd - Ghostscript 9.21",
+            "description": "Ghostscript booklet with A4 covers, A1 plans: pipes 0.72, grid lines 0.27. Baseline derived from one sample sheet of the style survey (2026-09-08); not a measured accuracy claim.",
+            "version": 1,
+            "calibration": {
+              "assemble.snap": 1.111,
+              "assemble.lateral": 1.333,
+              "assemble.wall_gap": 148.148,
+              "assemble.mark_merge": 11.111,
+              "assemble.small_ring": 12.963,
+              "associate.anchor": 29.63,
+              "associate.landing": 11.111,
+              "associate.twin_gap": 74.074,
+              "bucket.tick_rel_min": 1.8
+            },
+            "signatures": [
+              {
+                "pipe_ratios": [],
+                "ring_ratio": 7.89,
+                "layered": false
+              }
+            ],
+            "rules": [
+              {
+                "id": "reading-direction",
+                "stage": "binding",
+                "instruction": "Read from the system entry towards fixtures. For gravity systems S*/D* except SL, a higher VG establishes the inward direction and outranks other direction signals. CL serves this role only on gravity systems. Pressure-pipe CL is mounting height, not flow direction."
+              },
+              {
+                "id": "branch-description",
+                "stage": "binding",
+                "instruction": "A main keeps its designation through an unmarked tee. A branch with its own label includes its approach from the main to its mark when supported by topology. Do not propagate the main label into that branch."
+              },
+              {
+                "id": "solid-fixtures",
+                "stage": "binding",
+                "instruction": "R1 and K5 describe solid fixture connections in this style. An uninsulated split-form heating label typically describes a short rise or drop, not a long insulated distribution run."
+              },
+              {
+                "id": "parallel-pairs",
+                "stage": "binding",
+                "instruction": "Use the designation line_count from the system table: only line_count 2 permits an unlabelled parallel twin. Nx describes a bundle. VV and VVC are distinct individually labelled systems."
+              },
+              {
+                "id": "mark-boundaries",
+                "stage": "binding",
+                "instruction": "Another designation's landing is a boundary, including an unreadable designation. A label may cover its own approach and continuation when topology supports one branch; never cross a competing designation merely to fill an unassigned stretch."
+              }
+            ],
+            "library_id": "lopoglan-booklet",
+            "pen_table": {
+              "sheet": "Löpöglan 2.pdf",
+              "page_no": 3,
+              "pipe_widths": [
+                0.72
+              ],
+              "leader_width": 0.27,
+              "text_height": 11.0,
+              "u_paper": 1.0,
+              "hairline": false,
+              "family_method": "library starting values (lopoglan-booklet) confirmed by the sheet",
+              "derivation": "Adjustments are the engine's derived tolerances on this sheet as ratios of the 0.27 pt leader pen (pipe family by library starting values (lopoglan-booklet) confirmed by the sheet; detector boxes and OCR labels)."
+            }
+          }
+        ],
+        "draft": {
+          "id": "lopoglan-booklet",
+          "name": "Bengt Dahlgren Syd - Ghostscript 9.21",
+          "description": "Ghostscript booklet with A4 covers, A1 plans: pipes 0.72, grid lines 0.27. Baseline derived from one sample sheet of the style survey (2026-09-08); not a measured accuracy claim.",
+          "version": 1,
+          "calibration": {
+            "assemble.snap": 1.111,
+            "assemble.lateral": 1.333,
+            "assemble.wall_gap": 148.148,
+            "assemble.mark_merge": 11.111,
+            "assemble.small_ring": 12.963,
+            "associate.anchor": 29.63,
+            "associate.landing": 11.111,
+            "associate.twin_gap": 74.074,
+            "bucket.tick_rel_min": 1.8
+          },
+          "signatures": [
+            {
+              "pipe_ratios": [],
+              "ring_ratio": 7.89,
+              "layered": false
+            }
+          ],
+          "rules": [
+            {
+              "id": "reading-direction",
+              "stage": "binding",
+              "instruction": "Read from the system entry towards fixtures. For gravity systems S*/D* except SL, a higher VG establishes the inward direction and outranks other direction signals. CL serves this role only on gravity systems. Pressure-pipe CL is mounting height, not flow direction."
+            },
+            {
+              "id": "branch-description",
+              "stage": "binding",
+              "instruction": "A main keeps its designation through an unmarked tee. A branch with its own label includes its approach from the main to its mark when supported by topology. Do not propagate the main label into that branch."
+            },
+            {
+              "id": "solid-fixtures",
+              "stage": "binding",
+              "instruction": "R1 and K5 describe solid fixture connections in this style. An uninsulated split-form heating label typically describes a short rise or drop, not a long insulated distribution run."
+            },
+            {
+              "id": "parallel-pairs",
+              "stage": "binding",
+              "instruction": "Use the designation line_count from the system table: only line_count 2 permits an unlabelled parallel twin. Nx describes a bundle. VV and VVC are distinct individually labelled systems."
+            },
+            {
+              "id": "mark-boundaries",
+              "stage": "binding",
+              "instruction": "Another designation's landing is a boundary, including an unreadable designation. A label may cover its own approach and continuation when topology supports one branch; never cross a competing designation merely to fill an unassigned stretch."
+            }
+          ],
+          "library_id": "lopoglan-booklet",
+          "pen_table": {
+            "sheet": "Löpöglan 2.pdf",
+            "page_no": 3,
+            "pipe_widths": [
+              0.72
+            ],
+            "leader_width": 0.27,
+            "text_height": 11.0,
+            "u_paper": 1.0,
+            "hairline": false,
+            "family_method": "library starting values (lopoglan-booklet) confirmed by the sheet",
+            "derivation": "Adjustments are the engine's derived tolerances on this sheet as ratios of the 0.27 pt leader pen (pipe family by library starting values (lopoglan-booklet) confirmed by the sheet; detector boxes and OCR labels)."
+          }
+        }
+      },
+      "priorn-shx": {
+        "active": 1,
+        "releases": [
+          {
+            "id": "priorn-shx",
+            "name": "Sweco - AutoCAD 2018 - pdfplot14",
+            "description": "Sweco / AutoCAD 2018 via pdfplot14, SHX text as stroked glyphs (7 text objects), pipes 1.44. Baseline derived from one sample sheet of the style survey (2026-09-08); not a measured accuracy claim.",
+            "version": 1,
+            "calibration": {
+              "assemble.snap": 0.694,
+              "assemble.lateral": 0.833,
+              "assemble.wall_gap": 55.556,
+              "assemble.mark_merge": 4.167,
+              "assemble.small_ring": 4.861,
+              "associate.anchor": 11.111,
+              "associate.landing": 4.167,
+              "associate.twin_gap": 27.778,
+              "bucket.tick_rel_min": 1.8
+            },
+            "signatures": [
+              {
+                "pipe_ratios": [
+                  4.0
+                ],
+                "ring_ratio": 7.5,
+                "layered": true
+              }
+            ],
+            "rules": [
+              {
+                "id": "reading-direction",
+                "stage": "binding",
+                "instruction": "Read from the system entry towards fixtures. For gravity systems S*/D* except SL, a higher VG establishes the inward direction and outranks other direction signals. CL serves this role only on gravity systems. Pressure-pipe CL is mounting height, not flow direction."
+              },
+              {
+                "id": "branch-description",
+                "stage": "binding",
+                "instruction": "A main keeps its designation through an unmarked tee. A branch with its own label includes its approach from the main to its mark when supported by topology. Do not propagate the main label into that branch."
+              },
+              {
+                "id": "solid-fixtures",
+                "stage": "binding",
+                "instruction": "R1 and K5 describe solid fixture connections in this style. An uninsulated split-form heating label typically describes a short rise or drop, not a long insulated distribution run."
+              },
+              {
+                "id": "parallel-pairs",
+                "stage": "binding",
+                "instruction": "Use the designation line_count from the system table: only line_count 2 permits an unlabelled parallel twin. Nx describes a bundle. VV and VVC are distinct individually labelled systems."
+              },
+              {
+                "id": "mark-boundaries",
+                "stage": "binding",
+                "instruction": "Another designation's landing is a boundary, including an unreadable designation. A label may cover its own approach and continuation when topology supports one branch; never cross a competing designation merely to fill an unassigned stretch."
+              }
+            ],
+            "library_id": "priorn-shx",
+            "pen_table": {
+              "sheet": "V-50-1-A0101.pdf",
+              "page_no": 0,
+              "pipe_widths": [
+                1.44
+              ],
+              "leader_width": 0.72,
+              "text_height": 11.0,
+              "u_paper": 1.0,
+              "hairline": false,
+              "family_method": "width rule, confirmed by 30 leader landings; leader pen 0.72 (38 leaders reach a label, 2 of the 0.36 class)",
+              "derivation": "Adjustments are the engine's derived tolerances on this sheet as ratios of the 0.72 pt leader pen (pipe family by width rule, confirmed by 30 leader landings; leader pen 0.72 (38 leaders reach a label, 2 of the 0.36 class); detector boxes and OCR labels)."
+            }
+          }
+        ],
+        "draft": {
+          "id": "priorn-shx",
+          "name": "Sweco - AutoCAD 2018 - pdfplot14",
+          "description": "Sweco / AutoCAD 2018 via pdfplot14, SHX text as stroked glyphs (7 text objects), pipes 1.44. Baseline derived from one sample sheet of the style survey (2026-09-08); not a measured accuracy claim.",
+          "version": 1,
+          "calibration": {
+            "assemble.snap": 0.694,
+            "assemble.lateral": 0.833,
+            "assemble.wall_gap": 55.556,
+            "assemble.mark_merge": 4.167,
+            "assemble.small_ring": 4.861,
+            "associate.anchor": 11.111,
+            "associate.landing": 4.167,
+            "associate.twin_gap": 27.778,
+            "bucket.tick_rel_min": 1.8
+          },
+          "signatures": [
+            {
+              "pipe_ratios": [
+                4.0
+              ],
+              "ring_ratio": 7.5,
+              "layered": true
+            }
+          ],
+          "rules": [
+            {
+              "id": "reading-direction",
+              "stage": "binding",
+              "instruction": "Read from the system entry towards fixtures. For gravity systems S*/D* except SL, a higher VG establishes the inward direction and outranks other direction signals. CL serves this role only on gravity systems. Pressure-pipe CL is mounting height, not flow direction."
+            },
+            {
+              "id": "branch-description",
+              "stage": "binding",
+              "instruction": "A main keeps its designation through an unmarked tee. A branch with its own label includes its approach from the main to its mark when supported by topology. Do not propagate the main label into that branch."
+            },
+            {
+              "id": "solid-fixtures",
+              "stage": "binding",
+              "instruction": "R1 and K5 describe solid fixture connections in this style. An uninsulated split-form heating label typically describes a short rise or drop, not a long insulated distribution run."
+            },
+            {
+              "id": "parallel-pairs",
+              "stage": "binding",
+              "instruction": "Use the designation line_count from the system table: only line_count 2 permits an unlabelled parallel twin. Nx describes a bundle. VV and VVC are distinct individually labelled systems."
+            },
+            {
+              "id": "mark-boundaries",
+              "stage": "binding",
+              "instruction": "Another designation's landing is a boundary, including an unreadable designation. A label may cover its own approach and continuation when topology supports one branch; never cross a competing designation merely to fill an unassigned stretch."
+            }
+          ],
+          "library_id": "priorn-shx",
+          "pen_table": {
+            "sheet": "V-50-1-A0101.pdf",
+            "page_no": 0,
+            "pipe_widths": [
+              1.44
+            ],
+            "leader_width": 0.72,
+            "text_height": 11.0,
+            "u_paper": 1.0,
+            "hairline": false,
+            "family_method": "width rule, confirmed by 30 leader landings; leader pen 0.72 (38 leaders reach a label, 2 of the 0.36 class)",
+            "derivation": "Adjustments are the engine's derived tolerances on this sheet as ratios of the 0.72 pt leader pen (pipe family by width rule, confirmed by 30 leader landings; leader pen 0.72 (38 leaders reach a label, 2 of the 0.36 class); detector boxes and OCR labels)."
+          }
+        }
+      }
+    },
+    "global_changes": []
+  }
+}

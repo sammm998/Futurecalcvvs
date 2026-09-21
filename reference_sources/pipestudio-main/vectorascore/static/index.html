@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>FutureCalc Pipe Studio</title><link rel="icon" type="image/png" href="/static/futurecalc-icon.png"><link rel="stylesheet" href="/static/app.css?v=20260911-2">
+</head>
+<body>
+<header class="studio-header">
+  <a class="brand" href="/" aria-label="FutureCalc Pipe Studio home"><img class="brand-logo" src="/static/futurecalc-logo.png" width="150" height="34" alt="FutureCalc.ai"><span class="brand-product"><b>Pipe Studio</b><small>Drawing intelligence</small></span></a>
+  <nav class="workspace-nav" aria-label="Workspace">
+    <button class="active" data-page="review">Drawings</button><button data-page="learning">Improvements <span id="total-feedback" hidden>0</span></button><button data-page="redeploy">App updates <span id="redeploy-count" hidden>0</span></button><details class="options-menu expert-settings"><summary>More</summary><div><button data-page="feedback">Feedback archive</button><button data-page="styles">Styles & rules</button><button data-page="service">Service API</button></div></details>
+  </nav>
+  <button id="who" class="reviewer">Set reviewer name</button>
+</header>
+<div id="busy" class="busy" hidden role="status" aria-live="polite"><span class="busy-bar" aria-hidden="true"></span><span id="busy-label">Working…</span></div>
+<div id="notification" role="status" hidden></div>
+<section id="review-workspace" class="workspace">
+  <div class="drawing-bar"><div><button class="btn" id="open-drawings">Choose a drawing</button><select id="sheet" aria-label="Drawing" hidden></select></div>
+    <span id="style-badge" class="badge drawing-style-badge">Loading drawing…</span>
+    <button class="btn" id="drawing-style">Style…</button><span id="style-picker" class="style-picker" hidden><label>Style <select id="style-choice" aria-label="Style for this drawing"></select></label><button id="reanalyze-style" class="btn" title="Run the vector stages again with the chosen style">↻ Re-analyze</button></span><span class="spacer"></span>
+    <label class="btn primary">＋ Add PDF<input type="file" id="file" accept="application/pdf" hidden></label>
+    <a id="export" class="btn" href="#">Export PDF ↗</a>
+    <button id="rerun-vectors" hidden></button>
+    <button id="run-fable" hidden></button>
+    <span id="progress" role="status"></span>
+  </div>
+  <nav id="tabs" aria-label="Drawing layers">
+    <button data-tab="pipes">Pipes</button><button data-tab="nodes">Joining points</button><button data-tab="leaders">Leading lines</button><button data-tab="labels">Labels</button><button data-tab="bindings">Assignments</button><button data-tab="unknown">Unclassified paths</button><button data-tab="noise">Noise</button>
+    <span class="spacer"></span><details class="view-settings"><summary>View options</summary><div class="display-options" role="group" aria-label="Display"><label><input type="checkbox" id="show-others" checked> Context</label><label><input type="checkbox" id="show-ml"> ML points</label><label><input type="checkbox" id="raw-pipes"> Raw vectors</label><label><input type="checkbox" id="show-inwall"> Hidden</label><label><input type="checkbox" id="show-walls"> Walls</label></div></details>
+  </nav>
+  <section id="llm-preview-warning" role="alert" hidden>
+    <div><strong id="llm-preview-warning-title">LLM preview is out of date</strong><p>Click <strong>Ask LLM</strong> to generate an up-to-date preview. <span id="llm-preview-source">The drawing below shows the previous saved result.</span></p></div>
+  </section>
+  <div id="tools"></div>
+  <main>
+    <div id="view" tabindex="0" aria-label="Drawing canvas. Plus and minus to zoom, F to fit, zero for 100 percent."><canvas id="c"></canvas><div id="canvas-empty"><b>Your drawing, understood layer by layer.</b><p>Upload a vector PDF to start a review.</p></div><div class="canvas-hint">SCROLL / PINCH TO ZOOM <span>·</span> DRAG TO PAN <span>·</span> DOUBLE-CLICK TO ZOOM</div><div class="zoom-controls" role="group" aria-label="Drawing zoom"><button id="zoom-out" title="Zoom out (−)" aria-label="Zoom out">−</button><select id="zoom-level" aria-label="Zoom level"><option value="current" id="zoom-current">100%</option><option value="0.25">25%</option><option value="0.5">50%</option><option value="1">100%</option><option value="2">200%</option><option value="4">400%</option><option value="8">800%</option></select><button id="zoom-in" title="Zoom in (+)" aria-label="Zoom in">+</button><span></span><button id="zoom-fit" title="Fit drawing (F)" aria-label="Fit drawing">Fit</button></div></div>
+    <aside>
+      <div class="aside-title"><span class="eyebrow">EXPERT REVIEW</span><span class="live-dot">●</span></div>
+      <h3>What needs attention?</h3><p class="inspector-hint">Select something on the drawing, then tell us what you see.</p>
+  <section id="assignment-actions" aria-label="Assignment actions" hidden>
+    <div class="assignment-action-row"><div id="result-context" role="status"><span id="assignment-job-state"></span></div>
+      <div class="assignment-buttons"><div class="assignment-toggle" role="radiogroup" aria-label="Assignment method"><button id="run-dimension" type="button" role="radio" aria-checked="true" data-assignment-mode="flow">Dimension</button><button id="mode-llm" type="button" role="radio" aria-checked="false" tabindex="-1" data-assignment-mode="astra">LLM</button></div><button id="run-astra" class="btn primary" data-generate="astra" hidden>Ask LLM</button></div>
+
+    </div>
+  </section>
+
+      <div id="feedback-context" class="feedback-context" role="status"></div>
+      <div id="review-result-controls">
+      <section id="assignment-summary" aria-label="Analysis information" hidden>
+        <div id="assignment-status" class="assignment-status" role="status" hidden><strong id="assignment-state">Checking result…</strong><span id="assignment-detail"></span></div>
+        <div id="assignment-usage" class="assignment-usage" hidden><strong id="assignment-run-state" role="status">Assignment has not run</strong><span id="assignment-usage-detail"></span></div>
+      </section>
+      <div id="legend"></div>
+      <p id="selection-summary" class="selection-summary">Nothing selected</p><details class="object-details"><summary>Object details</summary><pre id="info">Select a pipe, joining point, leading line or label.</pre></details>
+      <details class="inspector-extra"><summary>Suggested checks</summary><button id="refresh-queue" class="text-btn">Refresh</button><div id="review-queue"></div></details>
+      <label class="note-label" for="note">Add a note <span>optional</span></label><textarea id="note" placeholder="What should be different?"></textarea>
+      <div class="confirm-row"><button id="confirm-object" class="btn">✓ Correct</button><button id="wrong-object" class="btn wrong">✕ Wrong</button><button id="uncertain-object" class="btn">? Unsure</button></div>
+      <details class="inspector-extra"><summary>Saved on this drawing <small id="fb-count"></small></summary><ul id="fb-list"></ul></details>
+      </div>
+    </aside>
+  </main>
+  <footer><details><summary>Analysis details</summary><span id="stats"></span></details></footer>
+</section>
+<dialog id="drawings-dialog"><div class="section-bar"><div><h2>Your drawings</h2><p>Open a drawing to give feedback. New PDFs are matched to a style automatically.</p></div><button class="btn primary" id="library-upload">＋ Add PDF</button><button class="btn" id="close-drawings">Close</button></div><input id="drawing-search" placeholder="Search drawings…" aria-label="Search drawings"><div id="drawing-library"></div></dialog>
+<div id="style-preview-loading" class="style-preview-loading" role="status" aria-live="polite" hidden><div class="style-preview-card"><span class="style-preview-spinner" aria-hidden="true"></span><h2 id="style-preview-title">Recognising pipes…</h2><p id="style-preview-progress"></p><p>The updated drawing will appear when recognition is complete.</p></div></div>
+<dialog id="drawing-style-dialog"><h2>Choose the drawing style</h2><p id="drawing-style-explanation"></p><label>Use an existing style<select id="onboarding-style"></select></label><div class="dialog-actions"><button class="btn" id="close-drawing-style">Keep current style</button><button class="btn primary" id="apply-drawing-style">Use selected style</button></div><details class="new-style-option"><summary>Create a new style instead</summary><p>A name is suggested from the PDF information. Create the style and improve it through feedback on the drawing.</p><label>New style name<input id="drawing-style-name" maxlength="150" placeholder="Leave blank for a suggested name"></label><button class="btn" id="create-drawing-style">Create style & use it</button><p id="drawing-style-progress" role="status"></p></details></dialog>
+<section id="workbench" class="workbench" hidden></section>
+<dialog id="feedback-dialog"><form id="feedback-form">
+  <div class="eyebrow">YOUR FEEDBACK</div><h2 id="feedback-title">Correct an assignment</h2><p class="muted">Your feedback helps improve this style across drawings.</p>
+  <div id="feedback-scope" class="feedback-context"></div>
+  <p id="feedback-selection" class="muted"></p>
+  <label id="expected-label-wrap">Expected label<select id="expected-label"></select><small>Choose a label explicitly, or choose “No label” if the drawing provides none. Mentioning a label in the note does not select it.</small></label>
+  <label id="expected-text-wrap">Correct text<textarea id="expected-text" rows="5"></textarea></label>
+  <label id="expected-kind-wrap">Correct joining-point type<select id="expected-kind"><option>tick</option><option>circle</option><option>leader_end</option><option>wall</option><option>gap</option><option>tee</option></select></label>
+  <label>Expert note<textarea id="feedback-note" placeholder="Why is this the correct interpretation?"></textarea></label>
+  <div class="dialog-actions"><button type="button" id="cancel-feedback" class="btn">Cancel</button><button class="btn primary" type="submit">Save feedback</button></div>
+</form></dialog>
+<dialog id="name-dialog"><form id="name-form"><div class="eyebrow">YOUR EXPERT WORKSPACE</div><h2>Who is reviewing?</h2><p class="muted">Your name is attached to examples and release approvals.</p><label>Name<input id="reviewer-name" required autocomplete="name"></label><div class="dialog-actions"><button class="btn primary">Continue</button></div></form></dialog>
+<script src="/static/assignment-context.js"></script><script src="/static/studio.js?v=20260911-2"></script><script src="/static/app.js?v=20260911-2"></script>
+</body></html>

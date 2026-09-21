@@ -1,0 +1,24 @@
+{
+  "category": "as_built_requirements",
+  "description": "Underlag för relationshandlingar — requirements on the basis for as-built documents. Source: AMA VVS & Kyla 19.",
+  "source": "AMA VVS & Kyla 19",
+  "requirements": [
+    { "sv": "De ska överensstämma med verkligt utförande och funktion.", "en": "They must correspond to the actual execution and function." },
+    { "sv": "De ska vara undertecknade av entreprenören.", "en": "They must be signed by the contractor." },
+    { "sv": "De ska bestå av kopior av de handlingar som legat till grund för utförande av entreprenaden och på vilka förts in avvikelser som gjorts under arbetets gång, med skiss om så behövs.", "en": "They must consist of copies of the documents that formed the basis for executing the contract, with any deviations made during the work entered on them, including a sketch where needed." },
+    { "sv": "De ska innehålla lägesuppgifter för sådana utrustningar, enheter, apparater och dylikt vars definitiva placering inte redovisats i handling.", "en": "They must contain position data for equipment, units, apparatus and similar whose final placement was not shown in the documents." }
+  ],
+  "additional_rules": [
+    { "en": "Dimensions and other measurement data must be drawn in and stated so clearly and completely that they can serve as a basis for relationshandlingar." },
+    { "en": "A special set of drawings (särskild ritningsomgång) must be kept on site, into which the basis for relationsritningar is entered progressively. The drawing basis must be made in a clear and unambiguous way and with the same symbols that occur elsewhere on the drawings. Text that is a clarifying comment should be circled so that it is not misunderstood." }
+  ],
+  "coordinated_as_builts": {
+    "title_sv": "Samordnade relationshandlingar",
+    "title_en": "Coordinated as-built documents",
+    "text_en": "For changes and rebuilds the contractor most often delivers documentation only of the new work installed. As-built drawings for a building therefore usually consist partly of drawings from the time of the original construction and partly of drawings from later changes and rebuilds. It is of great value to a property owner to have coordinated relationshandlingar for the VVS installations."
+  },
+  "example_markup_reading": {
+    "description_en": "Example of a marked-up basis for relationsritningar: a hand-annotated ritning in which removed items are struck through and new items are written in. Typical annotations seen in such a markup include RA1 struck through, RV21-15 Kv=0,1 struck through and replaced by 2xAV21-28, SV21-15 added, and a group of pipes labelled VVC1 15, VV1 28, KV1 28, S1 110.",
+    "takeoff_implication": "As-built markup is the ground truth for befintlig installation. Struck-through items are removals; hand-written items are additions. Both need to be captured separately in mängdavtagning of a rebuild."
+  }
+}

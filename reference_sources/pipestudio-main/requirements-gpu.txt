@@ -1,0 +1,20 @@
+# GPU inference for the ML label / joining-point detector (pipe_ai.py).
+#
+# Install INSTEAD of the CPU `onnxruntime` from requirements.txt — the two
+# packages shadow each other when both are present:
+#
+#     pip uninstall -y onnxruntime
+#     pip install -r requirements-gpu.txt
+#
+# onnxruntime-gpu 1.29+ links against CUDA 13 and cuDNN 9; the wheels below
+# are the CUDA 13 builds (unsuffixed names — the `*-cu13` names are deprecated
+# shims that fail to install, except cuDNN's).  pipe_ai preloads them so the
+# CUDA provider is found without touching LD_LIBRARY_PATH.  Verified on an
+# NVIDIA L4 with driver 610 / CUDA 13.3: a full sheet at 144 dpi in 0.3-0.8 s.
+onnxruntime-gpu>=1.29
+nvidia-cuda-runtime
+nvidia-cublas
+nvidia-cufft
+nvidia-curand
+nvidia-cuda-nvrtc
+nvidia-cudnn-cu13

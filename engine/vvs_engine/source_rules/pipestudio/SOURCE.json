@@ -1,0 +1,50 @@
+{
+  "files": [
+    {
+      "source": "pipestudio-main/vectorascore/flow_assign.py",
+      "target": "engine/vvs_engine/source_rules/pipestudio/flow_assign.py",
+      "sha256": "807120a0031010171ffaefdc25fe8578fb5942c3ccdd4e264949fa7248f7bf8c"
+    },
+    {
+      "source": "pipestudio-main/vectorascore/final_bind.py",
+      "target": "engine/vvs_engine/source_rules/pipestudio/final_bind.py",
+      "sha256": "b0ed781780f4521023b8850c49a6b8e782ea6e437a2a390f19075c00e0ff417c"
+    },
+    {
+      "source": "pipestudio-main/vectorascore/binding_context.py",
+      "target": "engine/vvs_engine/source_rules/pipestudio/binding_context.py",
+      "sha256": "109ae70f26c54ad7e115e3c8edbb1110b1ae50216f543e170eea8d8859f3d4ee"
+    },
+    {
+      "source": "pipestudio-main/vectorascore/assignment_payload.py",
+      "target": "engine/vvs_engine/source_rules/pipestudio/assignment_payload.py",
+      "sha256": "42a5aaa52050af745157fe61558be8133f36958f6b585f1c0855b124d9660366"
+    },
+    {
+      "source": "pipestudio-main/vectorascore/associate.py",
+      "target": "engine/vvs_engine/source_rules/pipestudio/associate.py",
+      "sha256": "3231e51ec973adc159dd1c953add72953f4152537ed0db2322f909b97b670c9b"
+    },
+    {
+      "source": "pipestudio-main/vectorascore/extract.py",
+      "target": "engine/vvs_engine/source_rules/pipestudio/extract.py",
+      "sha256": "a701f40404ae8844ee65ae1bd2fe045dd8d7ed5c0bd2790c32dbe3a72fccf5a1"
+    },
+    {
+      "source": "pipestudio-main/vectorascore/geom.py",
+      "target": "engine/vvs_engine/source_rules/pipestudio/geom.py",
+      "sha256": "6943b3ec27eb9a96a2017a0910b0fdbf3e6dede5fb737fd48556f630708ef333"
+    },
+    {
+      "source": "pipestudio-main/vectorascore/vvs.py",
+      "target": "engine/vvs_engine/source_rules/pipestudio/vvs.py",
+      "sha256": "78655cdd942f3bb7db281dc1556438f1c0a59ed5ae0d39c8b192db451b2deb2c"
+    },
+    {
+      "source": "pipestudio-main/vectorascore/data/system_designations.json",
+      "target": "engine/vvs_engine/source_rules/pipestudio/data/system_designations.json",
+      "sha256": "f5e8437e36a67bf4b49d8477a7ebf775faed67357bf1c46e8f3b2b35fc150d74"
+    }
+  ],
+  "policy": "Source modules are byte-identical. Host adapters are outside this package. Always pass an explicit model transport; the original remote transport is not used."
+}

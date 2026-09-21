@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://futurecalc.ai/contracts/detection-ack.v2.schema.json",
+  "title": "Pipe detection acknowledgement, protocol 2",
+  "description": "The synchronous reply to a dispatch. HTTP 202 with this body means the job was accepted. The same runId with the same request does not start a second job; the same runId with different content is a 409; 429 means the service is saturated.",
+  "type": "object",
+  "properties": {
+    "protocolVersion": { "const": 2 },
+    "status": { "const": "accepted" },
+    "drawingId": { "$ref": "drawing-space.schema.json#/$defs/uuid" },
+    "runId": { "$ref": "drawing-space.schema.json#/$defs/uuid" }
+  },
+  "required": ["protocolVersion", "status", "drawingId", "runId"],
+  "additionalProperties": false
+}

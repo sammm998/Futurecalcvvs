@@ -1,0 +1,14 @@
+{
+  "category": "level_reference",
+  "description": "Beteckningar som brukar förekomma på ritningar — abbreviations for levels, positions and existing conditions.",
+  "entries": [
+    { "code": "BEF", "term_sv": "Befintlig", "term_en": "Existing", "takeoff_implication": "Marks scope boundary: existing installation is not new-build quantity." },
+    { "code": "VG",  "term_sv": "Vattengång", "term_en": "Invert level (water line of a gravity pipe)" },
+    { "code": "CL",  "term_sv": "Centrumlinje", "term_en": "Centre line" },
+    { "code": "FG",  "term_sv": "Färdigt golv", "term_en": "Finished floor level" },
+    { "code": "ÖG",  "term_sv": "Över (färdigt) golv", "term_en": "Above finished floor level" },
+    { "code": "ÖK",  "term_sv": "Överkant", "term_en": "Top edge / top of" },
+    { "code": "UK",  "term_sv": "Underkant", "term_en": "Bottom edge / underside of" },
+    { "code": "UT",  "term_sv": "Undertak", "term_en": "Suspended ceiling" }
+  ]
+}

@@ -1,0 +1,23 @@
+services:
+  pipe-detect:
+    build: .
+    image: pipe-detect:latest
+    # Port 5005 is fixed by the FutureCalc contract.
+    ports:
+      - "5005:5005"
+    environment:
+      # REQUIRED — the service refuses to start without it.
+      API_KEY: "${API_KEY:?set API_KEY to the key shared with FutureCalc}"
+      WORKERS: "${WORKERS:-2}"
+      QUEUE_LIMIT: "${QUEUE_LIMIT:-8}"
+      MAX_IMAGE_PIXELS: "${MAX_IMAGE_PIXELS:-80000000}"
+      CALLBACK_TIMEOUT: "${CALLBACK_TIMEOUT:-30}"
+      STRIP_SYSTEM_INDEX: "${STRIP_SYSTEM_INDEX:-true}"
+      INCLUDE_UNCLASSIFIED: "${INCLUDE_UNCLASSIFIED:-true}"
+    restart: unless-stopped
+    # Detection is CPU-bound; give it room or large sheets crawl.
+    deploy:
+      resources:
+        limits:
+          cpus: "4"
+          memory: 4G

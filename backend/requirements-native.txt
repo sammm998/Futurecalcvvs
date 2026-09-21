@@ -1,0 +1,6 @@
+# PipeStudio's complete detector, OCR and vector assembly runtime.
+onnxruntime>=1.20,<2
+pytesseract>=0.3.10
+scikit-image>=0.22
+scipy>=1.11
+opencv-python-headless>=4.9

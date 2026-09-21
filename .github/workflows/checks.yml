@@ -1,0 +1,64 @@
+# The checks the image build runs, run before the image build runs them.
+#
+# A deploy failed on an eslint warning because the bundle was built directly instead of through `npm run build`,
+# which is what the image runs. Whatever the image does, this does first, so the answer arrives here rather than
+# in a failed deployment.
+name: checks
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+jobs:
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm install --no-audit --no-fund
+        working-directory: frontend
+      # exactly what the image's frontend stage runs: eslint at zero warnings, the type check, then the bundle
+      - run: npm run build
+        working-directory: frontend
+
+  engine:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      # Ritbordets kärna körs av samma kod som webbläsaren kör, genom node. Utan node_modules hoppar nitton
+      # prov över - och tvåplanshusets sista två steg läser huset de stegen bygger, så de föll. Bygget stod
+      # rött på det i tvåhundra körningar. Nu körs hela sviten här, precis som den körs lokalt.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm install --no-audit --no-fund
+        working-directory: frontend
+      - run: pip install -r backend/requirements.txt
+      - run: pip install -e engine
+      # the suite runs under pytest, which is not a dependency of the service and so is not in its requirements
+      - run: pip install pytest
+      - run: python -m pytest -q engine/tests
+      # hela produkten som en person använder den - konto, projekt, uppladdning, analys, resultat, varför,
+      # olösta fall, varje export - på provsvitens eget blad, utan webbläsare och utan verkliga ritningar
+      - name: the whole product end to end on the synthetic sheet
+        run: python engine/tools/e2e.py --synthetic
+      - name: the reading may not carry anything from a drawing it was tuned on
+        run: |
+          python - <<'PY'
+          import sys
+          sys.path.insert(0, "engine")
+          from vvs_engine.contamination import scan_source
+          r = scan_source("engine/vvs_engine")
+          print(r["state"], r.get("files_scanned"), "filer")
+          sys.exit(0 if r["state"] == "PASS" else 1)
+          PY

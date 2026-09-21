@@ -1,0 +1,24 @@
+{
+  "name": "futurecalc-pipe-detection-contract",
+  "version": "2.0.2",
+  "protocolVersion": 2,
+  "files": {
+    "PROTOCOL.md": "4a3c4f33cd78ccd27d64f696422717d9bcd4e15935148ef8b39e1d4465cf3fc5",
+    "drawing-space.schema.json": "7c1668de6aea6f55179df2c502fec698daee3da257f417ef31336bb3eeb9a78e",
+    "detection-request.v2.schema.json": "bb24b1f4d14fc3dbf716df8c5d9e4bc97dc43e09feba8e34c6afe31263f17dd2",
+    "detection-ack.v2.schema.json": "987cf36513b5c4966468856754cfb2188b836f0f901fe27816986b23dc21029d",
+    "detection-result.v2.schema.json": "fd18c574fabfd9b2510facb818732bda840a9c9e7d0af1167f64f442875177e5",
+    "examples/detection-request.valid.json": "6b51fbef610a82f0fc416baa2b7d81769290dfa579282094f0e8f4045ec6e793",
+    "examples/detection-request.llm.valid.json": "bdb2be7f4dfad12ddce8af54501d55c61d4c175e1f2af2edab2f8c60dc92df79",
+    "examples/detection-request.with-scale.invalid.json": "99fbaa4e795cd2db211a2579a5f5c44df4a8e653ab650d9c2077ef2d9879014a",
+    "examples/detection-request.missing-assignment.invalid.json": "315dc5dd2204ca2ed1e3fc447f2c3389ec2c3b00911a6ee65eb3268eb293f91d",
+    "examples/detection-request.unknown-assignment.invalid.json": "974ef45ed96f248f1897b1698e622bf9e3acde2f738f2bf3975a2d71168a0a14",
+    "examples/detection-ack.valid.json": "0deffab316c1f49ad662643b2e07ca144a27ca1b9b375ceb4e4876455eef598a",
+    "examples/detection-ack.missing-run.invalid.json": "e511f3185f3bfb7597778f4cc57035e3ca3b36bd5f924975998d8bdb93ab9f5d",
+    "examples/detection-result.valid.json": "1f724e790058bfe0b22573d97753b5dc234c3155967713436969eecafbe4db2d",
+    "examples/detection-result.no-scale.valid.json": "28a750336a61eb9cf03136b90933823c40fc4add7c54ebbc9ddc6af59d951215",
+    "examples/detection-result.failed.valid.json": "abad88b275f18531979ab006ff1d4a6ec484fe8dc0a3b790fb73d3a62a4c0d39",
+    "examples/detection-result.split-fields.invalid.json": "502d5b70f95c9a8f24878f2ccc456bbf033740d4d36b522188e3f256fac1f4a1",
+    "hmac-test-vector.json": "1f850d253debf8b6712ad3f9b2c82bd8242ba8348623dca72aa0ccb5507b0b0d"
+  }
+}

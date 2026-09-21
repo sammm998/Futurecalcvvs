@@ -1,0 +1,13 @@
+const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
+const source=fs.readFileSync('vectorascore/static/app.js','utf8');
+const context={};vm.createContext(context);vm.runInContext(source.slice(source.indexOf('  function feedbackGeometry('),source.indexOf('  function focusFeedback(')),context);
+const get=(r,result={})=>JSON.parse(JSON.stringify(context.feedbackGeometry(r,result)));
+assert.deepEqual(get({stretch_id:0,point:[99,99]},{stretches:[{id:0,points:[[1,2],[3,4]]}]}).lines,[[[1,2],[3,4]]]);
+assert.deepEqual(get({node_id:2},{nodes:[{id:2,x:5,y:7}]}).point,[5,7]);
+assert.deepEqual(get({label_id:3,evidence:{label:{rect:[1,2,3,4]}}}).rect,[1,2,3,4]);
+assert.deepEqual(get({leader_id:1},{leaders:[{id:1,path_id:5}],paths:[{id:5,segs:[[1,2,3,4]]}]}).lines,[[[1,2],[3,4]]]);
+assert.deepEqual(get({points:[[1,1],[4,5]]}).lines,[[[1,1],[4,5]]]);
+assert.deepEqual(get({rect:[1,2,5,6]}).bounds,[[1,2],[5,6]]);
+assert.deepEqual(get({point:[2,4]}).point,[2,4]);
+assert.equal(get({}),null);
+console.log('Feedback highlight: pipes, nodes, labels, leaders, drawn lines, boxes and points passed');

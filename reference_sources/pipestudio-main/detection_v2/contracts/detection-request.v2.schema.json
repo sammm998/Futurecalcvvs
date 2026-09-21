@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://futurecalc.ai/contracts/detection-request.v2.schema.json",
+  "title": "Pipe detection request, protocol 2",
+  "description": "What the app's backend sends to the detection microservice. It carries only what the service needs to work: the job's identifiers, the image, the canvas, the assignment method, and one output flag. No scale (the service reads it off the drawing itself), no callbackUrl (a fixed address in the service's own configuration), no secrets (headers), no source identity or revision (runId ties the job to our own registry; echoed back they would prove nothing), and no mimeType or encoding (one image variant). Closed: an unknown property is a protocol change, not an extension.",
+  "type": "object",
+  "properties": {
+    "protocolVersion": { "const": 2 },
+    "drawingId": { "$ref": "drawing-space.schema.json#/$defs/uuid" },
+    "runId": {
+      "$ref": "drawing-space.schema.json#/$defs/uuid",
+      "description": "Minted by the app, not the service, so the same identifier is in the job registry, in the callback, and in every annotation the run produced."
+    },
+    "image": {
+      "type": "string",
+      "contentEncoding": "base64",
+      "description": "base64 of the gzipped SVG. One variant; a second format would arrive as a new optional field."
+    },
+    "coordinateSpace": {
+      "$ref": "drawing-space.schema.json#/$defs/coordinateSpace",
+      "description": "The service returns coordinates in exactly this space. The old rule where the service's own size won is gone."
+    },
+    "assignmentMethod": {
+      "enum": ["llm", "dimension"],
+      "description": "Which implementation assigns labels to pipes: `llm` reasons over the sheet with a language model, `dimension` matches on the dimension read off the label and pipe and calls no model in this step. Required, and it sits beside the identifiers rather than under `output` because it selects how the run is performed, not what the answer contains. There is no default: a missing or unknown value is a validation error, because a run whose method nobody stated cannot be compared with one whose method is known. If the named method is unavailable the service fails the run with an explicit error — it never quietly performs the other one."
+    },
+    "output": {
+      "type": "object",
+      "properties": {
+        "includeScaleAndLengths": {
+          "type": "boolean",
+          "description": "false: graphs, labels, markers and length.px only, with scale null. true: also the scale read off the drawing and length.planView in millimetres. One flag, because a physical length without a scale does not exist."
+        }
+      },
+      "required": ["includeScaleAndLengths"],
+      "additionalProperties": false
+    }
+  },
+  "required": ["protocolVersion", "drawingId", "runId", "image", "coordinateSpace", "assignmentMethod", "output"],
+  "additionalProperties": false
+}

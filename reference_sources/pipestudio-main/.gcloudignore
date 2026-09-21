@@ -1,0 +1,44 @@
+# Cloud Build uploads this directory; keep it to what the image needs.
+# (Without this file gcloud falls back to .gitignore, which would still upload
+#  the review app and drop the drawings — being explicit is safer.)
+.git/
+.gitignore
+.venv/
+__pycache__/
+*.py[cod]
+.claude/
+.codex/
+.env
+.env.*
+*.ses
+.studio/
+feedback/
+uploads/
+
+# client drawings and reference material — must never leave the machine
+clean/
+Ritningar utan mängdning (1)/
+check_lines/
+label_attach/
+*.pdf
+*.svg
+*.xml
+*.xlsx
+*.docx
+*.zip
+
+# generated output
+output/
+debug/
+review/
+tiles_output/
+*.png
+
+# local-only review tool
+reviewapp/
+review_tool.py
+tiles.py
+
+# docs
+*.md
+!detection_v2/contracts/PROTOCOL.md

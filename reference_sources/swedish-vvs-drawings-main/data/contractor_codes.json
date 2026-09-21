@@ -1,0 +1,16 @@
+{
+  "category": "contractor_code",
+  "description": "Beteckningar för (sido)entreprenörer — contractor designations. Under a generalentreprenad these codes are used by tradition for work described in the documents of side consultants; in that case they do not refer to side contractors of the general contract.",
+  "entries": [
+    { "code": "BE", "term_sv": "Byggentreprenör",        "term_en": "Building contractor" },
+    { "code": "ME", "term_sv": "Markentreprenör",        "term_en": "Groundworks contractor" },
+    { "code": "EE", "term_sv": "Elentreprenör",          "term_en": "Electrical contractor" },
+    { "code": "HE", "term_sv": "Hissentreprenör",        "term_en": "Lift contractor" },
+    { "code": "RE", "term_sv": "Rörentreprenör",         "term_en": "Pipework (plumbing) contractor" },
+    { "code": "VE", "term_sv": "Ventilationsentreprenör", "term_en": "Ventilation contractor" },
+    { "code": "SE", "term_sv": "Styrentreprenör",        "term_en": "Controls contractor" },
+    { "code": "KE", "term_sv": "Kylentreprenör",         "term_en": "Refrigeration/cooling contractor" },
+    { "code": "GE", "term_sv": "Generalentreprenör",     "term_en": "General contractor" },
+    { "code": "TE", "term_sv": "Totalentreprenör",       "term_en": "Design-and-build (turnkey) contractor" }
+  ]
+}

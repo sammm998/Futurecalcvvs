@@ -1,0 +1,38 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+node_modules/
+frontend/dist/
+data/openworld_quarantine/
+scratch/
+*.egg-info/
+data/validation_A/
+data/validation_C/
+data/validation_D/
+data/validation_E/
+data/styles/
+data/cvat/
+frontend/smoke/ui/
+data/validation_set3/
+data/incoming/
+data/incoming2/
+data/validation_W/
+
+# Halvfärdiga grindkörningar: gate_resume skriver hit och slår ihop till <grind>.json när den är klar
+results/**/*.json.part
+data/openworld/
+
+# Local runtime, credentials, generated drawing evidence
+.venv/
+.local/
+results/current/
+
+# Private drawing and runtime data are never published
+/data/
+/results/
+.env
+.env.*
+!.env.example
+*.db
+*.sqlite*
+*.log

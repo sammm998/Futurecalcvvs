@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "vectorascore-review",
+      "runtimeExecutable": ".venv/bin/python",
+      "runtimeArgs": ["-m", "vectorascore.serve", "8770"],
+      "port": 8770
+    }
+  ]
+}

@@ -1,0 +1,38 @@
+{
+  "category": "line_type",
+  "description": "Line styles used on a planritning to encode the vertical position of a rörledning relative to the section at fönsternivå (window level). Critical for inferring elevation during mängdavtagning.",
+  "entries": [
+    {
+      "code": "solid",
+      "term_sv": "Heldragen linje",
+      "term_en": "Solid line",
+      "meaning_sv": "Under fönsternivå",
+      "meaning_en": "Pipe runs below window level (within the room, visible in the section).",
+      "dash_pattern": "————————"
+    },
+    {
+      "code": "dashed",
+      "term_sv": "Streckad linje",
+      "term_en": "Dashed line",
+      "meaning_sv": "Under golvyta",
+      "meaning_en": "Pipe runs below the floor surface.",
+      "dash_pattern": "– – – – – –"
+    },
+    {
+      "code": "dash_dot",
+      "term_sv": "Streckprickad linje",
+      "term_en": "Dash-dot line",
+      "meaning_sv": "Över fönsternivå",
+      "meaning_en": "Pipe runs above window level but within the storey.",
+      "dash_pattern": "–·–·–·–·–·"
+    },
+    {
+      "code": "dash_double_dot",
+      "term_sv": "Dubbelt streckprickad linje",
+      "term_en": "Dash-double-dot line",
+      "meaning_sv": "Över bjälklag",
+      "meaning_en": "Pipe runs above the floor slab (i.e. in the storey above).",
+      "dash_pattern": "–··–··–··–"
+    }
+  ]
+}

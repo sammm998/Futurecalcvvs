@@ -1,0 +1,18 @@
+{
+  "category": "sanitary_fixture",
+  "description": "Beteckningar på sanitetsinredningar m m — designations for sanitary fixtures that have no dedicated drawing symbol. They are drawn in a simplified way ('förenklat ritsätt'). On ritningar and in the beskrivning they are usually given an index, e.g. TS1, VK2, where the index distinguishes different types of sanitary appliance, mixer (blandare) and so on.",
+  "entries": [
+    { "code": "DB",  "term_sv": "Diskbänk",                            "term_en": "Kitchen sink unit / worktop with sink", "notes": "Code collision: DB also denotes Dagvattenbrunn (see drainage_wells)." },
+    { "code": "UB",  "term_sv": "Utslagsback",                         "term_en": "Slop sink / cleaner's sink" },
+    { "code": "TS",  "term_sv": "Tvättställ, tvättho",                 "term_en": "Washbasin, wash trough" },
+    { "code": "BK",  "term_sv": "Badkar",                              "term_en": "Bathtub" },
+    { "code": "DK",  "term_sv": "Duschkar",                            "term_en": "Shower tray" },
+    { "code": "VK",  "term_sv": "Klosett",                             "term_en": "WC / toilet" },
+    { "code": "U",   "term_sv": "Urinalskål, urinränna",               "term_en": "Urinal bowl, urinal trough" },
+    { "code": "DF",  "term_sv": "Dricksvattenfontän",                  "term_en": "Drinking fountain" },
+    { "code": "DM",  "term_sv": "Diskmaskin",                          "term_en": "Dishwasher" },
+    { "code": "TM",  "term_sv": "Tvättmaskin",                         "term_en": "Washing machine" },
+    { "code": "SLH", "term_sv": "Slanghylla",                          "term_en": "Hose shelf / hose reel rack" },
+    { "code": "VVB", "term_sv": "Tappvattenvärmare (förr varmvattenberedare)", "term_en": "Domestic water heater (formerly called varmvattenberedare)" }
+  ]
+}

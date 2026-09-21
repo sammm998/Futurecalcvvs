@@ -1,0 +1,15 @@
+{
+  "$comment": "Fixed inputs and the one signature they produce, so an implementation can check itself without a round trip. The message signed is the timestamp, a dot, then the raw body bytes — the timestamp is inside the signature so a captured body cannot be moved forward to keep it fresh. The expected value was computed independently in Python's hmac and in `openssl dgst -sha256 -mac HMAC`, and both agreed with the application's own implementation. If this number ever changes, the algorithm has changed, and every implementation built against the old one starts failing at the door.",
+  "algorithm": "HMAC-SHA256",
+  "key": "contract-test-vector-key",
+  "timestamp": "1757000000",
+  "body": "{\"protocolVersion\":2,\"status\":\"succeeded\",\"runId\":\"55555555-5555-4555-8555-555555555555\"}",
+  "message": "<timestamp> + \".\" + <body>, as bytes, with no trailing newline",
+  "headers": {
+    "X-Key-Id": "the id of the key used, from the agreed allow-list",
+    "X-Timestamp": "1757000000",
+    "X-Signature": "v1=d3abfb2e450a9419aeaffc609dddb5db5f677d8e0bd1e1e9429fbf5cc2bdb067"
+  },
+  "expectedSignature": "d3abfb2e450a9419aeaffc609dddb5db5f677d8e0bd1e1e9429fbf5cc2bdb067",
+  "windowSeconds": 300
+}

@@ -1,0 +1,5 @@
+# Microservice layer only — the detection pipeline's own dependencies are in
+# requirements.txt, which this is installed alongside.
+Flask>=3.0                  # HTTP API
+gunicorn>=21.2              # production WSGI server
+requests>=2.31              # callback delivery

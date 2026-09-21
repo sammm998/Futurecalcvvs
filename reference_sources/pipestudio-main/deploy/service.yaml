@@ -1,0 +1,70 @@
+# Declarative Cloud Run service definition.
+#
+# Use this when the service must come out right regardless of how it was first
+# created — it sets every setting that matters in one apply, including the two
+# that are easy to miss and impossible to spot from the outside:
+#
+#   run.googleapis.com/cpu-throttling: "false"
+#       Keeps CPU allocated after a request has been answered. This service
+#       replies to /predict with 202 and detects afterwards, so with the
+#       default ("true") that work is starved and the callback arrives late or
+#       never — while /health still looks perfectly fine.
+#
+#   maxScale: "1"
+#       The upload UI holds job results in memory and polls for them. With
+#       more than one instance a poll can land on an instance that never saw
+#       the job. Raise it if you only use the /predict + callback API.
+#
+# Apply:
+#   1. put the key in Secret Manager, once:
+#        printf '%s' 'the-key' | gcloud secrets create pipe-detect-api-key --data-file=-
+#   2. edit PROJECT_ID and the image below
+#   3. gcloud run services replace deploy/service.yaml --region europe-north1
+#   4. gcloud run services add-iam-policy-binding pipe-detect \
+#        --region europe-north1 --member allUsers --role roles/run.invoker
+#
+# Step 4 is separate because `services replace` does not manage IAM. Skip it if
+# you want the service private to Google identities.
+
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: pipe-detect
+  labels:
+    cloud.googleapis.com/location: europe-north1
+spec:
+  template:
+    metadata:
+      annotations:
+        run.googleapis.com/cpu-throttling: "false"
+        autoscaling.knative.dev/minScale: "0"
+        autoscaling.knative.dev/maxScale: "1"
+    spec:
+      containerConcurrency: 4
+      timeoutSeconds: 900
+      containers:
+        # Docker Hub also works here:
+        #   docker.io/<username>/pipe-detect:latest
+        - image: europe-north1-docker.pkg.dev/PROJECT_ID/containers/pipe-detect:latest
+          ports:
+            # Cloud Run passes this through as $PORT; the entrypoint honours it.
+            - name: http1
+              containerPort: 8080
+          resources:
+            limits:
+              cpu: "4"
+              memory: 4Gi
+          env:
+            - name: WORKERS
+              value: "2"
+            - name: QUEUE_LIMIT
+              value: "8"
+            # Cloud Run caps a request body at 32 MB and base64 adds ~33%, so
+            # this keeps the rejection ours, with a clear message.
+            - name: MAX_UPLOAD_BYTES
+              value: "31000000"
+            - name: API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: pipe-detect-api-key
+                  key: latest

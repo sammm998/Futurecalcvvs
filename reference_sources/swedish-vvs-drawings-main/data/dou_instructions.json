@@ -1,0 +1,50 @@
+{
+  "category": "dou_instructions",
+  "description": "Underlag för drift- och underhållsinstruktioner — basis for operation and maintenance (DoU) instructions.",
+  "standard": {
+    "publisher": "Svensk Byggtjänst",
+    "title_sv": "Drift- och underhållsinstruktioner & annan dokumentation i entreprenader",
+    "year": 2023,
+    "scope_en": "An industry standard that provides templates both for operation and maintenance instructions and for the basis for them."
+  },
+  "legal_basis_en": "The industry standard rests on the fact that both building legislation and work environment legislation require buildings and their installations to have instructions. Responsibility for these existing lies with the property owner (fastighetsägaren). The instructions can take the form of a database or, traditionally, a binder.",
+  "also_included_en": "The industry standard also contains templates for contract documentation and checklists for environment, work environment, fire inspection and maintenance inspection, and inspection records for pressure and tightness testing, adjustment of circulation flows (injustering av cirkulationsflöden) and sound pressure level.",
+  "page_header_requirements": [
+    { "sv": "projektnamn", "en": "project name" },
+    { "sv": "datum", "en": "date" },
+    { "sv": "revideringsdatum", "en": "revision date" },
+    { "sv": "numrering som bör anges med kapitelnummer följt av löpnummer", "en": "numbering, which should be stated as chapter number followed by sequential number" }
+  ],
+  "template_structure": {
+    "template_name": "Mall DoU 3 (AB Svensk Byggtjänst) - Underlag för DoU-instruktion, rörinstallation",
+    "front_page_fields": ["Fastighet", "Projekt", "Upprättad av", "Upprättad datum", "Reviderad datum"],
+    "sections": [
+      { "group_sv": "ORIENTERING", "group_en": "Orientation", "chapters": [
+        { "no": 1, "sv": "Om instruktionen", "en": "About the instruction" },
+        { "no": 2, "sv": "Översikter", "en": "Overviews" },
+        { "no": 3, "sv": "Säkerhet", "en": "Safety" },
+        { "no": 4, "sv": "Drift, funktion", "en": "Operation, function" }
+      ]},
+      { "group_sv": "FÖRTECKNINGAR", "group_en": "Schedules / lists", "chapters": [
+        { "no": 5, "sv": "Adresser", "en": "Addresses" },
+        { "no": 6, "sv": "Rutiner", "en": "Routines" },
+        { "no": 7, "sv": "Apparater, komponenter", "en": "Apparatus, components" },
+        { "no": 8, "sv": "Spjäll, ventiler, armatur", "en": "Dampers, valves, fittings" }
+      ]},
+      { "group_sv": "DOKUMENT", "group_en": "Documents", "chapters": [
+        { "no": 9,  "sv": "Protokoll", "en": "Records / test reports" },
+        { "no": 10, "sv": "Rör, brunnar", "en": "Pipes, wells" },
+        { "no": 11, "sv": "Pumpar, värmeväxlare", "en": "Pumps, heat exchangers" },
+        { "no": 12, "sv": "Värmare, kylare", "en": "Heaters, coolers" },
+        { "no": 13, "sv": "Sanitetsinredning", "en": "Sanitary fixtures" },
+        { "no": 14, "sv": "Sanitetsarmatur", "en": "Sanitary fittings" },
+        { "no": 15, "sv": "Ventiler, mätdon", "en": "Valves, measuring devices" },
+        { "no": 16, "sv": "Styr- och reglerdon", "en": "Control and regulating devices" },
+        { "no": 17, "sv": "Övriga produkter", "en": "Other products" },
+        { "no": 18, "sv": "Ritningar", "en": "Drawings" },
+        { "no": 19, "sv": "Scheman", "en": "Schematics" },
+        { "no": 20, "sv": "Övrigt", "en": "Other" }
+      ]}
+    ]
+  }
+}

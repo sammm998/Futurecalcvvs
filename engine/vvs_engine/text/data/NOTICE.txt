@@ -1,0 +1,6 @@
+The Hershey fonts (futural.jhf, rowmans.jhf, futuram.jhf) were created by Dr. A. V. Hershey at the
+U.S. National Bureau of Standards and are distributed under the Hershey font permission notice:
+the fonts may be freely used and distributed provided that the origin of the fonts is acknowledged
+("Hershey Fonts", A. V. Hershey / NBS) and the .jhf data is not sold in this form. They are used here
+purely as GENERIC CAD reference glyph geometry for character recognition; no drawing-specific data.
+Source: https://github.com/kamalmostafa/hershey-fonts

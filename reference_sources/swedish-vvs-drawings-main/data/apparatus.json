@@ -1,0 +1,16 @@
+{
+  "category": "apparatus",
+  "description": "Ritningssymboler för apparater m m plus beteckningar för andra apparater. The general symbol convention: a round symbol is used mostly where rotating parts occur; a rectangular symbol can be drawn upright or lying down and shows fixed parts.",
+  "entries": [
+    { "code": null,   "term_sv": "Allmän symbol",   "term_en": "General symbol",              "symbol_description": "Circle or rectangle. The circle is used mostly where rotating parts occur; the rectangle (upright or lying) shows fixed parts." },
+    { "code": "VVX",  "term_sv": "Värmeväxlare",    "term_en": "Heat exchanger",              "symbol_description": "Rectangle in the pipe run with an internal chevron/arrow." },
+    { "code": "P",    "term_sv": "Pump",            "term_en": "Pump",                        "symbol_description": "Circle with an internal triangle pointing in the flow direction." },
+    { "code": "SIL",  "term_sv": "Sil, filter",     "term_en": "Strainer, filter",            "symbol_description": "Rectangle with hatching." },
+    { "code": null,   "term_sv": "Radiator, värmare", "term_en": "Radiator, heater",          "symbol_description": "Long narrow rectangle." },
+    { "code": "EXP",  "term_sv": "Expansionskärl",  "term_en": "Expansion vessel",            "symbol_description": "Rectangle with EXP written inside the symbol." },
+    { "code": null,   "term_sv": "Dusch",           "term_en": "Shower",                      "symbol_description": "Small triangle on a vertical stem." },
+    { "code": "SG",   "term_sv": "Shuntgrupp",      "term_en": "Shunt group / mixing group" },
+    { "code": "VXV",  "term_sv": "Växelventil",     "term_en": "Changeover / diverting valve" },
+    { "code": "STPR", "term_sv": "Stuprör",         "term_en": "Rainwater downpipe" }
+  ]
+}

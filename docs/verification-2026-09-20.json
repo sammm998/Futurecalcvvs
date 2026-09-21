@@ -1,0 +1,265 @@
+{
+  "date": "2026-09-20",
+  "engine_source_sha256": "6b790d5052d43467cdd7554f7aec082f4b54bf06988731a8271b86ee6a2e5f22",
+  "unattended_ready": false,
+  "tests": {
+    "passed": 953,
+    "skipped": 3,
+    "warnings": 166,
+    "seconds": 92.35
+  },
+  "frontend": {
+    "i18n": "passed",
+    "eslint": "passed",
+    "typescript": "passed",
+    "production_build": "passed",
+    "remaining_warning": "large JavaScript chunk"
+  },
+  "cases": [
+    {
+      "case": "0501112",
+      "input_file": "W-50-1-0501112.pdf",
+      "input_sha256": "6f17a6dfb3f8449312a61e2954b96d6317eeb9e109452ac4a1cf0b5c3efb7129",
+      "page": 0,
+      "seconds": 5.93,
+      "rows": 7,
+      "totals": {
+        "physical_pipes": 12,
+        "confirmed_horizontal_m": 44.158,
+        "confirmed_vertical_m": 0.0,
+        "confirmed_total_m": 44.158,
+        "ambiguous_m": 2.158,
+        "in_hatched_area_m": 0.0,
+        "riser_labels": 0
+      },
+      "coverage_verdict": "DEGRADED",
+      "accuracy_verified": false,
+      "reference_comparison": [
+        {
+          "reference_pt": 3989.9075987783453,
+          "predicted_pt": 1728.2214993035466,
+          "reference_recovered_pt": 1410.2831370815127,
+          "prediction_supported_pt": 1284.6788426585358,
+          "missed_pt": 2579.624461696833,
+          "unsupported_pt": 443.5426566450107,
+          "duplicate_prediction_pt": 5.6399999999999295,
+          "reference_coverage": 0.35346260587922435,
+          "prediction_support": 0.7433531194793298
+        }
+      ]
+    },
+    {
+      "case": "0201112",
+      "input_file": "W-50-1-0201112.pdf",
+      "input_sha256": "1bb3518ee9acfee92e5518cd5cbe13ba6d07244b77d03e428ddc7dc3bbad593b",
+      "page": 0,
+      "seconds": 20.75,
+      "rows": 14,
+      "totals": {
+        "physical_pipes": 37,
+        "confirmed_horizontal_m": 82.527,
+        "confirmed_vertical_m": 0.0,
+        "confirmed_total_m": 82.527,
+        "ambiguous_m": 21.167,
+        "in_hatched_area_m": 0.0,
+        "riser_labels": 0
+      },
+      "coverage_verdict": "DEGRADED",
+      "accuracy_verified": false,
+      "reference_comparison": [
+        {
+          "reference_pt": 19649.495639598244,
+          "predicted_pt": 3331.0645101381565,
+          "reference_recovered_pt": 3259.0403269019143,
+          "prediction_supported_pt": 2574.3557750331684,
+          "missed_pt": 16390.45531269633,
+          "unsupported_pt": 756.7087351049881,
+          "duplicate_prediction_pt": 50.16000000000018,
+          "reference_coverage": 0.16585872669088766,
+          "prediction_support": 0.772832758776682
+        }
+      ]
+    },
+    {
+      "case": "A0011",
+      "input_file": "W-50-1-A-0011.pdf",
+      "input_sha256": "e9c0d89336398c3776451f24396319cf2dd9edb33d471df63f96bf3f74844229",
+      "page": 0,
+      "seconds": 16.37,
+      "rows": 11,
+      "totals": {
+        "physical_pipes": 46,
+        "confirmed_horizontal_m": 209.711,
+        "confirmed_vertical_m": 0.94,
+        "confirmed_total_m": 210.651,
+        "ambiguous_m": 1.439,
+        "in_hatched_area_m": 12.096,
+        "riser_labels": 68
+      },
+      "coverage_verdict": "VALID",
+      "accuracy_verified": false,
+      "reference_comparison": [
+        {
+          "reference_pt": 12096.748950880217,
+          "predicted_pt": 10051.918011363965,
+          "reference_recovered_pt": 10144.36508801116,
+          "prediction_supported_pt": 9394.535498803665,
+          "missed_pt": 1952.3838628690587,
+          "unsupported_pt": 657.3825125602988,
+          "duplicate_prediction_pt": 27.240000000000578,
+          "reference_coverage": 0.8386025972104685,
+          "prediction_support": 0.9346012858623487
+        }
+      ]
+    },
+    {
+      "case": "current-job",
+      "input_file": "V-50-1-A0001.pdf",
+      "input_sha256": "3d8fc03a0aff960072b6463985695495e668163e5c74a086d7629225ced84a68",
+      "page": 0,
+      "seconds": 22.25,
+      "rows": 12,
+      "totals": {
+        "physical_pipes": 19,
+        "confirmed_horizontal_m": 129.994,
+        "confirmed_vertical_m": 0.0,
+        "confirmed_total_m": 129.994,
+        "ambiguous_m": 4.77,
+        "in_hatched_area_m": 0.0,
+        "riser_labels": 0
+      },
+      "coverage_verdict": "VALID",
+      "accuracy_verified": false,
+      "reference_comparison": []
+    },
+    {
+      "case": "eon-hairline",
+      "input_file": "R9UHA10-CLB001-002.pdf",
+      "input_sha256": "3d1ea6884cc22c9640d4c78af59507ec24d7c399bf708e3cdb89ab70bb04773c",
+      "page": 0,
+      "seconds": 10.47,
+      "rows": 7,
+      "totals": {
+        "physical_pipes": 8,
+        "confirmed_horizontal_m": 42.475,
+        "confirmed_vertical_m": 0.0,
+        "confirmed_total_m": 42.475,
+        "ambiguous_m": 12.419,
+        "in_hatched_area_m": 0.0,
+        "riser_labels": 0
+      },
+      "coverage_verdict": "DEGRADED",
+      "accuracy_verified": false,
+      "reference_comparison": []
+    },
+    {
+      "case": "axis-bluebeam",
+      "input_file": "V50-1-0842 - Plan B2, Del 42, Värme & Sanitäranlägg-.pdf",
+      "input_sha256": "ef53f8474ca0a36eb6e0eaa55909c54c87af856b3e87806ca95be652d1c4cb70",
+      "page": 0,
+      "seconds": 11.81,
+      "rows": 8,
+      "totals": {
+        "physical_pipes": 20,
+        "confirmed_horizontal_m": 116.748,
+        "confirmed_vertical_m": 0.0,
+        "confirmed_total_m": 116.748,
+        "ambiguous_m": 236.783,
+        "in_hatched_area_m": 143.696,
+        "riser_labels": 0
+      },
+      "coverage_verdict": "DEGRADED",
+      "accuracy_verified": false,
+      "reference_comparison": []
+    },
+    {
+      "case": "style4-heavy-dashed",
+      "input_file": "6.pdf",
+      "input_sha256": "8f070fe1eea57a52d84e89ae9232f587f332dbedbde2daeb05aa3edd33697ade",
+      "page": 0,
+      "seconds": 44.98,
+      "rows": 16,
+      "totals": {
+        "physical_pipes": 95,
+        "confirmed_horizontal_m": 413.023,
+        "confirmed_vertical_m": 0.0,
+        "confirmed_total_m": 413.023,
+        "ambiguous_m": 109.728,
+        "in_hatched_area_m": 1.291,
+        "riser_labels": 0
+      },
+      "coverage_verdict": "DEGRADED",
+      "accuracy_verified": false,
+      "reference_comparison": []
+    },
+    {
+      "case": "style6-single-width",
+      "input_file": "R1502.pdf",
+      "input_sha256": "93f060ebf7760e1e3ede566f613315b54f99ca7432516fcd507c7e73d0b2bf6c",
+      "page": 0,
+      "seconds": 38.57,
+      "rows": 0,
+      "totals": {
+        "physical_pipes": 0,
+        "confirmed_horizontal_m": 0,
+        "confirmed_vertical_m": 0,
+        "confirmed_total_m": 0,
+        "ambiguous_m": 0,
+        "in_hatched_area_m": 0,
+        "riser_labels": 0
+      },
+      "coverage_verdict": "INVALID",
+      "accuracy_verified": false,
+      "reference_comparison": []
+    }
+  ],
+  "main_account": {
+    "job_id": "b119b50e47db4fa4902ee090a1da9925",
+    "status": "COMPLETED",
+    "balance_before": 1.0,
+    "balance_after": 1.0,
+    "ledger_unchanged": true,
+    "role_unchanged": true,
+    "exports": {
+      "xlsx": {
+        "bytes": 6017,
+        "valid": true
+      },
+      "csv": {
+        "bytes": 1132,
+        "valid": true
+      },
+      "json": {
+        "bytes": 24140,
+        "valid": true
+      },
+      "report": {
+        "bytes": 2581,
+        "valid": true
+      },
+      "pdf": {
+        "bytes": 490601,
+        "valid": true
+      }
+    },
+    "input_pdf_sha256": "c2884f3007f3764a5f566c57264acf05c830dc892d6f5087029cff745492ab5f",
+    "quantities": {
+      "physical_pipes": 46,
+      "confirmed_horizontal_m": 209.711,
+      "confirmed_vertical_m": 0.94,
+      "confirmed_total_m": 210.651,
+      "ambiguous_m": 1.439,
+      "in_hatched_area_m": 12.096,
+      "riser_labels": 68
+    }
+  },
+  "reference_scope": "Post-freeze comparison of confirmed drawn centreline segments outside hatching; exact designation; 1 PDF point tolerance; excludes dash gaps and vertical metres. Partial development references, not an independent acceptance test.",
+  "ui_verification": "Server restarted and new built login page loaded; account result was verified through local maintenance calls to ordinary backend handlers. User session expired, result view requires sign-in.",
+  "limitations": [
+    "Large missed quantities on 0201112 and 0501112",
+    "Style 4 quantity increase lacks independent reference validation",
+    "Scanned drawing takeoff is not implemented",
+    "787 unique PDFs inventoried, not all validated",
+    "OCR R1502 result is historical from 2026-09-19, not rerun with this engine"
+  ]
+}

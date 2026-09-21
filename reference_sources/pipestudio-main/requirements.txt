@@ -1,0 +1,15 @@
+PyMuPDF>=1.24               # vector PDF parsing + rendering
+numpy>=1.26
+opencv-python-headless>=4.9 # raster ops (hatch mask, painting, raster fallback)
+shapely>=2.0                # centreline merging + polygon buffering
+scikit-image>=0.22          # skeletonisation (raster fallback only)
+scipy>=1.11
+pytesseract>=0.3.10         # label OCR (also needs the `tesseract` binary)
+onnxruntime           # ML label / joining-point detector (pipe_ai.py,
+                            # YOLOX ONNX).  On a CUDA host install
+                            # onnxruntime-gpu INSTEAD (never both — they
+                            # shadow each other) plus the NVIDIA wheels it
+                            # links against.
+
+anthropic>=1.2              # Claude Fable binding stage (vectorascore/llm_bind.py, provider "fable")
+openai>=2.0                 # OpenAI GPT-6 Astra binding stage (same file, provider "astra")

@@ -1,0 +1,18 @@
+{
+  "category": "valve",
+  "description": "Ritningssymboler för ventiler m m. For a backventil the flow direction runs from the unmarked field to the marked field. For a trevägsventil the marked fields indicate the controllable valve opening.",
+  "entries": [
+    { "code": "AV",  "term_sv": "Avstängningsventil, tvåvägs",   "term_en": "Shut-off valve, two-way",        "ways": 2, "symbol_description": "Two opposed triangles (bowtie) in the pipe run.", "older_symbol": "Filled dot with a short stem." },
+    { "code": "SV",  "term_sv": "Styrventil, tvåvägs",           "term_en": "Control valve, two-way",         "ways": 2, "symbol_description": "Single triangle on a stem in the pipe run." },
+    { "code": "AV",  "term_sv": "Avstängningsventil, trevägs",   "term_en": "Shut-off valve, three-way",      "ways": 3, "symbol_description": "Bowtie with a third branch on a stem.", "older_symbol": "Filled dot with a stem on a tee." },
+    { "code": "SV",  "term_sv": "Styrventil, trevägs",           "term_en": "Control valve, three-way",       "ways": 3, "symbol_description": "Bowtie with a marked field and a third branch.", "older_symbol": "Filled triangle with an arrow stem." },
+    { "code": "AV",  "term_sv": "Avstängningsventil, fyrvägs",   "term_en": "Shut-off valve, four-way",       "ways": 4, "symbol_description": "Four-way cross of triangles." },
+    { "code": "SV",  "term_sv": "Styrventil, fyrvägs",           "term_en": "Control valve, four-way",        "ways": 4, "symbol_description": "Four-way cross of triangles with marked fields." },
+    { "code": "BV",  "term_sv": "Backventil",                    "term_en": "Check valve / non-return valve", "symbol_description": "Bowtie with one field filled. Flow runs from the unmarked to the marked field.", "older_symbol": "Triangle against a bar, filled or open." },
+    { "code": "SÄV", "term_sv": "Säkerhetsventil",               "term_en": "Safety relief valve",            "symbol_description": "Bowtie with a downward arrow on the stem." },
+    { "code": "TV",  "term_sv": "Tappventil",                    "term_en": "Draw-off / tap valve",           "symbol_description": "Short perpendicular stem with a dot at the pipe." },
+    { "code": "AL",  "term_sv": "Luftavledare",                  "term_en": "Air vent / air release device",  "symbol_description": "Inverted hook on a stem rising from the pipe." },
+    { "code": "VAV", "term_sv": "Vakuumventil",                  "term_en": "Vacuum breaker valve",           "symbol_description": "Comb of short vertical strokes on the pipe." },
+    { "code": "BL",  "term_sv": "Blandare",                      "term_en": "Mixer / mixing tap",             "symbol_description": "Two dots on the pipe joined by a bracket to a single outlet stem." }
+  ]
+}

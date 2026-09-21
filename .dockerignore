@@ -1,0 +1,15 @@
+.git
+.venv
+.local
+node_modules
+frontend/node_modules
+frontend/dist
+results
+# ritningarna och facit, aldrig i bilden. Monstret ar rotat: `data` utan snedstreck matchar varje
+# katalog som heter data, aven backend/app/data - dar materialboken bor och maste folja med.
+/data
+scratch
+**/__pycache__
+**/*.pyc
+.pytest_cache
+backend/data

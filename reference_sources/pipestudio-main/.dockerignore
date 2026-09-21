@@ -1,0 +1,37 @@
+.venv/
+__pycache__/
+*.py[cod]
+.git/
+.github/
+cloudbuild.yaml
+deploy/
+.claude/
+
+# drawings, generated output and the local-only review tool
+clean/
+Ritningar utan mängdning (1)/
+check_lines/
+label_attach/
+output/
+debug/
+review/
+tiles_output/
+# The review pipeline now ships: service/review.py imports it for the detection
+# stages the review UI edits, so the two cannot drift apart. Only its own front
+# end and the standalone launcher stay out of the image.
+reviewapp/static/
+review_tool.py
+tiles.py
+*.pdf
+*.xml
+*.xlsx
+*.docx
+*.png
+
+.studio/
+feedback/
+.env
+.env.*
+*.ses
+.codex/
+uploads/

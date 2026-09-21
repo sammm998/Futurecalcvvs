@@ -1,0 +1,570 @@
+{
+ "version": 2,
+ "built": "2026-09-08",
+ "accept_distance": 0.15,
+ "note": "one measured profile per known drawing style; starting values apply only when the sheet confirms them",
+ "styles": [
+  {
+   "id": "sweco-pdfplot-strokes",
+   "name": "AutoCAD - pdfplot14-16 - Ghostscript 9.21",
+   "note": "Sweco / AutoCAD MEP via pdfplot, lettering as 0.72 pt strokes, pipes 1.44 / 2.04, leader 0.48 (the reference family)",
+   "sheet": "W-50-1-A-0131.pdf",
+   "profile": {
+    "format": "A1",
+    "page": [
+     2384,
+     1684
+    ],
+    "page_no": 0,
+    "u_paper": 1.0,
+    "text_height": 11.0,
+    "text_mode": "strokes",
+    "font": "ISOCPEUR",
+    "n_layers": 51,
+    "layered": true,
+    "hairline": false,
+    "width_ladder": [
+     0.72,
+     0.48,
+     1.44,
+     0.0,
+     0.96,
+     2.04
+    ],
+    "ring_pt": 2.76,
+    "ring_mm": 0.97,
+    "dash_gap_pt": 2.5,
+    "grey_share": 0.103,
+    "fill_share": 0.0,
+    "n_paths": 36417,
+    "n_texts": 4
+   },
+   "starting_values": {
+    "pipe_widths": [
+     1.44,
+     2.04
+    ],
+    "leader_width": 0.48
+   },
+   "studio_style_id": "style-1"
+  },
+  {
+   "id": "sweco-pdfplot-text",
+   "name": "Sweco - AutoCAD MEP 2020 - pdfplot15",
+   "note": "Sweco / AutoCAD MEP via pdfplot, real ISOCPEUR text, pipes 1.44 / 2.28, leader 0.72 (0.36 is revision clouds)",
+   "sheet": "V-50-1-A0122.pdf",
+   "profile": {
+    "format": "A1",
+    "page": [
+     2384,
+     1684
+    ],
+    "page_no": 0,
+    "u_paper": 1.0,
+    "text_height": 10.99,
+    "text_mode": "text",
+    "font": "ISOCPEUR",
+    "n_layers": 87,
+    "layered": true,
+    "hairline": false,
+    "width_ladder": [
+     0.72,
+     0.0,
+     1.44,
+     0.96,
+     0.48,
+     0.36
+    ],
+    "ring_pt": 2.57,
+    "ring_mm": 0.91,
+    "dash_gap_pt": 2.5,
+    "grey_share": 0.012,
+    "fill_share": 0.0,
+    "n_paths": 23275,
+    "n_texts": 458
+   },
+   "starting_values": {
+    "pipe_widths": [
+     1.44,
+     2.28
+    ],
+    "leader_width": 0.72
+   }
+  },
+  {
+   "id": "priorn-shx",
+   "name": "AutoCAD - pdfplot14-16 - Ghostscript 9.21",
+   "note": "Sweco / AutoCAD 2018 via pdfplot14, SHX text as stroked glyphs (7 text objects), pipes 1.44",
+   "sheet": "V-50-1-A0101.pdf",
+   "profile": {
+    "format": "A1",
+    "page": [
+     2384,
+     1684
+    ],
+    "page_no": 0,
+    "u_paper": 1.0,
+    "text_height": 11.0,
+    "text_mode": "strokes",
+    "font": "ArialMT",
+    "n_layers": 49,
+    "layered": true,
+    "hairline": false,
+    "width_ladder": [
+     0.72,
+     0.36,
+     0.0,
+     0.54,
+     1.44,
+     1.08
+    ],
+    "ring_pt": 2.7,
+    "ring_mm": 0.95,
+    "dash_gap_pt": 2.5,
+    "grey_share": 0.0,
+    "fill_share": 0.0,
+    "n_paths": 19518,
+    "n_texts": 7
+   },
+   "starting_values": {
+    "pipe_widths": [
+     1.44
+    ]
+   },
+   "studio_style_id": "style-1"
+  },
+  {
+   "id": "eon-hairline",
+   "name": "Sweco - AutoCAD 2023 - pdfplot16 - Hairline",
+   "note": "Sweco / AutoCAD 2023 via pdfplot16, every width 0: families by (colour, layer), pipes on the V layers",
+   "sheet": "R9UHA10-CLB001-002.pdf",
+   "profile": {
+    "format": "A1",
+    "page": [
+     2384,
+     1684
+    ],
+    "page_no": 0,
+    "u_paper": 0.92,
+    "text_height": 10.12,
+    "text_mode": "text",
+    "font": "ISOCPEUR",
+    "n_layers": 37,
+    "layered": true,
+    "hairline": true,
+    "width_ladder": [
+     0.0
+    ],
+    "ring_pt": 2.76,
+    "ring_mm": 0.97,
+    "dash_gap_pt": null,
+    "grey_share": 0.254,
+    "fill_share": 0.0,
+    "n_paths": 18198,
+    "n_texts": 96
+   }
+  },
+  {
+   "id": "axis-bluebeam",
+   "name": "VVS Konsulterna - Revit - Bluebeam Brewery 5.0",
+   "note": "Tyréns via Bluebeam Brewery: pipes 0.66, stroked text 0.48, fixtures 0.96, wall strokes 1.38; labels underlined, the leader continues the underline in the pipe pen",
+   "sheet": "V50-1-0842 - Plan B2, Del 42, Värme & Sanitäranlägg-.pdf",
+   "profile": {
+    "format": "A1",
+    "page": [
+     2384,
+     1684
+    ],
+    "page_no": 0,
+    "u_paper": 1.0,
+    "text_height": 11.11,
+    "text_mode": "text",
+    "font": "Arial",
+    "n_layers": 0,
+    "layered": false,
+    "hairline": false,
+    "width_ladder": [
+     0.48,
+     0.96,
+     0.66,
+     1.38,
+     0.06
+    ],
+    "ring_pt": 2.85,
+    "ring_mm": 1.01,
+    "dash_gap_pt": 16.0,
+    "grey_share": 0.039,
+    "fill_share": 0.03,
+    "n_paths": 14528,
+    "n_texts": 462
+   },
+   "starting_values": {
+    "pipe_widths": [
+     0.66
+    ],
+    "leader_width": 0.66
+   },
+   "conventions": {
+    "labels_underlined": true
+   }
+  },
+  {
+   "id": "bd-ghostscript",
+   "name": "Bengt Dahlgren - Ghostscript 9.21",
+   "note": "Bengt Dahlgren via Ghostscript 9.21: pipes 1.41 / 2.82, leader 0.51, glyphs 0.72, the leader ends in a ring",
+   "sheet": "1760279_1.pdf",
+   "profile": {
+    "format": "A1",
+    "page": [
+     2384,
+     1684
+    ],
+    "page_no": 0,
+    "u_paper": 1.0,
+    "text_height": 10.99,
+    "text_mode": "text",
+    "font": "ISOCPEUR",
+    "n_layers": 0,
+    "layered": false,
+    "hairline": false,
+    "width_ladder": [
+     0.72,
+     0.51,
+     0.0,
+     1.41,
+     0.99,
+     2.82
+    ],
+    "ring_pt": 2.85,
+    "ring_mm": 1.01,
+    "dash_gap_pt": 5.0,
+    "grey_share": 0.095,
+    "fill_share": 0.001,
+    "n_paths": 15912,
+    "n_texts": 378
+   },
+   "starting_values": {
+    "pipe_widths": [
+     1.41,
+     2.82
+    ],
+    "leader_width": 0.51
+   },
+   "studio_style_id": "bd-ghostscript"
+  },
+  {
+   "id": "hyllie-ghostscript",
+   "name": "AutoCAD - pdfplot14-16 - Ghostscript 9.21",
+   "note": "Otto Magnusson / Bengt Dahlgren via Ghostscript: pipes 1.44 / 2.04, architecture in grey, leader 0.48",
+   "sheet": "10.pdf",
+   "profile": {
+    "format": "A1",
+    "page": [
+     2384,
+     1684
+    ],
+    "page_no": 0,
+    "u_paper": 1.0,
+    "text_height": 11.0,
+    "text_mode": "text",
+    "font": "ISOCPEUR",
+    "n_layers": 0,
+    "layered": false,
+    "hairline": false,
+    "width_ladder": [
+     0.72,
+     1.44,
+     0.48,
+     0.96,
+     2.04
+    ],
+    "ring_pt": 2.76,
+    "ring_mm": 0.97,
+    "dash_gap_pt": 2.5,
+    "grey_share": 0.387,
+    "fill_share": 0.0,
+    "n_paths": 12824,
+    "n_texts": 252
+   },
+   "starting_values": {
+    "pipe_widths": [
+     1.44,
+     2.04
+    ],
+    "leader_width": 0.48
+   },
+   "studio_style_id": "style-1"
+  },
+  {
+   "id": "badskon-a3-booklet",
+   "name": "PO Andersson - Ghostscript 9.21",
+   "note": "Ghostscript booklet, A3 plans at half size: pipes 0.48, text 5.5 pt, ring still 3 pt",
+   "sheet": "Badskon 1.pdf",
+   "profile": {
+    "format": "A3",
+    "page": [
+     1191,
+     842
+    ],
+    "page_no": 2,
+    "u_paper": 0.5,
+    "text_height": 5.5,
+    "text_mode": "text",
+    "font": "ISOCPEUR",
+    "n_layers": 0,
+    "layered": false,
+    "hairline": false,
+    "width_ladder": [
+     0.24,
+     0.48,
+     0.72,
+     0.0
+    ],
+    "ring_pt": 1.32,
+    "ring_mm": 0.47,
+    "dash_gap_pt": 2.5,
+    "grey_share": 0.258,
+    "fill_share": 0.013,
+    "n_paths": 10231,
+    "n_texts": 1241
+   },
+   "starting_values": {
+    "pipe_widths": [
+     0.48
+    ]
+   }
+  },
+  {
+   "id": "lopoglan-booklet",
+   "name": "Bengt Dahlgren - Ghostscript 9.21",
+   "note": "Ghostscript booklet with A4 covers, A1 plans: pipes 0.72, grid lines 0.27",
+   "sheet": "Löpöglan 2.pdf",
+   "profile": {
+    "format": "A1",
+    "page": [
+     2384,
+     1684
+    ],
+    "page_no": 3,
+    "u_paper": 1.0,
+    "text_height": 10.99,
+    "text_mode": "text",
+    "font": "ISOCPEUR",
+    "n_layers": 0,
+    "layered": false,
+    "hairline": false,
+    "width_ladder": [
+     0.36,
+     0.72,
+     0.27,
+     0.51,
+     0.0
+    ],
+    "ring_pt": 4.17,
+    "ring_mm": 1.47,
+    "dash_gap_pt": 10.0,
+    "grey_share": 0.0,
+    "fill_share": 0.02,
+    "n_paths": 11036,
+    "n_texts": 99
+   },
+   "starting_values": {
+    "pipe_widths": [
+     0.72
+    ]
+   },
+   "studio_style_id": "bd-ghostscript"
+  },
+  {
+   "id": "blackhornet-2xa0",
+   "name": "Arildssons Rör - Ghostscript 9.21",
+   "note": "Ghostscript booklet, double A0 sheets, lettering in heavy strokes (1.42 / 1.98 are glyphs): pipes 0.71",
+   "sheet": "Bläckhornet.pdf",
+   "profile": {
+    "format": "2xA0",
+    "page": [
+     7152,
+     3371
+    ],
+    "page_no": 1,
+    "u_paper": 1.0,
+    "text_height": 11.0,
+    "text_mode": "text",
+    "font": "ISOCPEUR",
+    "n_layers": 0,
+    "layered": false,
+    "hairline": false,
+    "width_ladder": [
+     1.42,
+     0.51,
+     0.71,
+     1.98,
+     0.99,
+     0.24
+    ],
+    "ring_pt": null,
+    "ring_mm": null,
+    "dash_gap_pt": 0.25,
+    "grey_share": 0.726,
+    "fill_share": 0.004,
+    "n_paths": 19760,
+    "n_texts": 476
+   },
+   "starting_values": {
+    "pipe_widths": [
+     0.71
+    ]
+   }
+  },
+  {
+   "id": "style4-heavy-dashed",
+   "name": "PQR Malmö - Bluebeam Revu - Ghostscript 9.21",
+   "note": "Ghostscript export, two-line labels (code over underlined dimension), pipes 0.96 solid and dashed, leader 0.48",
+   "sheet": "6.pdf",
+   "profile": {
+    "format": "A1",
+    "page": [
+     2384,
+     1684
+    ],
+    "page_no": 0,
+    "u_paper": 1.0,
+    "text_height": 10.99,
+    "text_mode": "text",
+    "font": "ISOCPEUR",
+    "n_layers": 0,
+    "layered": false,
+    "hairline": false,
+    "width_ladder": [
+     0.72,
+     0.48,
+     0.96,
+     0.0,
+     0.24,
+     1.44
+    ],
+    "ring_pt": 2.76,
+    "ring_mm": 0.97,
+    "dash_gap_pt": 5.0,
+    "grey_share": 0.181,
+    "fill_share": 0.091,
+    "n_paths": 24354,
+    "n_texts": 215
+   },
+   "starting_values": {
+    "pipe_widths": [
+     0.96
+    ],
+    "leader_width": 0.48
+   }
+  },
+  {
+   "id": "style5-sewer-plan",
+   "name": "Rejlers - Bluebeam Revu - Ghostscript 9.21",
+   "note": "Ghostscript export, S1 sewer runs 0.96 dashed with VG levels, leader 0.24",
+   "sheet": "2.pdf",
+   "profile": {
+    "format": "A1",
+    "page": [
+     2384,
+     1684
+    ],
+    "page_no": 0,
+    "u_paper": 1.0,
+    "text_height": 10.99,
+    "text_mode": "text",
+    "font": "ISOCPEUR",
+    "n_layers": 0,
+    "layered": false,
+    "hairline": false,
+    "width_ladder": [
+     0.12,
+     0.0,
+     0.24,
+     0.36,
+     0.96,
+     0.48
+    ],
+    "ring_pt": 7.8,
+    "ring_mm": 2.75,
+    "dash_gap_pt": 5.0,
+    "grey_share": 0.0,
+    "fill_share": 0.008,
+    "n_paths": 8189,
+    "n_texts": 588
+   },
+   "starting_values": {
+    "pipe_widths": [
+     0.96
+    ],
+    "leader_width": 0.24
+   }
+  },
+  {
+   "id": "style9-thin-dashdot",
+   "name": "Kjell Petersson - Bluebeam Revu - Ghostscript 9.21",
+   "note": "Bluebeam Revu export, few labels, walls 0.99, dash-dot pipes 0.72: pipe family unresolved, recognition only",
+   "sheet": "10.pdf",
+   "profile": {
+    "format": "A1",
+    "page": [
+     2384,
+     1684
+    ],
+    "page_no": 0,
+    "u_paper": 0.8,
+    "text_height": 8.8,
+    "text_mode": "text",
+    "font": "ISOCPEUR",
+    "n_layers": 0,
+    "layered": false,
+    "hairline": false,
+    "width_ladder": [
+     0.51,
+     0.0,
+     0.72,
+     0.99,
+     0.42
+    ],
+    "ring_pt": null,
+    "ring_mm": null,
+    "dash_gap_pt": null,
+    "grey_share": 0.001,
+    "fill_share": 0.219,
+    "n_paths": 11303,
+    "n_texts": 354
+   }
+  },
+  {
+   "id": "style6-single-width",
+   "name": "Sweco - Bluebeam Brewery 5.0 - Uniform Stroke",
+   "note": "Every stroke 0.36 pt and no text objects: not solvable by width, labels only from the detector",
+   "sheet": "R1502.pdf",
+   "profile": {
+    "format": "A1",
+    "page": [
+     2384,
+     1684
+    ],
+    "page_no": 0,
+    "u_paper": 1.0,
+    "text_height": 11.0,
+    "text_mode": "strokes",
+    "font": null,
+    "n_layers": 0,
+    "layered": false,
+    "hairline": false,
+    "width_ladder": [
+     0.36
+    ],
+    "ring_pt": null,
+    "ring_mm": null,
+    "dash_gap_pt": null,
+    "grey_share": 0.0,
+    "fill_share": 0.586,
+    "n_paths": 18583,
+    "n_texts": 0
+   }
+  }
+ ]
+}

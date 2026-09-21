@@ -1,0 +1,11 @@
+{
+  "category": "control_device",
+  "description": "Ritningssymboler för styrventiler m m — control and actuator symbols. On older ritningar the ställdon (actuator) symbol was a square rather than a circle.",
+  "entries": [
+    { "code": "RC", "term_sv": "Reglercentral",                "term_en": "Control unit / controller",              "symbol_description": "Small square with dashed lines rising from it." },
+    { "code": "ST", "term_sv": "Handställdon",                 "term_en": "Manual actuator",                        "symbol_description": "T shape on the valve stem." },
+    { "code": "ST", "term_sv": "Övriga ställdon, grundsymbol", "term_en": "Other actuators, base symbol",           "symbol_description": "Circle on the valve stem.", "older_symbol": "Square on the valve stem." },
+    { "code": "SV", "term_sv": "Styrventil, manuell",          "term_en": "Control valve, manual",                  "symbol_description": "Bowtie with a plain stem." },
+    { "code": "SV", "term_sv": "Styrventil med automatiskt ställdon", "term_en": "Control valve with automatic actuator", "symbol_description": "Bowtie with a circle (actuator) on the stem.", "older_symbol": "Bowtie with a square on the stem." }
+  ]
+}

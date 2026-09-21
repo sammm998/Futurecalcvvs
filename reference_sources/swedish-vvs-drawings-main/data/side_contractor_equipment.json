@@ -1,0 +1,13 @@
+{
+  "category": "side_contractor_equipment",
+  "description": "Beteckningar som avser sidoentreprenörers installationer eller arbeten — designations for equipment installed under another (side) contract, mostly ventilation equipment.",
+  "entries": [
+    { "code": "LV",  "term_sv": "Luftvärmare (i ventilationsutrustning)",      "term_en": "Air heater (in ventilation equipment)" },
+    { "code": "LK",  "term_sv": "Luftkylare (i ventilationsutrustning)",       "term_en": "Air cooler (in ventilation equipment)" },
+    { "code": "SL",  "term_sv": "Slutapparat (i ventilationsutrustning)",      "term_en": "Terminal unit (in ventilation equipment)", "notes": "Code collision: SL also denotes Säkerhetsledning as a system designation." },
+    { "code": "EB",  "term_sv": "Kylbaffel (utan tilluft)",                    "term_en": "Chilled beam (without supply air)" },
+    { "code": "TB",  "term_sv": "Kylbaffel (med tilluft)",                     "term_en": "Chilled beam (with supply air)", "notes": "Code collision: TB also denotes Tillsynsbrunn among wells." },
+    { "code": "LVE", "term_sv": "Lufteftervärmare (i ventilationsutrustning)", "term_en": "Air reheater (in ventilation equipment)" },
+    { "code": "IL",  "term_sv": "Inspektionslucka",                            "term_en": "Inspection hatch / access panel" }
+  ]
+}

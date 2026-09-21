@@ -1,0 +1,18 @@
+{
+  "protocolVersion": 2,
+  "status": "succeeded",
+  "drawingId": "44444444-4444-4444-8444-444444444444",
+  "runId": "55555555-5555-4555-8555-555555555555",
+  "coordinateSpace": { "width": 4961, "height": 3508 },
+  "scale": null,
+  "pipes": [
+    {
+      "id": "p1",
+      "geometry": { "nodes": [{ "id": 1, "x": 0, "y": 0 }, { "id": 2, "x": 900, "y": 0 }], "edges": [[1, 2]] },
+      "length": { "px": 900 },
+      "labelId": null
+    }
+  ],
+  "labels": [],
+  "metadata": { "warnings": ["scale_not_found"] }
+}

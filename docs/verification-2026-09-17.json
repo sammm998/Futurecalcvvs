@@ -1,0 +1,58 @@
+{
+  "date": "2026-09-17",
+  "engine_source_sha256": "edca53d4652392142659c2f7635c82efc4ff9b17bc6f06499052f603dd5e76f3",
+  "tests": {
+    "passed": 856,
+    "skipped": 3,
+    "seconds": 368.43
+  },
+  "frontend": [
+    "i18n",
+    "eslint",
+    "typescript",
+    "vite"
+  ],
+  "api_exports": [
+    "xlsx",
+    "csv",
+    "json",
+    "report",
+    "pdf"
+  ],
+  "scope": "Exact designation, confirmed drawn centreline segments outside hatch, tolerance 1 PDF point. Partial references; not overall accuracy.",
+  "spatial": {
+    "0201112": {
+      "reference_pt": 19649.495639598244,
+      "predicted_pt": 1531.760982319562,
+      "reference_recovered_pt": 1285.615921573306,
+      "prediction_supported_pt": 1137.9755394623273,
+      "missed_pt": 18363.87971802494,
+      "unsupported_pt": 393.78544285723467,
+      "duplicate_prediction_pt": 18.480000000000388,
+      "reference_coverage": 0.06542742598351964,
+      "prediction_support": 0.7429197848734069
+    },
+    "0501112": {
+      "reference_pt": 3989.9075987783453,
+      "predicted_pt": 371.46102573696976,
+      "reference_recovered_pt": 340.7763566120986,
+      "prediction_supported_pt": 302.2353341484957,
+      "missed_pt": 3649.131242166247,
+      "unsupported_pt": 69.225691588474,
+      "duplicate_prediction_pt": 0.0,
+      "reference_coverage": 0.08540958610581348,
+      "prediction_support": 0.8136394216563314
+    },
+    "0011": {
+      "reference_pt": 12096.748950880217,
+      "predicted_pt": 9958.464180242057,
+      "reference_recovered_pt": 10002.13744567367,
+      "prediction_supported_pt": 9257.796683325012,
+      "missed_pt": 2094.611505206547,
+      "unsupported_pt": 700.6674969170463,
+      "duplicate_prediction_pt": 27.239999999999156,
+      "reference_coverage": 0.8268450875758537,
+      "prediction_support": 0.9296410084692383
+    }
+  }
+}

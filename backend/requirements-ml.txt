@@ -1,0 +1,2 @@
+# Optional local label-box detector, independent of character OCR and cloud APIs.
+onnxruntime>=1.20

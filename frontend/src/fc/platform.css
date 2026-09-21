@@ -1,0 +1,75 @@
+/* Plattformen och VPR.
+ *
+ * Samma mörka publika språk som startsidan, men stillsammare: de här sidorna ska gå att läsa, inte upplevas.
+ * Innehållsförteckningen är sidans kärna - en rad per del, numret först, namnet stort, meningen därefter -
+ * och den bygger på grid i stället för absoluta mått så att den håller från telefon till bred skärm.
+ */
+.fc-plat { background: var(--fc-bg); color: var(--fc-ink); min-height: 100svh; }
+
+.fc-plat-head {
+  padding: clamp(120px, 20vh, 220px) var(--fc-gut) clamp(48px, 8vh, 96px);
+  display: grid; gap: 18px; max-width: 1400px;
+}
+.fc-plat-head h1 { margin: 0; max-width: 16ch; }
+.fc-plat-lede { max-width: 62ch; color: var(--fc-ink-60); }
+.fc-plat-cta { display: flex; flex-wrap: wrap; align-items: center; gap: 18px 28px; margin-top: 14px; }
+.fc-plat-meta { display: flex; flex-wrap: wrap; gap: 10px 28px; margin-top: 10px; }
+
+/* innehållsförteckningen */
+.fc-plat-index { padding: 0 var(--fc-gut) clamp(60px, 10vh, 120px); }
+.fc-plat-index ol { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--fc-line); }
+.fc-plat-index li { border-bottom: 1px solid var(--fc-line); }
+.fc-plat-index a {
+  display: grid; align-items: baseline; gap: 4px 28px;
+  grid-template-columns: 3.5rem minmax(0, 12rem) minmax(0, 1fr) 2rem;
+  padding: clamp(18px, 2.6vh, 32px) 0; text-decoration: none; color: inherit;
+  transition: background var(--fc-d-fast) var(--fc-e-primary), padding-left var(--fc-d-fast) var(--fc-e-primary);
+}
+.fc-plat-index a:hover { background: rgba(242, 241, 237, 0.045); padding-left: 14px; }
+.fc-plat-index a:focus-visible { outline: 2px solid var(--fc-accent); outline-offset: -2px; }
+.fc-plat-n { color: var(--fc-ink-24); }
+.fc-plat-t { font-size: clamp(1.4rem, 2.6vw, 2.3rem); font-weight: 600; letter-spacing: -0.03em; }
+.fc-plat-d { color: var(--fc-ink-60); max-width: 60ch; }
+.fc-plat-arrow { justify-self: end; color: var(--fc-ink-24); transition: color var(--fc-d-fast) var(--fc-e-primary); }
+.fc-plat-index a:hover .fc-plat-arrow { color: var(--fc-accent); }
+@media (max-width: 900px) {
+  .fc-plat-index a { grid-template-columns: 3rem minmax(0, 1fr); }
+  .fc-plat-arrow, .fc-plat-d { grid-column: 2; }
+  .fc-plat-arrow { justify-self: start; }
+}
+
+/* kedjan på VPR-sidan */
+.fc-plat-steps { padding: 0 var(--fc-gut) clamp(60px, 10vh, 120px); }
+.fc-plat-steps ol {
+  list-style: none; margin: 22px 0 0; padding: 0;
+  display: grid; gap: 1px; background: var(--fc-line);
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); border: 1px solid var(--fc-line);
+}
+.fc-plat-steps li { background: var(--fc-bg); padding: clamp(20px, 3vh, 34px); display: grid; gap: 10px; align-content: start; }
+.fc-plat-step-t { font-size: clamp(1.15rem, 1.8vw, 1.6rem); margin: 0; letter-spacing: -0.02em; }
+.fc-plat-steps p { color: var(--fc-ink-60); margin: 0; }
+
+/* det läsningen vägrar */
+.fc-plat-refuse {
+  padding: 0 var(--fc-gut) clamp(60px, 10vh, 120px);
+  display: grid; gap: clamp(24px, 4vw, 64px); grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  align-items: start;
+}
+.fc-plat-refuse h2 { margin: 10px 0 0; max-width: 18ch; }
+.fc-plat-refuse ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 1px; background: var(--fc-line); border-block: 1px solid var(--fc-line); }
+.fc-plat-refuse li { background: var(--fc-bg); padding: clamp(14px, 2vh, 22px) 0 clamp(14px, 2vh, 22px) 26px; position: relative; color: var(--fc-ink-60); }
+.fc-plat-refuse li::before { content: "—"; position: absolute; left: 0; color: var(--fc-ink-24); }
+@media (max-width: 860px) { .fc-plat-refuse { grid-template-columns: minmax(0, 1fr); } }
+
+/* vägen in */
+.fc-plat-open {
+  padding: clamp(40px, 7vh, 90px) var(--fc-gut); border-top: 1px solid var(--fc-line);
+  display: grid; gap: clamp(24px, 4vw, 64px); grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+  align-items: start;
+}
+.fc-plat-open h2 { margin: 10px 0 12px; max-width: 16ch; }
+.fc-plat-open p { color: var(--fc-ink-60); max-width: 52ch; margin: 0; }
+.fc-plat-open-links { display: grid; gap: 12px; justify-items: start; align-content: start; }
+@media (max-width: 860px) { .fc-plat-open { grid-template-columns: minmax(0, 1fr); } }
+
+.fc-plat-foot { padding-bottom: clamp(28px, 5vh, 56px); display: flex; flex-wrap: wrap; gap: 12px 30px; }

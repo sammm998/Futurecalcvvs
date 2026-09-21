@@ -1,0 +1,263 @@
+/* Startsidans scener.
+ *
+ * En scen per kapitel, och varje scen får sin egen form. Ingen av dem är ett kort i ett rutnät - det som
+ * håller ihop sidan är typografin och rummet, inte en upprepad behållare.
+ */
+
+.fc {
+  background: var(--fc-black);
+  color: var(--fc-ink);
+  font-family: var(--fc-sans);
+  overflow-x: clip;
+  position: relative;
+}
+.fc ::selection { background: var(--fc-accent); color: var(--fc-accent-ink); }
+
+/* ---------------------------------------------------------------- hjälten */
+.fc-hero {
+  position: relative;
+  min-height: 100svh;
+  display: grid;
+  grid-template-rows: 1fr auto;
+  padding: clamp(96px, 14vh, 190px) var(--fc-gut) clamp(28px, 5vh, 56px);
+  isolation: isolate;
+}
+.fc-hero-plan {
+  position: absolute; inset: 6% -14% auto auto;
+  width: min(78vw, 1180px); opacity: 0.4; z-index: -1;
+  mask-image: linear-gradient(200deg, #000 20%, transparent 78%);
+  -webkit-mask-image: linear-gradient(200deg, #000 20%, transparent 78%);
+}
+.fc-hero-in { align-self: center; }
+.fc-hero-eyebrow { margin: 0 0 clamp(20px, 4vh, 44px); }
+.fc-hero-l { margin: 0; }
+.fc-hero-l .fc-line { display: block; }
+.fc-hero-l i { font-size: 1.04em; }
+.fc-hero-meta {
+  position: absolute; right: var(--fc-gut); top: 46%;
+  display: grid; gap: 9px; justify-items: end; z-index: 2;
+}
+.fc-hero-foot {
+  display: flex; align-items: flex-end; justify-content: space-between; gap: clamp(20px, 4vw, 60px);
+  border-top: 1px solid var(--fc-line); padding-top: clamp(18px, 3vh, 30px);
+}
+.fc-hero-foot .fc-lead { margin: 0; max-width: 34ch; }
+.fc-hero-cta { display: flex; gap: 12px; flex: none; }
+@media (max-width: 900px) {
+  .fc-hero-meta { display: none; }
+  .fc-hero-plan { inset: auto -30% -4% auto; width: 150vw; opacity: 0.26; }
+  .fc-hero-foot { flex-direction: column; align-items: stretch; }
+  .fc-hero-cta { flex-wrap: wrap; }
+}
+
+/* ---------------------------------------------------------------- kapitelskylten */
+.fc-chap {
+  padding: clamp(56px, 11vh, 130px) var(--fc-gut) clamp(20px, 4vh, 48px);
+  display: grid; gap: 14px; max-width: var(--fc-col); margin: 0 auto;
+}
+.fc-chap-rule { height: 1px; background: var(--fc-line); margin-bottom: clamp(14px, 3vh, 34px); }
+/* Rubrik och ingress bredvid varandra. Under varandra blev sidan en trappa av tomma fält. */
+.fc-chap-in {
+  display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+  gap: clamp(20px, 5vw, 80px); align-items: end;
+}
+.fc-chap-t { margin: 0; max-width: 15ch; }
+.fc-chap-s { margin: 0; max-width: 48ch; padding-bottom: 0.6em; }
+@media (max-width: 860px) { .fc-chap-in { grid-template-columns: minmax(0, 1fr); align-items: start; } }
+
+/* ---------------------------------------------------------------- bladet som reser sig */
+.fc-rise { height: 340vh; position: relative; }
+.fc-rise-pin { position: sticky; top: 0; height: 100svh; overflow: hidden; }
+.fc-3d { position: absolute; inset: 0; width: 100%; height: 100%; }
+.fc-rise-3d { z-index: 0; }
+.fc-rise-over {
+  position: absolute; inset: 0; z-index: 1; pointer-events: none;
+  display: grid; grid-template-rows: auto 1fr auto;
+  padding: clamp(80px, 13vh, 150px) var(--fc-gut) clamp(28px, 5vh, 60px);
+}
+.fc-rise-t { max-width: 22ch; }
+.fc-rise-t .fc-label { max-width: none; white-space: nowrap; }
+.fc-rise-t h2 { margin: 8px 0 0; }
+/* Texten står ovanpå en modell som rör sig. En svag skugga bakom orden gör den läsbar mot både vägg och golv
+   utan att lägga en platta över bilden. */
+.fc-rise-t h2, .fc-rise-t p { text-shadow: 0 2px 24px rgba(8, 8, 8, 0.85); }
+.fc-rise-meta {
+  grid-row: 3; justify-self: end; display: grid; gap: 8px; justify-items: end;
+  background: rgba(8, 8, 8, 0.62); backdrop-filter: blur(10px);
+  border: 1px solid var(--fc-line); border-radius: var(--fc-r); padding: 14px 18px;
+}
+@media (max-width: 760px) {
+  .fc-rise { height: 280vh; }
+  .fc-rise-meta { justify-self: stretch; justify-items: start; }
+}
+
+/* ---------------------------------------------------------------- påståendet */
+.fc-state-in {
+  padding: 0 var(--fc-gut); max-width: var(--fc-col); margin: 0 auto; width: 100%;
+  display: grid; gap: clamp(18px, 4vh, 40px);
+}
+.fc-state-t { margin: 0; max-width: 18ch; }
+.fc-state-w { transition: opacity 0.5s var(--fc-e-primary); }
+.fc-state-b { margin: 0; max-width: 46ch; justify-self: end; }
+
+/* ---------------------------------------------------------------- mängdningsscenen */
+/* Bladet får ytan, läsningen står bredvid. Låg raderna under bladet blev scenen tre tomma band på höjden och
+   ett litet blad i mitten; bredvid varandra fyller de varandras luft och man ser mätningen och dess resultat
+   i samma blick - vilket är hela poängen med att visa dem alls. */
+.fc-take-in {
+  height: 100%; padding: clamp(66px, 9vh, 110px) var(--fc-gut) clamp(22px, 4vh, 44px);
+  display: grid;
+  grid-template-columns: minmax(0, 1.55fr) minmax(0, 0.85fr);
+  grid-template-rows: auto minmax(0, 1fr);
+  column-gap: clamp(20px, 3.5vw, 64px); row-gap: clamp(10px, 2vh, 22px);
+  max-width: var(--fc-col); margin: 0 auto; width: 100%;
+}
+.fc-take-head { grid-column: 1 / -1; }
+.fc-take-head h2 { margin: 6px 0 0; }
+.fc-take-side { display: grid; align-content: center; gap: clamp(16px, 3vh, 34px); min-height: 0; }
+.fc-take-stage { position: relative; min-height: 0; }
+/* Bladet och markeringen ovanpå det måste ligga i exakt samma ruta, annars pekar markeringen bredvid röret.
+   Båda är absolut placerade över hela ytan med samma viewBox, och båda låter preserveAspectRatio brevlåda
+   in bladet på samma sätt. Höjden är satt: ett blad med `height: auto` växer ur en scen som är en vy hög. */
+.fc-take-plan, .fc-take-over {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+}
+.fc-take-plan { transition: opacity 0.4s; }
+.fc-take-plan .bp { width: 100%; height: 100%; }
+.fc-take-over { pointer-events: none; }
+.fc-take-over .fc-take-dot { transform-origin: center; transform-box: fill-box; transition: opacity 0.3s, transform 0.4s var(--fc-e-primary); }
+/* När stråket tänds dämpas allt annat på bladet: det är så en mängdare tittar. */
+.fc-take.lit .fc-take-plan .bp-run { opacity: 0.16; transition: opacity 0.5s; }
+.fc-take.lit .fc-take-plan .bp-wall path { opacity: 0.5; }
+.fc-take-read {
+  display: grid; gap: 7px;
+  background: linear-gradient(180deg, var(--fc-bg-2), var(--fc-bg));
+  border: 1px solid var(--fc-line); border-radius: var(--fc-r); padding: clamp(14px, 1.6vw, 22px);
+}
+.fc-take-mwrap { margin: 6px 0 0; font-family: var(--fc-mono); font-size: clamp(22px, 3vw, 38px); color: var(--fc-accent); }
+.fc-take-mwrap span:last-child { font-size: 0.5em; color: var(--fc-ink-40); }
+.fc-take-m { font-variant-numeric: tabular-nums; }
+.fc-take-out { border-top: 1px solid var(--fc-line); padding-top: 16px; }
+.fc-take-rows { display: grid; gap: 2px; margin-top: 10px; }
+.fc-take-row {
+  display: grid; grid-template-columns: 1fr auto auto; gap: clamp(10px, 3vw, 40px);
+  font-family: var(--fc-mono); font-size: clamp(11px, 1vw, 13px); color: var(--fc-ink-60);
+  padding: 5px 0; border-bottom: 1px solid var(--fc-line-2);
+  opacity: 0; transition: opacity 0.4s var(--fc-e-primary), transform 0.4s var(--fc-e-primary);
+}
+.fc-take-row span:last-child { color: var(--fc-ink); font-variant-numeric: tabular-nums; }
+.fc-take-row.tot span:last-child { color: var(--fc-accent); }
+@media (max-width: 900px) {
+  .fc-take-in { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr) auto; }
+  .fc-take-side { align-content: end; }
+  .fc-take-stage { min-height: 30vh; }
+  .fc-take-out { display: none; }              /* på en telefon får mätningen plats, inte kalkylen med */
+}
+
+/* ---------------------------------------------------------------- rullande rad */
+.fc-mq { overflow: hidden; padding: clamp(24px, 6vh, 70px) 0; border-block: 1px solid var(--fc-line-2); }
+.fc-mq-t { display: flex; width: max-content; will-change: transform; }
+.fc-mq-t span {
+  font-family: var(--fc-sans); font-weight: 600;
+  font-size: clamp(2.4rem, 8vw, 7rem); line-height: 1; letter-spacing: -0.04em;
+  white-space: nowrap; color: transparent; -webkit-text-stroke: 1px var(--fc-ink-24);
+}
+
+/* ---------------------------------------------------------------- produktscenerna */
+.fc-show { padding: clamp(20px, 5vh, 60px) 0 clamp(60px, 12vh, 140px); }
+.fc-show-card {
+  flex: 0 0 min(76vw, 440px);
+  display: grid; gap: 16px; align-content: start;
+  border: 1px solid var(--fc-line); border-radius: var(--fc-r-lg);
+  padding: clamp(22px, 2.4vw, 38px);
+  background: linear-gradient(180deg, var(--fc-bg-2), var(--fc-bg));
+  min-height: min(62vh, 520px);
+  transition: border-color var(--fc-d-fast), transform 0.5s var(--fc-e-primary);
+}
+.fc-show-card:hover { border-color: var(--fc-line-3); transform: translateY(-4px); }
+.fc-show-card header { display: grid; gap: 10px; }
+.fc-show-card h3 { margin: 0; }
+.fc-show-card .fc-body { margin: 0; }
+.fc-show-tags { list-style: none; margin: auto 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 7px; }
+.fc-show-tags li { border: 1px solid var(--fc-line); border-radius: var(--fc-r-pill); padding: 5px 11px; }
+@media (max-width: 899px) {
+  .fc-show { padding: 0 var(--fc-gut) clamp(50px, 10vh, 100px); }
+  .fc-show-card { flex: none; min-height: 0; }
+}
+
+/* ---------------------------------------------------------------- akademin */
+.fc-ac {
+  display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 0.9fr);
+  gap: clamp(30px, 6vw, 90px); align-items: center;
+  padding: clamp(70px, 14vh, 170px) var(--fc-gut);
+  max-width: var(--fc-col); margin: 0 auto;
+}
+.fc-ac-l { display: grid; gap: 22px; justify-items: start; }
+.fc-ac-l h2 { margin: 0; }
+.fc-ac-l .fc-body { margin: 0; max-width: 50ch; }
+.fc-ac-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 1px; width: 100%; }
+.fc-ac-list li {
+  display: grid; grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr); gap: 18px;
+  padding: 14px 0; border-top: 1px solid var(--fc-line-2);
+}
+.fc-ac-list b { font-weight: 500; font-size: 15px; }
+.fc-ac-list span { color: var(--fc-ink-60); font-size: 14.5px; line-height: 1.5; }
+.fc-ac-r { display: grid; gap: 22px; }
+.fc-ac-cert { border-radius: var(--fc-r-lg); }
+.fc-ac-nums { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.fc-ac-nums p { margin: 4px 0 0; }
+@media (max-width: 900px) {
+  .fc-ac { grid-template-columns: minmax(0, 1fr); }
+  .fc-ac-list li { grid-template-columns: minmax(0, 1fr); gap: 4px; }
+}
+
+/* ---------------------------------------------------------------- certifikatet */
+.fc-cert {
+  background: var(--fc-paper); color: #0b0b0b;
+  padding: clamp(22px, 2.6vw, 40px); aspect-ratio: 1 / 1.22;
+  display: grid; align-content: start; gap: clamp(14px, 2vh, 26px);
+  position: relative;
+}
+.fc-cert::after {
+  content: ""; position: absolute; inset: 12px; border: 1px solid rgba(11, 11, 11, 0.14); pointer-events: none;
+}
+.fc-cert-top { display: flex; align-items: center; justify-content: space-between; }
+.fc-cert-mark { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; letter-spacing: -0.02em; }
+.fc-cert .fc-label { color: rgba(11, 11, 11, 0.5); }
+.fc-cert-name { font-size: clamp(26px, 3.4vw, 46px); line-height: 1; margin: clamp(10px, 3vh, 34px) 0 0; }
+.fc-cert-title { margin: 0; font-size: clamp(13px, 1.1vw, 16px); line-height: 1.35; color: rgba(11, 11, 11, 0.7); }
+.fc-cert-grid { display: grid; gap: 5px; margin-top: auto; }
+.fc-cert-grid .fc-tl-k { color: rgba(11, 11, 11, 0.42); }
+.fc-cert-grid .fc-tl-s { color: rgba(11, 11, 11, 0.25); }
+.fc-cert-grid .fc-tl-v { color: #0b0b0b; }
+.fc-cert-grid .fc-tl-v.on { color: #0a7a44; }
+.fc-cert-rule { height: 1px; background: rgba(11, 11, 11, 0.18); }
+
+/* ---------------------------------------------------------------- slutet */
+.fc-end {
+  position: relative; min-height: 88svh;
+  display: grid; align-content: center; justify-items: center; gap: clamp(22px, 5vh, 48px);
+  padding: clamp(70px, 14vh, 170px) var(--fc-gut); text-align: center;
+}
+.fc-end-t { margin: 0; max-width: 14ch; }
+.fc-end-cta { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+
+/* ---------------------------------------------------------------- foten */
+.fc-foot { padding: clamp(40px, 8vh, 90px) var(--fc-gut) 0; border-top: 1px solid var(--fc-line); }
+.fc-foot-links {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: clamp(20px, 4vw, 60px); max-width: var(--fc-col); margin: 0 auto;
+}
+.fc-foot-links > div { display: grid; gap: 7px; align-content: start; }
+.fc-foot-links .fc-link { color: var(--fc-ink-60); width: fit-content; font-size: 14.5px; }
+.fc-foot-links .fc-link:hover { color: var(--fc-ink); }
+/* Ordmärket som fyller bredden. Det är foten - inga fyra kolumner till. */
+.fc-foot-mark {
+  font-family: var(--fc-sans); font-weight: 600;
+  font-size: clamp(3rem, 15.5vw, 17rem); line-height: 0.82; letter-spacing: -0.055em;
+  color: var(--fc-bg-3); margin: clamp(30px, 8vh, 90px) 0 0; text-align: center; user-select: none;
+}
+.fc-foot-base {
+  display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+  border-top: 1px solid var(--fc-line-2); padding: 16px 0 20px; margin-top: 10px;
+}

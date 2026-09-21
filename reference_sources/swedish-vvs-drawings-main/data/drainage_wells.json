@@ -1,0 +1,14 @@
+{
+  "category": "drainage_well",
+  "description": "Ritningssymboler för brunnar m m — wells, gullies and separators. The general well symbol is a circle or a rectangle.",
+  "entries": [
+    { "code": "B",   "term_sv": "Brunn i allmänhet", "term_en": "Well / gully, general", "symbol_description": "Circle or rectangle." },
+    { "code": "DB",  "term_sv": "Dagvattenbrunn",    "term_en": "Stormwater gully", "notes": "Code collision: DB also denotes Diskbänk among sanitary fixtures." },
+    { "code": "NB",  "term_sv": "Nedstigningsbrunn", "term_en": "Manhole (man-entry chamber)" },
+    { "code": "SB",  "term_sv": "Spolbrunn",         "term_en": "Rodding / flushing chamber" },
+    { "code": "TB",  "term_sv": "Tillsynsbrunn",     "term_en": "Inspection chamber", "notes": "Code collision: TB also denotes Kylbaffel med tilluft." },
+    { "code": "DRB", "term_sv": "Dräneringsbrunn",   "term_en": "Drainage chamber" },
+    { "code": null,  "term_sv": "Avskiljare",        "term_en": "Separator (e.g. oil or grease separator)", "symbol_description": "Rectangle with a vertical divider in the pipe run." },
+    { "code": "RA",  "term_sv": "Rensanordning",     "term_en": "Rodding eye / cleaning device" }
+  ]
+}

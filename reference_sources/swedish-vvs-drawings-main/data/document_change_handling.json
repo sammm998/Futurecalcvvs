@@ -1,0 +1,32 @@
+{
+  "category": "document_change_handling",
+  "description": "Ändring av handlingar — changing a förfrågningsunderlag or a bygghandling should be done consistently and clearly, so that there is no uncertainty about what has been changed.",
+  "drawing_change_markers": {
+    "title_sv": "Ändring av ritning",
+    "title_en": "Change to a drawing",
+    "intro_en": "That a drawing has been changed is stated:",
+    "places": [
+      { "sv": "på ritningen vid ändringsställe (i \"moln\")", "en": "on the drawing at the point of change (in a revision 'cloud')" },
+      { "sv": "på ritningens namnruta i ändringstabell", "en": "in the revision table of the drawing's title block" },
+      { "sv": "på ritningens namnruta i plats för ändringsbeteckning", "en": "in the title block, in the space for the revision designation" },
+      { "sv": "i handlingsförteckning/ritningsförteckning", "en": "in the document list / drawing list" },
+      { "sv": "i KFU/PM", "en": "in the KFU or the PM" }
+    ]
+  },
+  "text_document_change_markers": {
+    "title_sv": "Ändring av texthandling",
+    "title_en": "Change to a text document",
+    "intro_en": "That a beskrivning (text document) has been changed is stated:",
+    "places": [
+      { "sv": "i texthandlingen vid ändringsstället", "en": "in the text document at the point of change" },
+      { "sv": "på texthandlingens samtliga sidor", "en": "on all pages of the text document" },
+      { "sv": "på texthandlingens titelsida", "en": "on the title page of the text document" },
+      { "sv": "i KFU/PM", "en": "in the KFU or the PM" }
+    ]
+  },
+  "accompanying_documents": [
+    { "status": "Förfrågningsunderlag", "document": "KFU (kompletterande förfrågningsunderlag)", "note_en": "Normally attached when tender documents are changed." },
+    { "status": "Bygghandling", "document": "Ändrings-PM", "note_en": "Attached when a construction document is changed. KFU and PM are numbered in the same sequence." }
+  ],
+  "takeoff_implication": "A takeoff pipeline must version drawings by ändringsbeteckning (A, B, C, D ...) and re-run affected quantities when a KFU or Ändrings-PM is issued. Revision clouds mark the regions to re-measure."
+}

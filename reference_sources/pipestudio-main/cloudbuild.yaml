@@ -1,0 +1,101 @@
+# Build and deploy the durable Cloud Tasks ingress and private worker.
+# Run deploy/tasks.sh bootstrap once before enabling this pipeline.
+
+substitutions:
+  _SERVICE: futurecalc-pipe-detection
+  _REGION: europe-west1
+  _JOB_BUCKET: futurecalc-prod-pipe-detection-jobs
+  _QUEUE: pipe-detection
+  _REPO: containers
+  # Name of the Secret Manager secret holding the FutureCalc API key.
+  # Create it once:  printf '%s' 'the-key' | gcloud secrets create pipe-detection-api-key --data-file=-
+  _API_KEY_SECRET: pipe-detection-api-key
+  _CALLBACK_URL: ""  # Required: fixed HTTPS callback endpoint from webapp
+  _CALLBACK_KEY_ID: ""  # Required: key id registered in webapp
+  _CALLBACK_HMAC_SECRET: pipe-detection-callback-hmac
+  _OPENAI_API_KEY_SECRET: pipe-detection-openai-api-key
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+  machineType: E2_HIGHCPU_8       # the image is large; this keeps builds short
+
+images:
+  - '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/${_SERVICE}:${SHORT_SHA}'
+  - '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/${_SERVICE}:latest'
+
+steps:
+  - id: validate-config
+    name: bash
+    env:
+      - CALLBACK_URL=${_CALLBACK_URL}
+      - CALLBACK_KEY_ID=${_CALLBACK_KEY_ID}
+    args:
+      - -ec
+      - |
+        test -n "$$CALLBACK_URL" && test -n "$$CALLBACK_KEY_ID" || {
+          echo 'Configure _CALLBACK_URL and _CALLBACK_KEY_ID on the main trigger'; exit 1;
+        }
+        case "$$CALLBACK_URL" in https://*) ;; *) echo 'Callback must use HTTPS'; exit 1;; esac
+
+  - id: build
+    name: gcr.io/cloud-builders/docker
+    args:
+      - build
+      - '-f'
+      - 'detection_v2/Dockerfile'
+      - '-t'
+      - '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/${_SERVICE}:${SHORT_SHA}'
+      - '-t'
+      - '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/${_SERVICE}:latest'
+      - '.'
+
+  # Prove the image runs before it is allowed anywhere near the service.
+  - id: smoke-test
+    name: gcr.io/cloud-builders/docker
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        set -euo pipefail
+        IMG='${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/${_SERVICE}:${SHORT_SHA}'
+        # Build steps are themselves containers on the `cloudbuild` network, so
+        # a published port on the host is not reachable from here. Put the
+        # container on that same network and address it by name instead.
+        docker run -d --name smoke --network=cloudbuild \
+          -e API_KEY=ci-test -e PORT=8080 -e OPENAI_API_KEY=ci-unused \
+          -e CALLBACK_URL=https://example.invalid/callback \
+          -e CALLBACK_KEY_ID=ci -e CALLBACK_HMAC_KEY=ci-secret "$$IMG"
+        for i in $$(seq 1 60); do
+          curl -fsS http://smoke:8080/health >/dev/null 2>&1 && break
+          sleep 2
+        done
+        curl -fsS http://smoke:8080/health
+        code=$$(curl -s -o /dev/null -w '%{http_code}' -X POST \
+               http://smoke:8080/ -H 'Content-Type: application/json' -d '{}')
+        [ "$$code" = "401" ] || { echo "expected 401 without a key, got $$code"; docker logs smoke; exit 1; }
+        docker exec smoke python -m unittest detection_v2.test_service detection_v2.test_studio_adapter detection_v2.test_queue -v
+        docker rm -f smoke
+
+  - id: push
+    name: gcr.io/cloud-builders/docker
+    args: ['push', '--all-tags',
+           '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/${_SERVICE}']
+
+  - id: deploy
+    name: gcr.io/google.com/cloudsdktool/cloud-sdk
+    entrypoint: bash
+    env:
+      - PROJECT_ID=${PROJECT_ID}
+      - REGION=${_REGION}
+      - SERVICE=${_SERVICE}
+      - JOB_BUCKET=${_JOB_BUCKET}
+      - QUEUE=${_QUEUE}
+      - IMAGE=${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/${_SERVICE}:${SHORT_SHA}
+      - CALLBACK_URL=${_CALLBACK_URL}
+      - CALLBACK_KEY_ID=${_CALLBACK_KEY_ID}
+      - API_KEY_SECRET=${_API_KEY_SECRET}
+      - CALLBACK_HMAC_SECRET=${_CALLBACK_HMAC_SECRET}
+      - OPENAI_API_KEY_SECRET=${_OPENAI_API_KEY_SECRET}
+    args: ['deploy/tasks.sh', 'deploy']
+
+timeout: 1800s
