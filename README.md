@@ -14,8 +14,8 @@ engine/          Python engine (vvs_engine) + CLI + tests
 backend/         FastAPI application (auth, projects, drawings, background analysis jobs, exports)
 frontend/        React + TypeScript (Vite) web UI, Swedish or English, with a PDF.js viewer
 docker/          Dockerfiles + nginx config; docker-compose.yml at the root
-results/         Frozen artifacts for the development drawings (A, B, C) and the open-world drawing (D)
-data/dev/        The three clean development drawings (A, B, C)
+results/         Local analysis output (excluded from GitHub)
+data/            Supply your own drawings locally (excluded from GitHub)
 ```
 
 **Hur allt fungerar, vilka AI-modeller som används och exakt hur, säkerhet, drift och validering: se [`docs/SYSTEMET.md`](docs/SYSTEMET.md).**
@@ -25,8 +25,8 @@ data/dev/        The three clean development drawings (A, B, C)
 ```bash
 # engine
 pip install -e engine          # pymupdf, shapely, numpy, scipy
-vvs-takeoff analyze data/dev/DRAWING_A.pdf --out results/A --name DRAWING_A
-vvs-takeoff why data/dev/DRAWING_A.pdf <physical_pipe_id>
+vvs-takeoff analyze /path/to/drawing.pdf --out results/example --name example
+vvs-takeoff why /path/to/drawing.pdf <physical_pipe_id>
 
 # tests (engine + API)
 cd engine && python -m pytest -q tests

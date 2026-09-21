@@ -22,3 +22,7 @@ Fysisk mikrofon och kamera samt handstyrning på användarens utrustning behöve
 ## GitHub-leverans
 
 Kodexporten innehåller ingen lokal kontodatabas, API-nyckel, uppladdad ritning eller historik med sådana filer. Modeller, lokala handspårningsresurser och bevarade regelkällor ingår. Ritningar och lokala resultatartefakter måste tillföras separat för att återupprepa externa facitjämförelser. Testresultaten ovan gäller arbetskopian med dess lokala testunderlag, inte ett nyklonat repo utan dessa underlag.
+
+## Separat kontroll av GitHub-exporten
+
+Efter export och installation av frontendberoenden: 1 065 tester godkända, 3 överhoppade. Produktbygge och gesttester passerade också. De överhoppade proven kräver Linux för Debian-beroenden. Dessa körningar använder den lokalt installerade Python-miljön; en ren GitHub Actions-körning återstår.
