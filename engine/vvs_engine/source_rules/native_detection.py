@@ -60,7 +60,11 @@ def detect_page(pdf_path, page_number=0, style=None, progress=None, artifact_dir
             doc.save(clean)
         ex = stage('extract', lambda: extract.extract(clean, page_number))
         P = stage('profile', lambda: profile.profile(ex))
-        det = stage('detect', lambda: detect.detect(clean, page_number))
+        if strict_original:
+            det = stage('detect', lambda: detect.detect(clean, page_number))
+        else:
+            from .tiled_detection import detect as bounded_detect
+            det = stage('detect', lambda: bounded_detect(clean, page_number, progress=progress))
         det = labels.text_label_boxes(ex, det, text_height=style_module.text_height(ex)[0])
         L = stage('ocr', lambda: labels.read_labels(clean, det, page_no=page_number))
         rotated_repairs = []

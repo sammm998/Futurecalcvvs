@@ -14,6 +14,7 @@ import Projects from "./pages/Projects";
 import ProjectPage from "./pages/Project";
 import DrawingPage from "./pages/Drawing";
 import AnalysisPage from "./pages/Analysis";
+import { LangSwitch } from "./components/SiteHeader";
 import Boundary from "./components/Boundary";
 import PageCurtain from "./components/PageCurtain";
 import LearnPage, { LearnCoursePage, LearnLessonPage } from "./pages/LearnPage";
@@ -269,15 +270,15 @@ export default function App() {
     <div className={`app${railed ? " railed" : ""}`}>
       <aside className="side">
         <button className="ghost small railbtn" onClick={toggleRail}
-          title={rail ? "Visa sidopanelen" : "Fäll ihop sidopanelen"}
-          aria-label={rail ? "Visa sidopanelen" : "Fäll ihop sidopanelen"}><IconRail /></button>
+          title={rail ? tr("Visa sidopanelen") : tr("Fäll ihop sidopanelen")}
+          aria-label={rail ? tr("Visa sidopanelen") : tr("Fäll ihop sidopanelen")}><IconRail /></button>
         <div>
           <Link to="/projekt" className="brand"><Mark /> <span className="wide">FutureCalc</span></Link>
           <div className="org wide" style={{ marginTop: 10 }}>{tr("Mängdning ur ren vektor")}</div>
         </div>
         <nav>
           <Link to="/projekt" className={path.startsWith("/projekt") || path.startsWith("/projects") ? "on" : ""}>
-            <IconProjects /> <span className="wide">Projekt</span>
+            <IconProjects /> <span className="wide">{tr("Projekt")}</span>
           </Link>
           <Link to="/lar" className={path.startsWith("/lar") ? "on" : ""}>
             <IconLearn /> <span className="wide">{tr("Lär dig VVS")}</span>
@@ -292,18 +293,19 @@ export default function App() {
             <IconAgent /> <span className="wide">Agent</span>
           </Link>
           <Link to="/material" className={path.startsWith("/material") ? "on" : ""}>
-            <IconMaterial /> <span className="wide">Material</span>
+            <IconMaterial /> <span className="wide">{tr("Material")}</span>
           </Link>
           <Link to="/credits" className={path.startsWith("/credits") ? "on" : ""}>
             <IconCredits /> <span className="wide">Credits</span>
           </Link>
           {(role === "admin" || role === "partner") && (
             <Link to="/admin" className={path.startsWith("/admin") ? "on" : ""}>
-              <IconAdmin /> <span className="wide">{role === "admin" ? "Administration" : "Min provision"}</span>
+              <IconAdmin /> <span className="wide">{tr(role === "admin" ? "Administration" : "Min provision")}</span>
             </Link>
           )}
         </nav>
         <div className="foot">
+          <LangSwitch className="app-language" />
           {email && <div className="who wide">{email}</div>}
           <button className="secondary small" style={{ alignSelf: "flex-start", display: "inline-flex", alignItems: "center", gap: 8 }}
             onClick={() => { setToken(null); nav("/"); }}>

@@ -42,6 +42,7 @@ function initial(): Lang {
 }
 
 export const lang: Lang = initial();
+if (typeof document !== "undefined") document.documentElement.lang = lang;
 
 export function setLang(next: Lang): void {
   if (next === lang) return;

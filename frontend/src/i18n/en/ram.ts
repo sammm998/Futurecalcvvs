@@ -3,6 +3,18 @@
  * En rad per sträng, svensk nyckel först. Saknas en rad visas svenskan.
  */
 export const ram: Record<string, string> = {
+  "E-post": "Email",
+  "Skapa konto": "Create account",
+  "Ladda upp en VVS-ritning och få mängden med beläggen kvar.": "Upload an HVAC drawing and get quantities with supporting evidence.",
+  "Ett konto räcker för att köra en första ritning och jämföra mot din egen handmängdning.": "Create an account to analyse your first drawing and compare it with your own take-off.",
+  "Ett ögonblick…": "One moment\u2026",
+  "Registrera": "Register",
+  "Har du inget konto? ": "No account yet? ",
+  "Har du redan ett konto? ": "Already have an account? ",
+  "Skapa ett": "Create one",
+  "Visa sidopanelen": "Show sidebar",
+  "Fäll ihop sidopanelen": "Collapse sidebar",
+
   "Kontakta oss": "Contact",
   "Kontakt": "Contact",
   "Logga in": "Sign in",

@@ -1,3 +1,4 @@
+import { LangSwitch } from "../components/SiteHeader";
 import { useState } from "react";
 import { t as tr } from "../i18n";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -63,17 +64,18 @@ export default function Login() {
   };
   return (
     <div className="auth">
+      <LangSwitch className="login-language" />
       <div className="auth-form">
         <form onSubmit={submit}>
-          <h1>{mode === "login" ? "Logga in" : "Skapa konto"}</h1>
+          <h1>{mode === "login" ? tr("Logga in") : tr("Skapa konto")}</h1>
           <p className="sub">
             {mode === "login"
-              ? "Ladda upp en VVS-ritning och få mängden med beläggen kvar."
-              : "Ett konto räcker för att köra en första ritning och jämföra mot din egen handmängdning."}
+              ? tr("Ladda upp en VVS-ritning och få mängden med beläggen kvar.")
+              : tr("Ett konto räcker för att köra en första ritning och jämföra mot din egen handmängdning.")}
           </p>
 
           <div className="field">
-            <label htmlFor="lg-email">E-post</label>
+            <label htmlFor="lg-email">{tr("E-post")}</label>
             <input
               id="lg-email"
               placeholder={tr("namn@foretag.se")}
@@ -100,13 +102,13 @@ export default function Login() {
           {err && <p className="error">{err}</p>}
 
           <button type="submit" disabled={busy}>
-            {busy ? "Ett ögonblick…" : mode === "login" ? "Logga in" : "Registrera"}
+            {busy ? tr("Ett ögonblick…") : mode === "login" ? tr("Logga in") : tr("Registrera")}
           </button>
 
           <p className="swap">
-            {mode === "login" ? "Har du inget konto? " : "Har du redan ett konto? "}
+            {mode === "login" ? tr("Har du inget konto? ") : tr("Har du redan ett konto? ")}
             <button type="button" onClick={() => { setMode(mode === "login" ? "register" : "login"); setErr(""); }}>
-              {mode === "login" ? "Skapa ett" : "Logga in"}
+              {mode === "login" ? tr("Skapa ett") : tr("Logga in")}
             </button>
           </p>
         </form>
