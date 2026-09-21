@@ -1,4 +1,4 @@
-"""The whole product on a real drawing, the way a person uses it, with nothing stubbed.
+"""The whole product on a real drawing, the way a person uses it, with an explicitly offline provider for the synthetic CI sheet.
 
 Register, make a project, upload a real VVS vector PDF, analyse it, watch the progress, read the result back,
 click a quantity to its runs, ask why, read the unresolved cases, and take every export. Each step asserts on
@@ -6,13 +6,17 @@ what came back, so a step that silently returns an empty shell fails here rather
 """
 from __future__ import annotations
 
+from pathlib import Path
+
+from contextlib import nullcontext
+
 import json
 import os
 import sys
 import tempfile
 import time
 
-ROOT = "/home/user/vvs5"
+ROOT = str(Path(__file__).resolve().parents[2])
 FAILS: list[str] = []
 
 
@@ -23,18 +27,24 @@ def check(name: str, ok: bool, detail: str = "") -> bool:
     return ok
 
 
-def main(pdf: str) -> int:
+def main(pdf: str, *, synthetic: bool = False) -> int:
     tmp = tempfile.mkdtemp(prefix="e2e-")
     os.environ["VVS_DATABASE_URL"] = f"sqlite:///{tmp}/e2e.db"
     os.environ["VVS_STORAGE_ROOT"] = f"{tmp}/storage"
-    os.environ["VVS_SECRET_KEY"] = "e2e"
+    os.environ["VVS_SECRET_KEY"] = "synthetic-e2e-only-not-a-production-secret"
     sys.path.insert(0, os.path.join(ROOT, "backend"))
     sys.path.insert(0, os.path.join(ROOT, "engine"))
     from fastapi.testclient import TestClient
     from app.main import app
 
     print(f"\n=== hela produkten, från början till slut: {os.path.basename(pdf)}\n")
-    with TestClient(app) as c:
+    provider = nullcontext()
+    if synthetic:
+        sys.path.insert(0, os.path.join(ROOT, "engine", "tests"))
+        from source_service_double import offline_source_service
+        provider = offline_source_service()
+        print("OFFLINE: API lifecycle check with model double; not live model/detector accuracy verification")
+    with provider, TestClient(app) as c:
         check("hälsokontroll", c.get("/health").json().get("status") == "ok")
         tok = c.post("/api/auth/register", json={"email": "e2e@example.com", "password": "hemligt1"}).json()
         check("registrering ger en token", bool(tok.get("access_token")))
@@ -47,7 +57,10 @@ def main(pdf: str) -> int:
                        files={"file": (os.path.basename(pdf), fh, "application/pdf")}, headers=H).json()
         check("ritning laddas upp", bool(d.get("id")), f"{d.get('n_pages')} sidor")
 
-        j = c.post(f"/api/drawings/{d['id']}/analyze", headers=H).json()
+        response = c.post(f"/api/drawings/{d['id']}/analyze", headers=H)
+        if not check("analysjobbet accepteras", response.status_code == 200, response.text[:300]):
+            return 1
+        j = response.json()
         stages, t0 = set(), time.time()
         for _ in range(2400):
             j = c.get(f"/api/jobs/{j['id']}", headers=H).json()
@@ -131,14 +144,15 @@ def synthetic_sheet() -> str:
     """Provsviten's eget blad - två etiketterade ledningar, en konturglyfsetikett, skala och skalstock - så att
     hela produkten kan köras där inga verkliga ritningar finns (CI)."""
     sys.path.insert(0, os.path.join(ROOT, "engine"))
-    from tests.conftest import synthetic_pdf
+    from tests.conftest import synthetic_pdf, source_api_pdf
     d = tempfile.mkdtemp(prefix="e2e-blad-")
-    return synthetic_pdf.__wrapped__(d)
+    return source_api_pdf.__wrapped__(synthetic_pdf.__wrapped__(d), Path(d))
 
 
 if __name__ == "__main__":
     arg = sys.argv[1] if len(sys.argv) > 1 else f"{ROOT}/data/validation_C/clean.pdf"
-    if arg == "--synthetic" or not os.path.isfile(arg):
+    synthetic = arg == "--synthetic" or not os.path.isfile(arg)
+    if synthetic:
         print("kör på provsvitens syntetiska blad" + ("" if arg == "--synthetic" else f" ({arg} finns inte)"))
         arg = synthetic_sheet()
-    raise SystemExit(main(arg))
+    raise SystemExit(main(arg, synthetic=synthetic))

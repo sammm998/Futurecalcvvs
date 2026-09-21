@@ -2,6 +2,9 @@
 from __future__ import annotations
 
 import multiprocessing
+import logging
+import signal
+from pathlib import Path
 import time
 import traceback
 from copy import deepcopy
@@ -68,6 +71,41 @@ def _child(connection, args, kwargs, rule_values):
         connection.close()
 
 
+def _oom_kills():
+    """Linux cgroup v2 evidence, unavailable on other hosts or older cgroups."""
+    try:
+        values = dict(line.split() for line in Path('/sys/fs/cgroup/memory.events').read_text().splitlines())
+        return int(values['oom_kill'])
+    except (OSError, ValueError, KeyError):
+        return None
+
+
+def _worker_failure(process, oom_before, last_stage):
+    # Pipe EOF can arrive before multiprocessing has reaped the process.
+    # Joining first avoids reporting exitcode=None for a terminated worker.
+    process.join(timeout=2)
+    code = process.exitcode
+    oom_after = _oom_kills()
+    if oom_before is not None and oom_after is not None and oom_after > oom_before:
+        reason = 'Serverns minnesgräns nåddes och containern rapporterade ett minnesstopp (OOM).'
+    elif code == -signal.SIGKILL:
+        reason = 'Analysprocessen stoppades av servern (SIGKILL). Minnesbrist är en möjlig orsak; kontrollera serverloggen.'
+    elif code is not None and code < 0:
+        try:
+            name = signal.Signals(-code).name
+        except ValueError:
+            name = str(-code)
+        reason = f'Analysprocessen kraschade eller avbröts av en signal ({name}).'
+    elif code is None:
+        reason = 'Kontakten med analysprocessen stängdes innan processen avslutades.'
+    else:
+        reason = f'Analysprocessen avslutades utan resultat (kod {code}).'
+    stage = f' Senaste analyssteg: {last_stage}.' if last_stage else ''
+    logging.getLogger(__name__).error('Analysis worker failed: exitcode=%s, stage=%s, oom_before=%s, oom_after=%s',
+                                    code, last_stage, oom_before, oom_after)
+    return RuntimeError(reason + stage + ' Ingen ofullständig mängd publiceras.')
+
+
 def analyze_isolated(*args, progress=None, film_sink=None, rule_values=None, **kwargs):
     from vvs_engine.cli import AnalysisTookTooLong
     from vvs_engine.pdf.extract import UnsupportedInputError
@@ -76,6 +114,8 @@ def analyze_isolated(*args, progress=None, film_sink=None, rule_values=None, **k
     context=multiprocessing.get_context('spawn')
     receive,send=context.Pipe(duplex=False)
     process=context.Process(target=_child,args=(send,args,kwargs,rule_values or {}),daemon=True)
+    oom_before = _oom_kills()
+    last_stage = None
     process.start();send.close()
     try:
         while True:
@@ -86,7 +126,7 @@ def analyze_isolated(*args, progress=None, film_sink=None, rule_values=None, **k
                 try:
                     kind,payload=receive.recv()
                 except EOFError:
-                    raise RuntimeError(f'Analysprocessen avslutades utan resultat (kod {process.exitcode})') from None
+                    raise _worker_failure(process, oom_before, last_stage) from None
                 if kind=='result':
                     return payload
                 if kind=='error':
@@ -95,12 +135,14 @@ def analyze_isolated(*args, progress=None, film_sink=None, rule_values=None, **k
                     if payload['type']=='AnalysisTookTooLong':
                         raise AnalysisTookTooLong(payload['message'])
                     raise RuntimeError(payload['type']+': '+payload['message'])
-                if kind=='progress' and progress:
-                    progress(*payload)
+                if kind=='progress':
+                    last_stage = str(payload[0]) if payload else last_stage
+                    if progress:
+                        progress(*payload)
                 if kind=='film' and film_sink:
                     film_sink(*payload)
             elif not process.is_alive():
-                raise RuntimeError(f'Analysprocessen avslutades utan resultat (kod {process.exitcode})')
+                raise _worker_failure(process, oom_before, last_stage)
     finally:
         receive.close()
         process.join(timeout=.2)
