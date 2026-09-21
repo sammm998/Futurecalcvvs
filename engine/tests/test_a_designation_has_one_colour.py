@@ -1,11 +1,7 @@
-"""En beteckning, en färg - även när bladet skriver ut dimensionen på ett ställe och utelämnar den på ett annat.
+"""Färgen skiljer dimensionsidentiteter enligt kundens ändrade krav.
 
-Ett rör som byter färg mitt i sin egen sträckning läses som två rör. Det hände så fort samma namn förekom både
-med och utan dimension: identitetsnyckeln bär `|DN?` för det ena och `|DN22` för det andra, och färgen hashades
-på hela nyckeln. Färgen hör till namnet. Dimensionen står i tabellens egen kolumn.
-
-Paletten är produktens, inte motorns, så provet kör den där den bor: källan transpileras med den esbuild som
-redan följer med frontenden och körs i node. Saknas något av det hoppas provet över i stället för att ljuga.
+Samma fullständiga identitet ska vara stabil oberoende av visningsordning.
+Okänd dimension får inte se ut som en bekräftad dimension.
 """
 import json
 import os
@@ -27,10 +23,10 @@ def _colours(keys: list[str]) -> dict[str, str]:
     return json.loads(subprocess.run(["node", "-e", prog], capture_output=True, text=True, check=True).stdout)
 
 
-def test_the_same_designation_is_one_colour_with_and_without_a_dimension():
-    c = _colours(["KV31|DN15", "KV31|DN?", "KV31", "VS1-S13|DN22", "VS1-S13|DN?"])
-    assert c["KV31|DN15"] == c["KV31|DN?"] == c["KV31"], c
-    assert c["VS1-S13|DN22"] == c["VS1-S13|DN?"], c
+def test_dimensions_of_the_same_designation_are_told_apart():
+    c = _colours(["KV31|DN15", "KV31|DN22", "KV31|DN?", "VS1-S13|DN22", "VS1-S13|DN?"])
+    assert len({c["KV31|DN15"], c["KV31|DN22"], c["KV31|DN?"]}) == 3, c
+    assert c["VS1-S13|DN22"] != c["VS1-S13|DN?"], c
 
 
 def test_two_different_designations_are_told_apart():
