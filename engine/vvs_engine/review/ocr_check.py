@@ -14,7 +14,7 @@ import time
 
 import numpy as np
 
-TILE_PX = 1400
+TILE_PX = 768
 OVERLAP_PX = 120
 _ENGINE = None
 
@@ -29,7 +29,9 @@ def _engine():
             params = {"Rec.lang_type": LangRec.LATIN, "Rec.ocr_version": OCRVersion.PPOCRV5,
                       "Rec.model_type": ModelType.MOBILE, "Det.model_type": ModelType.TINY,
                       "Global.return_word_box": True,
-                      "EngineConfig.onnxruntime.intra_op_num_threads": 2,
+                      "Rec.rec_batch_num": 1, "Cls.cls_batch_num": 1,
+                      "EngineConfig.onnxruntime.enable_cpu_mem_arena": False,
+                      "EngineConfig.onnxruntime.intra_op_num_threads": 1,
                       "EngineConfig.onnxruntime.inter_op_num_threads": 1}
             if os.environ.get("VVS_OCR_MODEL_DIR"):
                 params["Global.model_root_dir"] = os.environ["VVS_OCR_MODEL_DIR"]
@@ -132,6 +134,7 @@ def ocr_words(page, dpi: int = 300, progress=None, regions=None,
     an assist, never the measurement, so when the budget runs out it stops and says how far it got rather than
     holding a reading that is otherwise finished.
     """
+    global _ENGINE
     import pymupdf
     src = getattr(page, "source_path", None)
     if not src:
@@ -159,11 +162,12 @@ def ocr_words(page, dpi: int = 300, progress=None, regions=None,
                                 colorspace=pymupdf.csRGB, annots=False)
             if pix.width < 8 or pix.height < 8:
                 continue
-            img = np.frombuffer(pix.samples, dtype=np.uint8).reshape(pix.height, pix.width, 3)
+            img = np.frombuffer(pix.samples_mv, dtype=np.uint8).reshape(pix.height, pix.width, 3)
             for box, text, conf in _ocr_rows(engine(img)):
                 xs = [(pix.x + float(q[0])) / s for q in box]
                 ys = [(pix.y + float(q[1])) / s for q in box]
                 out.append((str(text).strip(), [min(xs), min(ys), max(xs), max(ys)], float(conf)))
+            del img, pix
             if stats is not None:
                 stats['crops_read'] += 1
             if seen:
@@ -175,6 +179,9 @@ def ocr_words(page, dpi: int = 300, progress=None, regions=None,
         return _dedupe(out)
     finally:
         doc.close()
+        # OCR assistance and review share this module. Do not retain three
+        # ONNX sessions throughout the rest of the drawing analysis.
+        _ENGINE = None
 
 
 def _dedupe(words: list[tuple[str, list[float], float]]) -> list[tuple[str, list[float], float]]:

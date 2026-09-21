@@ -208,9 +208,10 @@ def _ocr_crosscheck_agent(pa, progress=None) -> tuple[list[Finding], str]:
     words = None
     dpi_used = 0
     first: Exception | None = None
+    ocr_stats = {}
     for dpi in OCR_REVIEW_DPI:
         try:
-            words = ocr_words(pa.page, dpi=dpi, budget_s=_R("review.agents.OCR_REVIEW_BUDGET_S", OCR_REVIEW_BUDGET_S),
+            words = ocr_words(pa.page, dpi=dpi, stats=ocr_stats, budget_s=_R("review.agents.OCR_REVIEW_BUDGET_S", OCR_REVIEW_BUDGET_S),
                               progress=(lambda t: progress(f"ocr {t}")) if progress else None)
             dpi_used = dpi
             break
@@ -254,6 +255,11 @@ def _ocr_crosscheck_agent(pa, progress=None) -> tuple[list[Finding], str]:
                            f"Synagenten ser {len(missed)} beteckningar på platser där vektorläsningen inte har någon text alls.",
                            {"examples": [m[0] for m in missed[:8]], "count": len(missed)},
                            bbox=[round(v, 1) for v in missed[0][1]]))
+    if ocr_stats.get('budget_exhausted'):
+        out.append(Finding("ocr_crosscheck", "WARN", "ocr_partial",
+            "OCR-granskningen nådde tidsgränsen. Hela ritningen har inte granskats med OCR.",
+            dict(ocr_stats)))
+        return out, "partial"
     return out, "ok"
 
 

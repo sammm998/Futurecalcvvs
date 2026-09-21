@@ -26,6 +26,8 @@ def test_rotated_original_ink_is_located_without_reading_annotations(tmp_path, m
 
     def read_image(img):
         y, x = np.where(img[:, :, 0] < 60)
+        if not len(x):
+            return ([], 0)
         box = [[float(x.min()), float(y.min())], [float(x.max()+1), float(y.min())],
                [float(x.max()+1), float(y.max()+1)], [float(x.min()), float(y.max()+1)]]
         if modern:
@@ -100,3 +102,23 @@ def test_budget_exhaustion_is_reported_as_a_partial_read(tmp_path, monkeypatch):
     assert ocr_check.ocr_words(raw, budget_s=1, stats=stats) == []
     assert stats['budget_exhausted'] is True
     assert stats['crops_read'] == 0 < stats['crops_planned']
+
+
+def test_large_sheet_ocr_uses_bounded_rasters_and_releases_engine(tmp_path, monkeypatch):
+    doc = pymupdf.open()
+    doc.new_page(width=1200, height=800)
+    source = tmp_path/'large.pdf'
+    doc.save(source)
+    doc.close()
+    sizes = []
+    def reader(image):
+        sizes.append(image.shape)
+        return ([], 0)
+    monkeypatch.setattr(ocr_check, '_ENGINE', reader)
+    raw = SimpleNamespace(source_path=str(source), info=SimpleNamespace(index=0))
+    stats = {}
+    assert ocr_check.ocr_words(raw, dpi=144, stats=stats) == []
+    assert len(sizes) > 1
+    assert max(max(s[:2]) for s in sizes) <= 769  # PDF clip rounding
+    assert stats['crops_read'] == stats['crops_planned']
+    assert ocr_check._ENGINE is None
