@@ -1665,8 +1665,11 @@ def analyze_page(page: RawPage, progress: Callable[[str], None] | None = None, o
     if source_detector is not None:
         from .source_rules.native_bridge import merge_detection
         native = source_detector(page.source_path, page.info.index, progress=progress)
+        from .source_rules.host_label_repair import repair as repair_label_sizes
+        label_sizes = repair_label_sizes(native.get('labels') or [], designations)
         native_merge = merge_detection(page, native, graphs, pipe_families, anchors,
                                        native_identities, native_elevations)
+        native_merge['label_sizes_from_drawing_lettering'] = label_sizes
     graphs, pipe_families = _split_at_tick_contacts(page, graphs, pipe_families, anchors)
     prims = {fk: graphs[fk].prims for fk in graphs}
     # a family taken after the passes ran is not a declined one, whatever the pass that looked at it decided

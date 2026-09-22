@@ -405,6 +405,43 @@ def _norm_number(t: str) -> str:
     return t.replace(",", ".")
 
 
+def _dash_of_a_run(f: FreeSeg, fmap: dict, seg_idx: GridIndex, d, n, lo: float, hi: float, H: float) -> bool:
+    """Is this stroke one dash of a dashed line that runs on past the block, rather than a side of its frame?
+
+    A frame side ends at the frame's corners. A dashed pipe passing alongside a label is drawn as a row of
+    separate strokes on one pen and one axis, and it carries on beyond the label: the same pen, on the same line,
+    a gap apart, outside the block's own span. Taking those dashes for the label's frame put them among the
+    sheet's annotation and cut the pipe out of the reading - a short run beside its own label went unmeasured.
+    The dashes are followed from this one along the line; strokes that touch end to end (the sides of stacked
+    boxes) are not a dashed run and are never followed."""
+    pen = (f.layer, round(f.width, 2), f.color)
+    axis = project(f.seg.mid, d)
+    seen = {f.fid}
+    todo = [f]
+    while todo and len(seen) < 64:
+        cur = todo.pop()
+        s = cur.seg
+        a0, a1 = sorted((project((s.x0, s.y0), n), project((s.x1, s.y1), n)))
+        for fid in seg_idx.query(bbox_expand(s.bbox(), 2.0 * H)):
+            if fid in seen:
+                continue
+            g = fmap[fid]
+            if (g.layer, round(g.width, 2), g.color) != pen:
+                continue
+            t = g.seg
+            if abs(project(t.mid, d) - axis) > 0.3 or abs(((t.angle - s.angle) + 90) % 180 - 90) > 2:
+                continue
+            b0, b1 = sorted((project((t.x0, t.y0), n), project((t.x1, t.y1), n)))
+            gap = max(b0 - a1, a0 - b1)
+            if gap <= 0.3 or gap > 2.0 * H:
+                continue                          # touching end to end, or too far to be the same line
+            if b1 < lo or b0 > hi:
+                return True                       # the line carries on outside the block
+            seen.add(fid)
+            todo.append(g)
+    return False
+
+
 def build_blocks(page: RawPage, lines: list[TextRow], free: list[FreeSeg]) -> list[AnnotationBlock]:
     """Group lines into annotation blocks using stacking geometry and underline/box lines."""
     lines = sorted(lines, key=lambda r: r.rid)
@@ -510,6 +547,8 @@ def build_blocks(page: RawPage, lines: list[TextRow], free: list[FreeSeg]) -> li
                 continue
             p0 = project((s.x0, s.y0), n); p1 = project((s.x1, s.y1), n)
             if min(p0, p1) < n0 - 0.6 * H or max(p0, p1) > n1 + 0.6 * H:
+                continue
+            if _dash_of_a_run(f, fmap, seg_idx, d, n, n0 - 0.6 * H, n1 + 0.6 * H, H):
                 continue
             box.append(f)
         frame_layers = Counter([u.layer for r in rows for u in r.underline] + [b.layer for b in box])
