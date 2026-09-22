@@ -24,7 +24,10 @@ def reuse_detection(root, revision, context, detect, pdf, page, target, options)
     except TypeError:
         return detect(pdf, page, artifact_dir=target, **options)
     root = Path(root)
-    root.mkdir(parents=True, exist_ok=True, mode=0o700)
+    try:
+        root.mkdir(parents=True, exist_ok=True, mode=0o700)
+    except OSError:
+        return detect(pdf, page, artifact_dir=target, **options)
     entry = root / hashlib.sha256(signature.encode()).hexdigest()
     if entry.is_dir():
         try:
@@ -42,6 +45,10 @@ def reuse_detection(root, revision, context, detect, pdf, page, target, options)
             shutil.rmtree(entry, ignore_errors=True)
     result = detect(pdf, page, artifact_dir=target, **options)
     try:
+        # Output artifacts and the database take priority over optional caching.
+        required = 128 * 1024 * 1024 + 2 * sum(p.stat().st_size for p in target.rglob('*') if p.is_file())
+        if shutil.disk_usage(root).free < required:
+            return result
         with tempfile.TemporaryDirectory(dir=root, prefix='.writing-') as work:
             work = Path(work)
             with gzip.open(work / 'result.pkl.gz', 'wb', compresslevel=1) as stream:

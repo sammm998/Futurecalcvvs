@@ -37,3 +37,20 @@ def test_no_revision_or_custom_model_disables_reuse(tmp_path,monkeypatch):
         reuse_detection(tmp_path/'cache','build',None,detect,'unused',0,tmp_path/'out',{})
     assert len(calls)==4
     assert not (tmp_path/'cache').exists()
+
+
+def test_low_disk_space_keeps_analysis_but_skips_optional_cache(tmp_path, monkeypatch):
+    from collections import namedtuple
+    from app.native_cache import reuse_detection
+    import app.native_cache as cache
+    usage=namedtuple('usage','total used free')
+    monkeypatch.setattr(cache.shutil,'disk_usage',lambda _:usage(100,99,1))
+    pdf=tmp_path/'drawing.pdf'; pdf.write_bytes(b'example')
+    calls=[]
+    def detect(pdf,page,artifact_dir,**kwargs):
+        calls.append(page); artifact_dir.mkdir(parents=True,exist_ok=True)
+        return {'graph':{'nodes':[]}}
+    for i in range(2):
+        assert reuse_detection(tmp_path/'cache','revision',{},detect,pdf,0,tmp_path/str(i),{})=={'graph':{'nodes':[]}}
+    assert calls==[0,0]
+    assert not list((tmp_path/'cache').iterdir())
