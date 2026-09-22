@@ -37,9 +37,24 @@ def test_combined_supplies_dimension_proposals_to_final_model_and_preserves_inpu
     result=run(A,L,R,{'rules':[]},mode='combined',ask=ask)
     assert any(c['label']==big and any(e['kind']=='rule_proposal' for e in c['evidence']) for q in seen for c in q['candidates'])
     assert result['combined']['status']=='COMPLETED'
-    assert result['combined']['result']['bindings'][0]['label']==small
+    # the model and the dimension rule chose the same pipe in two sizes: the rule decides the size, and says so
+    assert result['model']['result']['bindings'][0]['label']==small
+    assert result['combined']['result']['bindings'][0]['label']==big
+    assert result['combined']['result']['bindings'][0]['rule']=='combined_dimension_rule_on_size_dispute'
+    assert result['combined']['dimension_rule_decisions']==[{'stretch':0,'model':[small,0],'rule':[big,0]}]
     assert len(result['combined']['result']['bindings'])==1
     assert (A,L,R)==original
+
+
+def test_combined_keeps_the_models_choice_when_it_names_another_pipe():
+    sh=Sheet();a=sh.node(0,0);b=sh.node(100,0);sh.stretch(a,b)
+    big=sh.label('VS1-S13-22',a,22);other=sh.label('VS2-S13-15',b,15)
+    A={'nodes':sh.nodes,'stretches':sh.stretches};L=sh.labels;R={'leaders':sh.leaders,'bindings':[],'counts':{}}
+    def ask(qs):
+        return [{'stretch':q['stretch'],'label':other,'designation_idx':0,'ambiguous':False} for q in qs]
+    result=run(A,L,R,{'rules':[]},mode='combined',ask=ask)
+    assert result['combined']['result']['bindings'][0]['label']==other
+    assert result['combined']['dimension_rule_decisions']==[]
 
 
 def test_combined_abstention_keeps_rule_proposal_unconfirmed():

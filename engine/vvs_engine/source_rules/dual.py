@@ -27,6 +27,16 @@ def _valid(q, d):
             and pair in {(c['label'], c['designation_idx']) for c in q['candidates']})
 
 
+def _only_dimension_differs(a, b):
+    """Two readings of the same pipe - system, number, middle, suffix, venting and count alike - that differ in
+    size alone. A reading without a size, or with a count prefix, is not compared."""
+    if not a.get('dimension') or not b.get('dimension') or a.get('partial') or b.get('partial'):
+        return False
+    same = lambda d: (d.get('system'), d.get('number'), tuple(d.get('middle') or []), d.get('suffix'),
+                      bool(d.get('venting')), d.get('count', 1))
+    return same(a) == same(b) and a['dimension'] != b['dimension']
+
+
 class _Resilient:
     """The model transport, asked so that one bad request costs its own stretches and not the whole sheet.
 
@@ -152,6 +162,7 @@ def run(A,L,R,style,mode='compare',ask=None):
             decided = {b['stretch']: b for b in final['bindings']}
             labels = {l['id']: l for l in L}
             endpoint_confirmations = []
+            dimension_decisions = []
             for proposal in out['dimension']['result']['bindings']:
                 current = decided.get(proposal['stretch'])
                 bounded = bounded_label_agreement(A, L, R, proposal)
@@ -161,6 +172,22 @@ def run(A,L,R,style,mode='compare',ask=None):
                     # model's candidate agrees with both explicit endpoints.
                     model_d = labels[current['label']]['designations'][current['designation_idx']]
                     rule_d = labels[proposal['label']]['designations'][proposal['designation_idx']]
+                    if _only_dimension_differs(model_d, rule_d):
+                        # The same pipe, a different size: which size a stretch between two sizes carries is
+                        # what the dimension/flow rule reads, and the model does not read it the same way -
+                        # measured against two reference sheets, the model gave the smaller size to stretches
+                        # the rule and the reference both gave the larger one twice as often as the reverse.
+                        # On that one question the rule's answer stands, and the stretch says so.
+                        dimension_decisions.append({'stretch': current['stretch'], 'model': [current['label'], current['designation_idx']],
+                                                    'rule': [proposal['label'], proposal['designation_idx']]})
+                        current.update(label=proposal['label'], designation_idx=proposal['designation_idx'],
+                                       rule='combined_dimension_rule_on_size_dispute',
+                                       reason='Modellen och dimensionsregeln valde samma ledning med olika dimension; dimensionsregeln avgör storleken.')
+                        for assignment in final.get('assignments', []):
+                            if assignment['stretch'] == current['stretch']:
+                                assignment.update(label=proposal['label'], designation_idx=proposal['designation_idx'],
+                                                  reconciliation='combined_dimension_rule_on_size_dispute')
+                        continue
                     if (current['confidence'] != 'low' or not bounded
                             or designation_key(model_d) != designation_key(rule_d)):
                         continue
@@ -181,6 +208,7 @@ def run(A,L,R,style,mode='compare',ask=None):
                             assignment.update(label=b['label'], designation_idx=b['designation_idx'],
                                               status='assigned', reconciliation=b['rule'])
             combined['endpoint_confirmations'] = endpoint_confirmations
+            combined['dimension_rule_decisions'] = dimension_decisions
             combined['review_required'] = sum(b['confidence'] == 'low' for b in final['bindings'])
         out['combined'] = combined
     return out
