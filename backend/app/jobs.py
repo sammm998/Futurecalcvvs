@@ -267,6 +267,8 @@ def run_job(job_id: str) -> None:
                                 given_scale=by_hand, source_mode="combined", native_detection=True,
                                 native_cache_dir=storage.path(f"cache/native/{drawing.project_id}"),
                                 source_style="auto")
+            from .diagnostic_storage import compress_native_diagnostics
+            compress_native_diagnostics(out_dir)
             # which readers this installation actually had available, and by what name - a reading that quietly used a
             # model, or quietly did without one, is not a reading anyone can check
             on, why = second_reader_state()
