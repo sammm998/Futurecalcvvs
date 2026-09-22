@@ -133,32 +133,63 @@ def polyline_length(pts: Sequence[tuple[float, float]]) -> float:
 
 
 class GridIndex:
-    """Deterministic uniform-grid spatial hash over bboxes. Query results are sorted by item key."""
+    """Deterministic uniform-grid spatial hash over bboxes. Query results are sorted by item key.
+
+    A box spanning more than MAX_CELLS cells - a page frame, a stray point a CAD export left a kilometre away, a
+    box with no finite size at all - is not spread over the grid: it is kept aside and checked on every query.
+    Spreading it made one such path cost millions of cells, and a sheet with a few of them ran out of memory.
+    """
+
+    MAX_CELLS = 16384
 
     def __init__(self, cell: float = 24.0):
         self.cell = cell
         self._cells: dict[tuple[int, int], list[int]] = {}
         self._boxes: dict[int, tuple[float, float, float, float]] = {}
+        self._wide: list[int] = []
 
     def _range(self, b):
         c = self.cell
         return (int(math.floor(b[0] / c)), int(math.floor(b[1] / c)), int(math.floor(b[2] / c)), int(math.floor(b[3] / c)))
 
+    def _span(self, b) -> tuple[int, int, int, int] | None:
+        """The cell range of a box, or None where the box is not finite or covers too many cells to walk."""
+        try:
+            i0, j0, i1, j1 = self._range(b)
+        except (OverflowError, ValueError):     # an infinite or undefined coordinate
+            return None
+        if (i1 - i0 + 1) * (j1 - j0 + 1) > self.MAX_CELLS:
+            return None
+        return i0, j0, i1, j1
+
     def insert(self, key: int, b: tuple[float, float, float, float]) -> None:
+        if b[0] != b[0] or b[1] != b[1] or b[2] != b[2] or b[3] != b[3]:
+            return                              # a box with an undefined coordinate is nowhere, and meets nothing
         self._boxes[key] = b
-        i0, j0, i1, j1 = self._range(b)
+        span = self._span(b)
+        if span is None:
+            self._wide.append(key)
+            return
+        i0, j0, i1, j1 = span
         for i in range(i0, i1 + 1):
             for j in range(j0, j1 + 1):
                 self._cells.setdefault((i, j), []).append(key)
 
     def query(self, b: tuple[float, float, float, float]) -> list[int]:
-        i0, j0, i1, j1 = self._range(b)
-        out: set[int] = set()
-        for i in range(i0, i1 + 1):
-            for j in range(j0, j1 + 1):
-                lst = self._cells.get((i, j))
-                if lst:
-                    out.update(lst)
+        if b[0] != b[0] or b[1] != b[1] or b[2] != b[2] or b[3] != b[3]:
+            return []
+        out: set[int] = set(self._wide)
+        span = self._span(b)
+        if span is None:
+            # a query larger than the grid is worth walking: every stored box is a candidate
+            out.update(self._boxes)
+        else:
+            i0, j0, i1, j1 = span
+            for i in range(i0, i1 + 1):
+                for j in range(j0, j1 + 1):
+                    lst = self._cells.get((i, j))
+                    if lst:
+                        out.update(lst)
         res = [k for k in out if bbox_intersects(self._boxes[k], b)]
         res.sort()
         return res

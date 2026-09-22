@@ -123,5 +123,6 @@ def analyze(graphs,native,page,ask,elevations,raw_page):
     if ask is not None and hasattr(ask,'for_page'):ask=ask.for_page(raw_page)
     result=run(native['graph'],native['labels'],native['association'],native['style'],mode='combined',ask=ask)
     if result['combined']['status']!='COMPLETED':
-        raise RuntimeError('Native combined assignment failed: '+result['combined']['status'])
+        why=(result['combined'].get('result') or {}).get('failure_reason') or result['combined'].get('reason')
+        raise RuntimeError('Native combined assignment failed: '+result['combined']['status']+(f' ({why})' if why else ''))
     return project(graphs,native,result,page,elevations)

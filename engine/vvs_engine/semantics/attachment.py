@@ -666,6 +666,34 @@ def _collector_shaped(p: RawPath, pt: tuple[float, float]) -> bool:
     return any(point_seg_distance(pt[0], pt[1], sg)[0] <= tol + 0.5 * p.width for sg in p.segs)
 
 
+class PathsByPlace(dict):
+    """The sheet's paths by id, with a grid over their boxes built the first time a place is asked about.
+
+    The collector search asks, for every leader end, which paths' boxes hold the point. Walking the whole sheet
+    for each of them grew as leaders times paths: on a dense sheet with a thousand labels and a hundred thousand
+    strokes that was most of the reading's time. The grid answers the same question from the paths near the point.
+    """
+
+    def near(self, x: float, y: float, r: float) -> list[tuple[str, RawPath]]:
+        idx = self.__dict__.get("_grid")
+        if idx is None or idx[1] != len(self):
+            keys = list(self.keys())
+            grid = GridIndex(cell=24.0)
+            for i, k in enumerate(keys):
+                grid.insert(i, self[k].bbox)
+            idx = (grid, len(self), keys)
+            self.__dict__["_grid"] = idx
+        grid, _, keys = idx
+        return [(keys[i], self[keys[i]]) for i in grid.query_point(x, y, r) if keys[i] in self]
+
+
+def _paths_near(all_paths: dict[str, RawPath], x: float, y: float) -> list[tuple[str, RawPath]]:
+    """Paths whose box could hold the point within a collector's one-point margin; every path when not indexed."""
+    if isinstance(all_paths, PathsByPlace):
+        return all_paths.near(x, y, 1.5)
+    return list(all_paths.items())
+
+
 def _collectors_at(pt: tuple[float, float], own: str, skip: set[str],
                    all_paths: dict[str, RawPath]) -> list[RawPath]:
     """Samlingslinjer på ledarens egen penna vid punkten, sökta bland bladets alla vägar.
@@ -682,7 +710,7 @@ def _collectors_at(pt: tuple[float, float], own: str, skip: set[str],
     # för att bladets alla nycklar sorteras om vid varje anrop.
     x, y = pt
     out = []
-    for pid, p in all_paths.items():
+    for pid, p in _paths_near(all_paths, x, y):
         if pid in skip:
             continue
         if not (p.bbox[0] - 1.0 <= x <= p.bbox[2] + 1.0 and p.bbox[1] - 1.0 <= y <= p.bbox[3] + 1.0):

@@ -166,6 +166,30 @@ STRONG_KINDS = ("end", "end_tick", "crossing_tick")        # the leader meets th
 BOUNDARY_TOL = 0.75
 
 
+def _prims_of_segment(g: PipeGraph, pid: str, seg_index: int) -> list[int]:
+    """The graph primitives cut from one drawn segment, in the graph's own order.
+
+    Looking them up by walking every primitive for every contact made the seeding quadratic: on a sheet with a
+    few thousand labels and a few hundred thousand primitives that alone ran for minutes. The index is kept on the
+    graph and rebuilt whenever the primitive table is no longer the one it was built from, or has grown or shrunk
+    (a run split at a landing adds primitives); a listed primitive that no longer matches rebuilds it as well.
+    """
+    cached = getattr(g, "_segment_index", None)
+    if cached is None or cached[0] is not g.prims or cached[1] != len(g.prims):
+        index: dict[tuple, list[int]] = defaultdict(list)
+        for k, q in g.prims.items():
+            index[(q.pid, q.seg_index)].append(k)
+        cached = (g.prims, len(g.prims), index)
+        g._segment_index = cached
+    found = cached[2].get((pid, seg_index), [])
+    for k in found:
+        q = g.prims.get(k)
+        if q is None or q.pid != pid or q.seg_index != seg_index:
+            g._segment_index = None
+            return _prims_of_segment(g, pid, seg_index)
+    return found
+
+
 def _seed_prims(a: PipeCodeAnchor, graphs: dict[str, PipeGraph]) -> dict[str, list[tuple[int, str, tuple[float, float]]]]:
     """Graph primitives touched by an anchor's contacts: (prim id, contact kind, contact point) per family."""
     out: dict[str, list[tuple[int, str, tuple[float, float]]]] = defaultdict(list)
@@ -174,9 +198,8 @@ def _seed_prims(a: PipeCodeAnchor, graphs: dict[str, PipeGraph]) -> dict[str, li
         if g is None:
             continue
         best = None
-        for pid, q in g.prims.items():
-            if q.pid != c.pid or q.seg_index != c.seg_index:
-                continue
+        for pid in _prims_of_segment(g, c.pid, c.seg_index):
+            q = g.prims[pid]
             d, t = point_seg_distance(c.point[0], c.point[1], q.seg)
             if best is None or d < best[0] - 1e-9:
                 best = (d, pid)

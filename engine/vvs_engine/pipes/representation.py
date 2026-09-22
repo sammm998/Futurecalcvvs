@@ -531,11 +531,23 @@ def _corner_bridges(nodes, pmap, prim_nodes, idx, gap_mode: float, gtol: float, 
     free = [n for n in nodes.values() if n.degree == 1]
     cands: dict[tuple[int, int], tuple[int, int, float, str]] = {}
     use: Counter = Counter()
+    reach = gap_mode + gtol
+    if reach < 0:
+        return []
+    # Only ends within one gap of each other can meet at a corner, so each end looks in its own lattice cell and
+    # the eight around it. Comparing every free end with every other was quadratic: a dashed sheet has two free
+    # ends per dash, and on a dense sheet that is tens of thousands of ends and a reading that never finished.
+    cell = max(reach, 1e-3)
+    lattice: dict[tuple[int, int], list] = defaultdict(list)
+    for m in free:
+        lattice[(math.floor(m.x / cell), math.floor(m.y / cell))].append(m)
     for n in free:
         u = _outward(n, pmap[n.prims[0]])
         if u is None:
             continue
-        for m in free:
+        cx, cy = math.floor(n.x / cell), math.floor(n.y / cell)
+        near = [m for dx in (-1, 0, 1) for dy in (-1, 0, 1) for m in lattice.get((cx + dx, cy + dy), ())]
+        for m in near:
             if m.nid <= n.nid or not m.prims:
                 continue
             if abs(m.x - n.x) > gap_mode + gtol or abs(m.y - n.y) > gap_mode + gtol:
