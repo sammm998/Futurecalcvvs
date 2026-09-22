@@ -38,6 +38,10 @@ def merge_detection(page, native, graphs, families, anchors, identities, elevati
             for pid in s.get('path_ids', [])}
     added = 0; changed = set()
     prims = {fk: dict(g.prims) for fk, g in graphs.items()}
+    # What each family already holds and its next free id, kept as pieces are added rather than recounted for
+    # every path: recounting made this quadratic in the sheet's pipe pieces.
+    present: dict[str, set] = {}
+    next_id: dict[str, int] = {}
     for native_id in sorted(used):
         path = mapped.get(native_id)
         if path is None: continue
@@ -45,13 +49,17 @@ def merge_detection(page, native, graphs, families, anchors, identities, elevati
         target = prims.setdefault(fk, {})
         # A path may already have been divided at leader contacts. Preserve its
         # existing pieces instead of reinstating the unsplit original as well.
-        present = {(p.pid, p.seg_index) for p in target.values()}
+        if fk not in present:
+            present[fk] = {(p.pid, p.seg_index) for p in target.values()}
+            next_id[fk] = max(target, default=-1) + 1
+        seen = present[fk]
         for i, segment in enumerate(path.segs):
-            if (path.pid, i) in present or segment.length <= 0: continue
-            k = max(target, default=-1) + 1
+            if (path.pid, i) in seen or segment.length <= 0: continue
+            k = next_id[fk]; next_id[fk] = k + 1
             target[k] = Prim(k, path.pid, i, segment, fk, path.layer, path.width,
                              src_len=segment.length)
             added += 1; changed.add(fk)
+        seen.update((path.pid, i) for i, segment in enumerate(path.segs) if segment.length > 0)
     for fk in changed:
         graph = build_graph(list(prims[fk].values()), fk, graph_tolerances(page), symbols=page_symbols(page))
         graphs[fk] = graph

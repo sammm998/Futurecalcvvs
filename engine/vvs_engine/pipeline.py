@@ -25,8 +25,8 @@ from .profile.hatch import HatchFamily, discover_hatch, inside_hatch
 from .semantics.annotation import (AnnotationBlock, Designation, build_blocks, extract_designations,
                                     free_segments, merge_lines, one_reading_per_place)
 from .text.model import project, row_axes
-from .semantics.attachment import (GeometryIndex, PipeCodeAnchor, family_of, layer_system_tokens, leader_contacts,
-                                   resolve_block, system_layer_match)
+from .semantics.attachment import (GeometryIndex, PathsByPlace, PipeCodeAnchor, family_of, layer_system_tokens,
+                                   leader_contacts, resolve_block, system_layer_match)
 from .semantics.legend import DrawingLegend, adopt, assign_roles, read_legend, roles_of
 from .semantics.declarations import Declarations, read_declarations
 
@@ -174,13 +174,54 @@ BLOCK_INK_SHARE = 0.6       # så stor del av en pennas streck måste börja ell
 WRITING_PEN_MIN_STROKES = 8  # så många streck måste en penna ha innan "varenda ett" säger något om den
 
 
-def _runs_from_a_block(pth, boxes: list[tuple[float, float, float, float]], tol: float = 14.0) -> bool:
-    """Börjar eller slutar strecket vid en beteckningsruta? Då är det en hänvisningslinje, inte en ledning."""
-    for sg in pth.segs:
-        for x, y in ((sg.x0, sg.y0), (sg.x1, sg.y1)):
-            for x0, y0, x1, y1 in boxes:
+BLOCK_TOL = 14.0
+
+
+class _BlockBoxes:
+    """Bladets beteckningsrutor i ett rutnät, så att frågan "börjar strecket vid en ruta?" bara ser rutorna nära
+    punkten. Att pröva varje streck mot varje ruta växte som streck gånger rutor, och ett tätt blad med tusentals
+    etiketter och hundratusentals streck blev minuter av ingenting."""
+
+    CELL = 64.0
+
+    def __init__(self, boxes: list[tuple[float, float, float, float]], tol: float = BLOCK_TOL):
+        self.boxes = list(boxes)
+        self.tol = tol
+        self.cells: dict[tuple[int, int], list[int]] = defaultdict(list)
+        self.wide: list[int] = []          # rutor som täcker för många rutnätsceller, eller saknar ändliga mått
+        c = self.CELL
+        for i, (x0, y0, x1, y1) in enumerate(self.boxes):
+            if not all(math.isfinite(v) for v in (x0, y0, x1, y1)) or \
+                    (x1 - x0 + 2 * tol) * (y1 - y0 + 2 * tol) > 256 * c * c:
+                self.wide.append(i)
+                continue
+            for cx in range(math.floor((x0 - tol) / c), math.floor((x1 + tol) / c) + 1):
+                for cy in range(math.floor((y0 - tol) / c), math.floor((y1 + tol) / c) + 1):
+                    self.cells[(cx, cy)].append(i)
+
+    def __bool__(self) -> bool:
+        return bool(self.boxes)
+
+    def hit(self, x: float, y: float) -> bool:
+        tol = self.tol
+        near = self.cells.get((math.floor(x / self.CELL), math.floor(y / self.CELL)), ()) \
+            if math.isfinite(x) and math.isfinite(y) else range(len(self.boxes))
+        for group in (near, self.wide):
+            for i in group:
+                x0, y0, x1, y1 = self.boxes[i]
                 if x0 - tol <= x <= x1 + tol and y0 - tol <= y <= y1 + tol:
                     return True
+        return False
+
+
+def _runs_from_a_block(pth, boxes, tol: float = BLOCK_TOL) -> bool:
+    """Börjar eller slutar strecket vid en beteckningsruta? Då är det en hänvisningslinje, inte en ledning."""
+    if not isinstance(boxes, _BlockBoxes) or boxes.tol != tol:
+        boxes = _BlockBoxes(boxes.boxes if isinstance(boxes, _BlockBoxes) else boxes, tol)
+    for sg in pth.segs:
+        for x, y in ((sg.x0, sg.y0), (sg.x1, sg.y1)):
+            if boxes.hit(x, y):
+                return True
     return False
 
 
@@ -205,7 +246,7 @@ def _writing_pens(page: RawPage, families, blocks) -> set[str]:
     eller så finns det inte. Bara kravet att pennan ritat tillräckligt många streck för att "varenda ett" ska
     betyda något, så att en penna med två streck inte döms av en slump.
     """
-    boxes = _block_boxes(blocks)
+    boxes = _BlockBoxes(_block_boxes(blocks))
     if not boxes:
         return set()
     # Glyfstrecken räknas med, inte bort. En penna vars bläck är bokstäver skriver om möjligt ännu tydligare än
@@ -250,9 +291,7 @@ def _unconsidered(page: RawPage, pipe_families: dict, contact_stats: dict, ann_l
     # att kalla det "aldrig vägd som rör" är sant men vilseledande: det ser ut som en tappad ledning för den som
     # läser, och skickar hen att leta efter ett lagerfel som inte finns. Ritningen säger vad strecket är, och
     # läsningen ska säga det vidare.
-    boxes = [(min(r.line.bbox[0] for r in b.rows), min(r.line.bbox[1] for r in b.rows),
-              max(r.line.bbox[2] for r in b.rows), max(r.line.bbox[3] for r in b.rows))
-             for b in (blocks or []) if b.rows]
+    boxes = _BlockBoxes(_block_boxes(blocks))
     fams: dict[str, dict] = {}
     for pth in page.paths:
         if pth.kind != "s" or pth.pid in glyph_pids or pth.pid in lead_pids:
@@ -1072,7 +1111,7 @@ def analyze_page(page: RawPage, progress: Callable[[str], None] | None = None, o
     des_by_block: dict[str, list[Designation]] = defaultdict(list)
     for d in designations:
         des_by_block[d.block_id].append(d)
-    paths = {p.pid: p for p in page.paths}
+    paths = PathsByPlace((p.pid, p) for p in page.paths)
     glyph_pids = set(pid for r in vtext.rows for pid in r.provenance)
     block_by_id = {b.bid: b for b in blocks}
     # NOTE: consumed (for free segments) still excludes marks; the geometry index only excludes accepted text glyphs

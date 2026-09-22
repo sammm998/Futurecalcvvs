@@ -371,22 +371,39 @@ def _further_questions(pa, confirmed: float = 0.0, ambiguous: float = 0.0) -> di
     broken = []
     for fk, g in pa.graphs.items():
         gap = g.gap_mode or 0.0
-        if gap <= 0:
+        if gap <= 0 or not math.isfinite(gap):
             continue
         ends = []
         for c in graph_chains(g):
             for nid in (g.prim_nodes[c[0]][0], g.prim_nodes[c[-1]][1]):
                 if g.nodes[nid].degree == 1:
                     ends.append((nid, g.nodes[nid]))
+        # Each end looks only at the ends in its own lattice cell and the eight around it: comparing every free
+        # end with every other was quadratic, and a dense dashed sheet has tens of thousands of them. The first
+        # later end within reach is still the one reported, exactly as the pairwise walk found it.
+        cell = gap * 6.0
+        lattice: dict[tuple[int, int], list[int]] = {}
+        for j, (_, b) in enumerate(ends):
+            lattice.setdefault((math.floor(b.x / cell), math.floor(b.y / cell)), []).append(j)
         for i, (na, a) in enumerate(ends):
-            for nb, b in ends[i + 1:]:
-                d = math.hypot(a.x - b.x, a.y - b.y)
-                if gap * 1.5 < d <= gap * 6.0:
-                    broken.append({"family": fk, "at": [round(a.x, 1), round(a.y, 1)], "gap_pt": round(d, 1),
-                                   "this_familys_gap_pt": round(gap, 2),
-                                   "reason": "two_free_ends_face_each_other_further_apart_than_this_lines_own_gap"})
-                    break
-        if len(broken) > 40:
+            cx, cy = math.floor(a.x / cell), math.floor(a.y / cell)
+            hit = None
+            for dx in (-1, 0, 1):
+                for dy in (-1, 0, 1):
+                    for j in lattice.get((cx + dx, cy + dy), ()):
+                        if j <= i or (hit is not None and j >= hit[0]):
+                            continue
+                        b = ends[j][1]
+                        d = math.hypot(a.x - b.x, a.y - b.y)
+                        if gap * 1.5 < d <= gap * 6.0:
+                            hit = (j, d)
+            if hit is not None:
+                broken.append({"family": fk, "at": [round(a.x, 1), round(a.y, 1)], "gap_pt": round(hit[1], 1),
+                               "this_familys_gap_pt": round(gap, 2),
+                               "reason": "two_free_ends_face_each_other_further_apart_than_this_lines_own_gap"})
+                if len(broken) >= 40:
+                    break        # only the first forty are reported; looking further is time for nothing
+        if len(broken) >= 40:
             break
     out["possible_lost_continuity"] = broken[:40]
 
