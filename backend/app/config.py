@@ -57,6 +57,18 @@ class Settings(BaseSettings):
     model_config = {"env_prefix": "VVS_", "env_file": ".env", "extra": "ignore"}
 
 
+IMAGE_DATABASE_URL = "sqlite:////data/vvs.db"     # what the Dockerfile sets VVS_DATABASE_URL to
+SQLITE_KEPT_OVER_PLATFORM_DATABASE = False
+
+
+def _sqlite_has_data(url: str) -> bool:
+    path = url.replace("sqlite:///", "", 1)
+    try:
+        return os.path.getsize(path) > 0
+    except OSError:
+        return False
+
+
 def _from_the_platform(url: str) -> str:
     """Databasen driftplattformen själv kopplade in, när ingen är angiven för tjänsten.
 
@@ -66,10 +78,18 @@ def _from_the_platform(url: str) -> str:
 
     Bara när VVS_DATABASE_URL inte är satt. Den som anger en databas för tjänsten menar den databasen.
     """
-    if url != Settings.model_fields["database_url"].default:
+    if url not in (Settings.model_fields["database_url"].default, IMAGE_DATABASE_URL):
         return url
     given = (os.environ.get("DATABASE_URL") or "").strip()
     if not given:
+        return url
+    # The image names its own SQLite file (Dockerfile), so on the platform VVS_DATABASE_URL is always "set" -
+    # and a database the operator attached through DATABASE_URL was never looked at. It is now, with one guard:
+    # a SQLite file that already holds data is not swapped for a database that may be empty. That service keeps
+    # its file, and /api/version says both are there.
+    if url == IMAGE_DATABASE_URL and _sqlite_has_data(url):
+        global SQLITE_KEPT_OVER_PLATFORM_DATABASE
+        SQLITE_KEPT_OVER_PLATFORM_DATABASE = True
         return url
     # SQLAlchemy 2 vill ha drivrutinen i schemat; plattformarna skriver den gamla formen utan.
     for old, new in (("postgres://", "postgresql+psycopg://"), ("postgresql://", "postgresql+psycopg://")):
