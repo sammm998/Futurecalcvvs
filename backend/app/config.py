@@ -59,6 +59,24 @@ class Settings(BaseSettings):
 
 IMAGE_DATABASE_URL = "sqlite:////data/vvs.db"     # what the Dockerfile sets VVS_DATABASE_URL to
 SQLITE_KEPT_OVER_PLATFORM_DATABASE = False
+PLATFORM_DATABASE_UNREACHABLE = False
+
+
+def _reachable(url: str) -> bool:
+    """Can a connection to this database be opened within a few seconds?"""
+    try:
+        from sqlalchemy import create_engine, text
+        eng = create_engine(url, connect_args={"connect_timeout": 5} if url.startswith("postgresql") else {})
+        try:
+            with eng.connect() as cx:
+                cx.execute(text("select 1"))
+        finally:
+            eng.dispose()
+        return True
+    except Exception as e:                                      # noqa: BLE001
+        print(f"[data] DATABASE_URL gick inte att nå ({type(e).__name__}); tjänsten startar på SQLite-filen",
+              flush=True)
+        return False
 
 
 def _sqlite_has_data(url: str) -> bool:
@@ -87,14 +105,20 @@ def _from_the_platform(url: str) -> str:
     # and a database the operator attached through DATABASE_URL was never looked at. It is now, with one guard:
     # a SQLite file that already holds data is not swapped for a database that may be empty. That service keeps
     # its file, and /api/version says both are there.
+    global SQLITE_KEPT_OVER_PLATFORM_DATABASE, PLATFORM_DATABASE_UNREACHABLE
     if url == IMAGE_DATABASE_URL and _sqlite_has_data(url):
-        global SQLITE_KEPT_OVER_PLATFORM_DATABASE
         SQLITE_KEPT_OVER_PLATFORM_DATABASE = True
         return url
     # SQLAlchemy 2 vill ha drivrutinen i schemat; plattformarna skriver den gamla formen utan.
     for old, new in (("postgres://", "postgresql+psycopg://"), ("postgresql://", "postgresql+psycopg://")):
         if given.startswith(old):
-            return new + given[len(old):]
+            given = new + given[len(old):]
+            break
+    # A database the service cannot reach would stop it from starting at all - every page a 502. Where the
+    # image's own file is the alternative, the service starts on that file instead and says why in /api/version.
+    if url == IMAGE_DATABASE_URL and not _reachable(given):
+        PLATFORM_DATABASE_UNREACHABLE = True
+        return url
     return given
 
 

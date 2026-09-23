@@ -52,6 +52,18 @@ async def _lifespan(_app: FastAPI):
     except Exception as e:                                     # noqa: BLE001
         # En utbildning som inte gick att lägga in får inte hindra tjänsten från att starta.
         print(f"[academy] innehållet kunde inte läggas in: {e}", flush=True)
+    # Diskutrymme som inte bär någon information - dubbla kopior, okomprimerad diagnostik, kvarlämnade
+    # arbetskataloger, misslyckade analysers rester - återtas i bakgrunden, så att uppstarten inte väntar på det.
+    if os.environ.get("PYTEST_CURRENT_TEST") is None:
+        import threading
+
+        def _reclaim():
+            try:
+                from .disk_space import reclaim
+                print(f"[disk] återtaget: {reclaim(storage.path('results'))}", flush=True)
+            except Exception as e:                             # noqa: BLE001
+                print(f"[disk] kunde inte städa: {type(e).__name__}: {e}", flush=True)
+        threading.Thread(target=_reclaim, name="disk-reclaim", daemon=True).start()
     # jobb som var på väg när tjänsten senast stängde körs igen; ett RUNNING som ingen kör är en lögn på skärmen
     if os.environ.get("PYTEST_CURRENT_TEST") is None or os.environ.get("VVS_RESUBMIT_ON_START") == "1":
         from . import jobs as _jobs

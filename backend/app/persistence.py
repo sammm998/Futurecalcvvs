@@ -138,6 +138,9 @@ def verdict() -> dict:
                + " och ".join(parts) + ". Montera en volym på katalogen, eller lägg till en databastjänst och "
                "peka VVS_DATABASE_URL på den.")
     from . import config as _config
+    if _config.PLATFORM_DATABASE_UNREACHABLE:
+        why += (" Obs: en databastjänst är kopplad (DATABASE_URL) men gick inte att nå vid start, så SQLite-filen "
+                "används. Kontrollera adressen - för Supabase krävs poolerns adress (IPv4), inte den direkta.")
     if _config.SQLITE_KEPT_OVER_PLATFORM_DATABASE:
         why += (" Obs: en databastjänst är också kopplad (DATABASE_URL), men SQLite-filen har redan data och "
                 "används därför fortfarande. Flytta datan och sätt VVS_DATABASE_URL för att byta.")
