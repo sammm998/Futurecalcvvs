@@ -63,19 +63,35 @@ def test_no_connection_string_leaves_the_service(client, monkeypatch):
         assert secret not in body
 
 
-def test_a_database_of_its_own_needs_no_volume():
+def test_a_database_of_its_own_still_needs_a_volume_for_the_drawings(monkeypatch):
+    """The rows live in the database; the drawings and the results are files. A database alone keeps neither."""
     from app import persistence
     from app.config import settings
     before = settings.database_url
     try:
         settings.database_url = "postgresql+psycopg://user:pw@db.internal:5432/vvs"
+        monkeypatch.setattr(persistence, "_on_its_own_mount", lambda path: False)
         v = persistence.verdict()
-        assert v["persistent"] is True
+        assert v["persistent"] is False and "ritningarna" in v["why"]
         assert v["database"]["kind"] == "postgresql"
         assert v["database"]["host"] == "db.internal:5432/vvs"
         assert "pw" not in str(v) and "user" not in str(v["database"])
+        monkeypatch.setattr(persistence, "_on_its_own_mount", lambda path: True)
+        assert persistence.verdict()["persistent"] is True
     finally:
         settings.database_url = before
+
+
+def test_a_database_attached_by_the_platform_is_used_over_the_images_own_file(monkeypatch, tmp_path):
+    from app import config
+    monkeypatch.setenv("DATABASE_URL", "postgres://u:p@db.example:5432/postgres")
+    monkeypatch.setattr(config, "_sqlite_has_data", lambda url: False)
+    assert config._from_the_platform(config.IMAGE_DATABASE_URL) == "postgresql+psycopg://u:p@db.example:5432/postgres"
+    # a SQLite file that already holds the service's data is not swapped for a database that may be empty
+    monkeypatch.setattr(config, "_sqlite_has_data", lambda url: True)
+    assert config._from_the_platform(config.IMAGE_DATABASE_URL) == config.IMAGE_DATABASE_URL
+    # and a database the operator named for the service is always the one used
+    assert config._from_the_platform("sqlite:////elsewhere/mine.db") == "sqlite:////elsewhere/mine.db"
 
 
 def test_the_platforms_own_database_is_picked_up_when_none_is_given(monkeypatch):
@@ -84,4 +100,4 @@ def test_the_platforms_own_database_is_picked_up_when_none_is_given(monkeypatch)
     monkeypatch.setenv("DATABASE_URL", "postgres://u:p@h:5432/db")
     assert _from_the_platform(default) == "postgresql+psycopg://u:p@h:5432/db"
     # ...men en databas som är angiven för tjänsten är den som menas
-    assert _from_the_platform("sqlite:////data/vvs.db") == "sqlite:////data/vvs.db"
+    assert _from_the_platform("sqlite:////srv/egen/vvs.db") == "sqlite:////srv/egen/vvs.db"

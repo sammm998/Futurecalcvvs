@@ -105,8 +105,20 @@ def verdict() -> dict:
     nästa driftsättning.
     """
     db, st = database_facts(), storage_facts()
-    if db["kind"] != "sqlite":
-        ok, why = True, f"{db['kind']} som egen tjänst: data ligger utanför behållaren"
+    if db["kind"] != "sqlite" and settings.local_installation:
+        ok, why = True, f"{db['kind']} som egen tjänst; ritningarna sparas på datorns disk"
+    elif db["kind"] != "sqlite":
+        # The database keeps the rows, but not the drawings and the analysis results: those are files under the
+        # storage root. Without a volume there they are gone after the next deployment while the rows that
+        # point at them remain - a project full of drawings that cannot be opened.
+        if st.get("on_its_own_mount") is True:
+            ok, why = True, f"{db['kind']} som egen tjänst, ritningar och resultat på en monterad volym"
+        elif st.get("on_its_own_mount") is None:
+            ok, why = None, f"{db['kind']} som egen tjänst; gick inte att avgöra var ritningarna ligger"
+        else:
+            ok, why = False, (f"{db['kind']} som egen tjänst behåller kontona och projekten, men ritningarna och "
+                              f"analysresultaten ({st.get('root')}) ligger i behållarens eget filsystem och "
+                              "försvinner vid nästa driftsättning. Montera en volym på /data.")
     elif settings.local_installation:
         ok = bool(db.get("exists") and st.get("writable"))
         why = ("Lokal installation: databas och ritningar sparas på datorns disk. Säkerhetskopiera datamappen."
@@ -125,6 +137,10 @@ def verdict() -> dict:
         why = ("ligger i behållarens eget filsystem och försvinner vid nästa driftsättning: "
                + " och ".join(parts) + ". Montera en volym på katalogen, eller lägg till en databastjänst och "
                "peka VVS_DATABASE_URL på den.")
+    from . import config as _config
+    if _config.SQLITE_KEPT_OVER_PLATFORM_DATABASE:
+        why += (" Obs: en databastjänst är också kopplad (DATABASE_URL), men SQLite-filen har redan data och "
+                "används därför fortfarande. Flytta datan och sätt VVS_DATABASE_URL för att byta.")
     return {"persistent": ok, "why": why, "database": db, "storage": st, "rows": counts()}
 
 

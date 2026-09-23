@@ -82,14 +82,16 @@ Två uppsättningar fungerar:
 1. **Volym.** Montera en volym på `/data`. Då ligger både SQLite-filen och de uppladdade ritningarna på den, och
    de överlever en driftsättning. SQLite körs i WAL-läge med väntetid och räcker långt.
 2. **Egen databastjänst.** Lägg till Postgres i projektet. Railway sätter då `DATABASE_URL` på tjänsten, och
-   appen tar den automatiskt om `VVS_DATABASE_URL` inte är satt - den gamla `postgres://`-formen översätts till
-   drivrutinen SQLAlchemy vill ha. **Ritningsfilerna ligger fortfarande på disk**, så en volym på
-   `VVS_STORAGE_ROOT` behövs ändå, eller ett objektlager.
+   appen tar den automatiskt om `VVS_DATABASE_URL` inte är satt eller står kvar på imagens eget värde
+   (`sqlite:////data/vvs.db`) - den gamla `postgres://`-formen översätts till drivrutinen SQLAlchemy vill ha.
+   Ett undantag skyddar befintlig data: har SQLite-filen redan innehåll används den fortfarande, och
+   `/api/version` säger att en databastjänst också är kopplad. **Ritningsfilerna och analysresultaten ligger
+   fortfarande på disk**, så en volym på `/data` behövs ändå - utan den blir `persistent` `false`.
 
 Tjänsten säger själv vad som gäller. Vid varje uppstart skriver den en rad i loggen:
 
 ```
-[data] OK: postgresql som egen tjänst: data ligger utanför behållaren
+[data] OK: postgresql som egen tjänst, ritningar och resultat på en monterad volym
 [data] rader: {'users': 12, 'projects': 4, 'drawings': 31, 'jobs': 33}
 ```
 
