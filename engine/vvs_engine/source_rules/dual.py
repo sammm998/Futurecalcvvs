@@ -12,6 +12,7 @@ from .pipestudio import flow_assign, final_bind
 
 MODES=('dimension','model','compare','combined')
 
+PREFETCH_PIECE = 12      # questions per request when the batches are asked ahead
 GIVE_UP_AFTER = 4        # consecutive failed requests before the model is taken to be unreachable
 RETRY_PAUSE_S = 2.0
 
@@ -52,6 +53,7 @@ class _Resilient:
     def __init__(self, ask):
         self.ask = ask
         self.failures = []
+        self.timings = []
         self.lock = threading.Lock()
         self.in_a_row = 0
 
@@ -60,6 +62,7 @@ class _Resilient:
             return self.in_a_row >= GIVE_UP_AFTER
 
     def _once(self, chunk):
+        started = time.monotonic()
         try:
             got = self.ask(chunk)
             if not isinstance(got, list):
@@ -68,10 +71,12 @@ class _Resilient:
             with self.lock:
                 self.in_a_row += 1
                 self.failures.append({'stretches': [q['stretch'] for q in chunk],
-                                      'error': (type(exc).__name__ + ': ' + str(exc))[:300]})
+                                      'error': (type(exc).__name__ + ': ' + str(exc))[:300],
+                                      'seconds': round(time.monotonic() - started, 1)})
             return None
         with self.lock:
             self.in_a_row = 0
+            self.timings.append({'questions': len(chunk), 'seconds': round(time.monotonic() - started, 1)})
         return got
 
     def _ask(self, chunk, again=True):
@@ -100,9 +105,52 @@ class _Resilient:
             answered.update(self._ask(missing, again=False))
         return answered
 
+    def prefetch(self, chunks, workers):
+        """Ask every batch at once, before the assignment asks for them one pair at a time.
+
+        The assignment engine asks its batches two at a time, and each takes about a minute; a sheet with a
+        dozen batches waited six minutes for answers that do not depend on each other. Here they are all sent
+        together, `workers` at a time, and the assignment receives each answer as it asks for it. A batch the
+        assignment asks for that was not prefetched is asked then, as before.
+        """
+        from concurrent.futures import ThreadPoolExecutor
+        from contextvars import copy_context
+        if workers <= 1 or len(chunks) <= 1:
+            return
+        self.pool = ThreadPoolExecutor(max_workers=workers)
+        self.ahead = {}
+        piece = max(1, PREFETCH_PIECE)
+        for chunk in chunks:
+            key = tuple(q['stretch'] for q in chunk)
+            # A batch of two dozen questions can take a minute to answer, and a request that long is the one a
+            # gateway cuts off; the same questions asked in smaller consecutive pieces, all at once, come back in
+            # a fraction of the time. Neighbours stay together: a piece is a run of the batch's own order.
+            parts = [list(chunk[i:i + piece]) for i in range(0, len(chunk), piece)]
+            self.ahead[key] = [self.pool.submit(copy_context().run, self._ask, part) for part in parts]
+
+    def close(self):
+        pool = getattr(self, 'pool', None)
+        if pool is not None:
+            pool.shutdown(wait=False, cancel_futures=True)
+
     def __call__(self, chunk):
-        answered = self._ask(list(chunk))
+        futures = (getattr(self, 'ahead', None) or {}).pop(tuple(q['stretch'] for q in chunk), None)
+        self.used_ahead = getattr(self, 'used_ahead', 0) + (futures is not None)
+        if futures is not None:
+            answered = {}
+            for f in futures:
+                answered.update(f.result())
+        else:
+            answered = self._ask(list(chunk))
         return [answered[q['stretch']] for q in chunk if q['stretch'] in answered]
+
+
+def _model_concurrency():
+    import os
+    try:
+        return max(1, int(os.environ.get('VVS_MODEL_CONCURRENCY', '8')))
+    except ValueError:
+        return 8
 
 
 def run(A,L,R,style,mode='compare',ask=None):
@@ -126,10 +174,19 @@ def run(A,L,R,style,mode='compare',ask=None):
             model_input['bindings'].extend(deepcopy(R.get('symbol_port_candidates', [])))
             model_input['bindings'].extend(deepcopy(R.get('sheet_declaration_candidates', [])))
             resilient=_Resilient(ask)
-            model=final_bind.bind(deepcopy(A),model_input,deepcopy(L),deepcopy(style),ask=resilient)
+            # the same questions and batches the assignment will ask, sent ahead all at once
+            from .pipestudio.assignment_payload import batches
+            planned=[q for q in final_bind.questions(deepcopy(A),model_input,deepcopy(L)) if q['candidates']]
+            resilient.prefetch(batches(planned),_model_concurrency())
+            try:
+                model=final_bind.bind(deepcopy(A),model_input,deepcopy(L),deepcopy(style),ask=resilient)
+            finally:
+                resilient.close()
             # Only a model that answered nothing at all, while being asked something, is a failed assignment.
             # A stretch it did not answer is an unresolved stretch, reported as one, not a failed sheet.
             model['transport_failures']=resilient.failures
+            model['batches_asked_ahead']=getattr(resilient,'used_ahead',0)
+            model['request_seconds']=resilient.timings
             model['unresolved_by_model']=sum(a['status']=='unresolved' and a.get('reason')!='no_candidate'
                                              for a in model['assignments'])
             nothing=model['questions']>0 and not model['decisions']

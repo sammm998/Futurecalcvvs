@@ -93,4 +93,6 @@ def transport():
     if not key:
         return None
     from openai import OpenAI
-    return AssignmentTransport(OpenAI(api_key=key, timeout=180, max_retries=1), model)
+    # A request that has not answered in a minute is split and asked again in smaller pieces by the assignment
+    # (engine source_rules/dual.py), which is faster than waiting on it or letting the client repeat it whole.
+    return AssignmentTransport(OpenAI(api_key=key, timeout=60, max_retries=0), model)
