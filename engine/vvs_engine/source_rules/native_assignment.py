@@ -20,7 +20,7 @@ def identity(d):
     return identity_from_text(name,d['dimension'],system,None)
 
 
-def project(graphs, native, result, page, elevations):
+def project(graphs, native, result, page, elevations, host_reading=None):
     from .swedish import label_facts, lookup, designation_text
     A,L,R=native['graph'],native['labels'],native['association']
     labels={l['id']:l for l in L};stretches={s['id']:s for s in A['stretches']}
@@ -46,7 +46,7 @@ def project(graphs, native, result, page, elevations):
     # Match only the explicitly shared source path, with a bounded curve
     # approximation tolerance; this cannot admit a neighbouring pipe path.
     routes={sid:LineString(s['points']).buffer(.5,cap_style=2) for sid,s in stretches.items() if len(s['points'])>=2}
-    states={};reverse=defaultdict(list);partial=0
+    states={};reverse=defaultdict(list);partial=0;set_aside=set()
     for fk,g in graphs.items():
         states[fk]={}
         for pid,p in g.prims.items():
@@ -58,6 +58,8 @@ def project(graphs, native, result, page, elevations):
                     if covered>.02:partial+=1
                     continue
                 reverse[sid].append({'family':fk,'primitive':pid})
+                if stretches[sid].get('in_wall') or stretches[sid].get('entry'):
+                    set_aside.add((fk,pid))
                 b=bindings.get(sid)
                 if b and not stretches[sid].get('in_wall') and not stretches[sid].get('entry'):
                     d=labels[b['label']]['designations'][b['designation_idx']]
@@ -72,6 +74,26 @@ def project(graphs, native, result, page, elevations):
                 state.state='CONFIRMED';state.identity=next(iter(identities))
             else:
                 state.state='AMBIGUOUS';state.candidates=identities
+    # Geometry the native graph names nothing on - a run its assembler never built, or one no label of its own
+    # reached - is not thereby unlabelled. The host reads the whole sheet with its own leaders and contacts, and
+    # where it confirmed a piece on that evidence, the piece keeps that name rather than going unmeasured. Only
+    # pieces the native reading left entirely unowned are filled, never one it named or found ambiguous, and
+    # never one it set aside as wall or entry geometry.
+    filled=0
+    if host_reading is not None:
+        host=host_reading(graphs).prim_states
+        for fk,family in states.items():
+            for pid,state in family.items():
+                if state.state!='UNOWNED' or (fk,pid) in set_aside:
+                    continue
+                h=host.get(fk,{}).get(pid)
+                if h is None or h.state!='CONFIRMED' or h.identity is None:
+                    continue
+                state.state='CONFIRMED';state.identity=h.identity
+                state.reason='host_reading_where_the_native_graph_named_nothing'
+                state.evidence=['authority:host_reading','native:no_owner']+list(h.evidence or [])
+                state.anchors=set(h.anchors or ())
+                filled+=1
     # Native joining points and VG/CL landings delimit measurement sections.
     native_points={(round(n['x'],2),round(n['y'],2)) for n in A['nodes']}
     local_levels=defaultdict(list)
@@ -104,7 +126,8 @@ def project(graphs, native, result, page, elevations):
         adapter={'geometry':'pipestudio_native_topology_original_pdf_ink','entry_detection':'pipestudio_assemble',
                  'labels':{str(l['id']):l['text'] for l in L},'partial_projection_count':partial,
                  'limitations':['Segments without a complete native assignment remain unconfirmed.']},
-        primitive_map={str(sid):parts for sid,parts in reverse.items()})
+        primitive_map={str(sid):parts for sid,parts in reverse.items()},
+        host_filled_primitives=filled)
     result['swedish_rule_evidence'] = {
         'labels': {str(l['id']): label_facts(l) for l in L},
         'line_conventions': {str(s['id']): lookup((s.get('line_type') or 'unknown').replace('-','_')) for s in A['stretches']},
@@ -119,10 +142,10 @@ def project(graphs, native, result, page, elevations):
     return OwnershipResult(states,pipes,[],dict(Counter(s.state for family in states.values() for s in family.values()))),result
 
 
-def analyze(graphs,native,page,ask,elevations,raw_page):
+def analyze(graphs,native,page,ask,elevations,raw_page,host_reading=None):
     if ask is not None and hasattr(ask,'for_page'):ask=ask.for_page(raw_page)
     result=run(native['graph'],native['labels'],native['association'],native['style'],mode='combined',ask=ask)
     if result['combined']['status']!='COMPLETED':
         why=(result['combined'].get('result') or {}).get('failure_reason') or result['combined'].get('reason')
         raise RuntimeError('Native combined assignment failed: '+result['combined']['status']+(f' ({why})' if why else ''))
-    return project(graphs,native,result,page,elevations)
+    return project(graphs,native,result,page,elevations,host_reading)

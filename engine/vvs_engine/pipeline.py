@@ -1759,8 +1759,19 @@ def analyze_page(page: RawPage, progress: Callable[[str], None] | None = None, o
             native_merge['supplementary_contacts'] = supplement(native, anchors, identities, elevations)
             from .source_rules.declaration_candidates import propose
             native_merge['drawing_table_proposals'] = propose(native['graph'], native['labels'], native['association'], declarations.as_dict())
+            def host_reading(split_graphs):
+                """The host's own reading of the same (split) geometry, on copies of its anchors."""
+                import copy
+                own = copy.deepcopy(anchors)
+                ids = complete_identities(_pipe_identities(
+                    designations, own, grammar,
+                    _R("pipeline.DN_ROWS_ARE_VERTICAL_ONLY", DN_ROWS_ARE_VERTICAL_ONLY), legend=legend,
+                    unknown_codes=unknown_codes))
+                return propagate(split_graphs, own, page.info.index, ids, spelled_out,
+                                 declared=declarations.connection_pipes, declared_max_pt=declared_max_pt,
+                                 end_evidence=end_ev)
             ownership, source_assignment = native_analyze(graphs, native, page.info.index,
-                source_ask, elevations, page)
+                source_ask, elevations, page, host_reading)
         else:
             ownership, source_assignment = source_analyze(
                 graphs, anchors, identities, page.info.index, mode=source_mode,
