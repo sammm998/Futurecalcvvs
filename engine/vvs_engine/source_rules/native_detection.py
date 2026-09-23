@@ -27,8 +27,10 @@ def load_runtime():
     if source not in sys.path:
         sys.path.insert(0, source)
     os.environ.setdefault('AI_MODEL_PATH', str(ROOT / 'models/pipestudio-labels.onnx'))
-    # OCR reads each label box on its own: as many at once as the machine has cores, up to eight
-    os.environ.setdefault('PIPE_OCR_WORKERS', str(max(2, min(8, os.cpu_count() or 2))))
+    # Two OCR processes unless the operator says otherwise (PIPE_OCR_WORKERS). The core count is not a safe guide:
+    # a container sees every core of its host but not its own memory limit, and eight tesseract processes at once
+    # took a Railway service past that limit - it was restarted mid-analysis and every page answered 502.
+    os.environ.setdefault('PIPE_OCR_WORKERS', '2')
     os.environ.setdefault('OMP_THREAD_LIMIT', '1')
     os.environ.setdefault('PIPE_STUDIO_DATA', str(ROOT / '.local/native-studio'))
     import pytesseract

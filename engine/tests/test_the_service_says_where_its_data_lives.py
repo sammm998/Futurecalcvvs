@@ -86,7 +86,12 @@ def test_a_database_attached_by_the_platform_is_used_over_the_images_own_file(mo
     from app import config
     monkeypatch.setenv("DATABASE_URL", "postgres://u:p@db.example:5432/postgres")
     monkeypatch.setattr(config, "_sqlite_has_data", lambda url: False)
+    monkeypatch.setattr(config, "_reachable", lambda url: True)
     assert config._from_the_platform(config.IMAGE_DATABASE_URL) == "postgresql+psycopg://u:p@db.example:5432/postgres"
+    # a database that cannot be reached must not keep the service from starting: it stays on its own file
+    monkeypatch.setattr(config, "_reachable", lambda url: False)
+    assert config._from_the_platform(config.IMAGE_DATABASE_URL) == config.IMAGE_DATABASE_URL
+    monkeypatch.setattr(config, "_reachable", lambda url: True)
     # a SQLite file that already holds the service's data is not swapped for a database that may be empty
     monkeypatch.setattr(config, "_sqlite_has_data", lambda url: True)
     assert config._from_the_platform(config.IMAGE_DATABASE_URL) == config.IMAGE_DATABASE_URL
