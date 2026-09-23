@@ -254,6 +254,9 @@ def run_job(job_id: str) -> None:
         db.commit()
     out_dir = storage.path(result_key)
     try:
+        # a full disk is found out here, in plain words, not half-way through the reading as "Errno 28"
+        from .disk_space import ensure_room
+        ensure_room(storage.path(""), storage.path("results"))
         # the account's own rules, bound to this thread and to nothing else
         with engine_rules.using(moved):
             summary = analyze_isolated(pdf_path, out_dir, name=os.path.splitext(drawing.filename)[0],
@@ -269,6 +272,8 @@ def run_job(job_id: str) -> None:
                                 source_style="auto")
             from .diagnostic_storage import compress_native_diagnostics
             compress_native_diagnostics(out_dir)
+            from .disk_space import link_sheet_copies
+            link_sheet_copies(out_dir)
             # which readers this installation actually had available, and by what name - a reading that quietly used a
             # model, or quietly did without one, is not a reading anyone can check
             on, why = second_reader_state()
