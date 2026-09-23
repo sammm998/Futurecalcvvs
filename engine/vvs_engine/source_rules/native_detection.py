@@ -27,7 +27,8 @@ def load_runtime():
     if source not in sys.path:
         sys.path.insert(0, source)
     os.environ.setdefault('AI_MODEL_PATH', str(ROOT / 'models/pipestudio-labels.onnx'))
-    os.environ.setdefault('PIPE_OCR_WORKERS', '2')
+    # OCR reads each label box on its own: as many at once as the machine has cores, up to eight
+    os.environ.setdefault('PIPE_OCR_WORKERS', str(max(2, min(8, os.cpu_count() or 2))))
     os.environ.setdefault('OMP_THREAD_LIMIT', '1')
     os.environ.setdefault('PIPE_STUDIO_DATA', str(ROOT / '.local/native-studio'))
     import pytesseract
