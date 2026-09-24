@@ -21,7 +21,8 @@ from pathlib import Path
 
 log = logging.getLogger(__name__)
 
-MIN_FREE_BYTES = 400 * 1024 * 1024          # below this an analysis is not started: it would not be able to finish
+MIN_FREE_BYTES = 150 * 1024 * 1024          # an analysis writes ~60 MB at its peak; below this it could not finish
+KEEP_RUNS_PER_DRAWING = 2                   # when space runs out, older runs of the same drawing give way first
 TEMP_PREFIXES = ("vvs-detector-cache-", "vvs-native-")
 TEMP_MAX_AGE_S = 2 * 3600
 FAILED_KEEP_S = 24 * 3600
@@ -115,6 +116,45 @@ def remove_failed_results(keep_s: float = FAILED_KEEP_S) -> int:
     return saved
 
 
+def _when(job) -> float:
+    """When a run finished, as a number: stored times may come back with or without a zone."""
+    t = job.finished_at or job.started_at
+    if t is None:
+        return 0.0
+    if t.tzinfo is None:
+        t = t.replace(tzinfo=dt.timezone.utc)
+    return t.timestamp()
+
+
+def remove_superseded_runs(keep: int = KEEP_RUNS_PER_DRAWING) -> int:
+    """Results of older runs of a drawing that has been analysed again since - only when the disk is nearly full.
+
+    A drawing analysed ten times while its reading was being tuned holds ten full results, and only the newest
+    are the ones anyone opens. The newest `keep` completed runs of every drawing, and every run still in
+    progress, are never touched; the job rows stay, only their stored files go."""
+    from .db import AnalysisJob, SessionLocal
+    from .storage import storage
+    saved = 0
+    try:
+        with SessionLocal() as db:
+            by_drawing: dict = {}
+            for job in db.query(AnalysisJob).filter(AnalysisJob.status == "COMPLETED",
+                                                    AnalysisJob.result_key.isnot(None)).all():
+                by_drawing.setdefault(job.drawing_id, []).append(job)
+            for jobs in by_drawing.values():
+                jobs.sort(key=_when, reverse=True)
+                for job in jobs[keep:]:
+                    path = storage.path(job.result_key)
+                    if os.path.isdir(path):
+                        saved += sum(f.stat().st_size for f in Path(path).rglob("*") if f.is_file())
+                        shutil.rmtree(path, ignore_errors=True)
+                    job.result_key = None
+            db.commit()
+    except Exception:                                  # noqa: BLE001
+        log.exception("Kunde inte städa äldre körningar")
+    return saved
+
+
 def reclaim(results_root: str) -> dict:
     """Everything above, over every stored result. Safe to run while analyses run."""
     from .diagnostic_storage import compress_native_diagnostics
@@ -137,6 +177,8 @@ def ensure_room(storage_root: str, results_root: str) -> None:
     if free_bytes(storage_root) >= MIN_FREE_BYTES:
         return
     got = reclaim(results_root)
+    if free_bytes(storage_root) < MIN_FREE_BYTES:
+        got["superseded_runs"] = remove_superseded_runs()
     log.warning("Lite diskutrymme: städade %s", got)
     left = free_bytes(storage_root)
     if left < MIN_FREE_BYTES:
