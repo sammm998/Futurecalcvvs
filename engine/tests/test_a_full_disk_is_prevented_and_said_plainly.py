@@ -51,3 +51,41 @@ def test_a_nearly_full_disk_is_refused_in_plain_words(tmp_path, monkeypatch):
     assert "Disken" in str(e.value) and "10 MB ledigt" in str(e.value)
     monkeypatch.setattr(disk_space, "free_bytes", lambda path: 10 * 1024 ** 3)
     disk_space.ensure_room(str(tmp_path), str(tmp_path / "results"))                # room enough: nothing said
+
+
+def test_when_space_runs_out_only_older_runs_of_the_same_drawing_give_way(tmp_path, monkeypatch):
+    import datetime as dt
+    from types import SimpleNamespace
+    from app import disk_space
+    import app.db as db_module
+    import app.storage as storage_module
+    jobs = []
+    for drawing, n in (("d1", 4), ("d2", 1)):
+        for k in range(n):
+            key = f"results/{drawing}/{k}"
+            (tmp_path / key).mkdir(parents=True)
+            (tmp_path / key / "quantities.json").write_text("x" * 100)
+            jobs.append(SimpleNamespace(drawing_id=drawing, result_key=key, status="COMPLETED",
+                                        finished_at=dt.datetime(2026, 9, 1 + k), started_at=None))
+
+    class Q:
+        def filter(self, *a):
+            return self
+        def all(self):
+            return jobs
+
+    class S:
+        def __enter__(self):
+            return self
+        def __exit__(self, *a):
+            return False
+        def query(self, model):
+            return Q()
+        def commit(self):
+            pass
+    monkeypatch.setattr(db_module, "SessionLocal", lambda: S())
+    monkeypatch.setattr(storage_module, "storage", SimpleNamespace(path=lambda key: str(tmp_path / key)))
+    assert disk_space.remove_superseded_runs(keep=2) == 200
+    kept = sorted(j.result_key for j in jobs if j.result_key)
+    assert kept == ["results/d1/2", "results/d1/3", "results/d2/0"]        # the two newest, and the only run of d2
+    assert not (tmp_path / "results/d1/0").exists() and (tmp_path / "results/d1/3").exists()
