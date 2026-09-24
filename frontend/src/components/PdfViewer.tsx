@@ -23,7 +23,7 @@ export interface Drawn {
 
 // paletten bor i src/palette.ts så att bladet, tabellen och 3D-vyn ger samma rör samma färg; den lånas vidare
 // härifrån för dem som redan hämtar den från vyn
-import { identityColor, pipeColor } from "../palette";
+import { identityColor, pipeColor, pipeForLabel } from "../palette";
 export { identityColor };
 
 const len = (a: number[], b: number[]) => Math.hypot(b[0] - a[0], b[1] - a[1]);
@@ -548,6 +548,24 @@ const PdfViewer = forwardRef<ViewerHandle, ViewerProps>(function PdfViewer(props
 
   const w = vp ? vp.w * scale : 0, h = vp ? vp.h * scale : 0;
   const sw = (pt: number) => pt / scale;                     // a screen-constant width in page units
+  // Each label, its leader and its end mark wear the colour of the pipe the label names, so a reader follows
+  // label -> leader -> pipe by colour instead of by eye across a busy sheet.
+  const linked = useMemo(() => {
+    const byDesignation = new Map<string, { color: string; identity?: string }>();
+    const byLeader = new Map<string, { color: string; identity?: string }>();
+    const byAnchor = new Map<string, { color: string; identity?: string }>();
+    for (const a of props.anchors ?? []) {
+      if (a.names_a_pipe === false || (a.state !== "VERIFIED_PIPE_ATTACHMENT" && a.state !== "AMBIGUOUS_PIPE_ATTACHMENT")) continue;
+      const p = pipeForLabel(props.pipes ?? [], a.designation, a.dn, a.display);
+      if (!p || !p.identity) continue;
+      const link = { color: identityColor(p.identity), identity: p.identity };
+      byAnchor.set(a.id, link);
+      if (a.designation_id) byDesignation.set(a.designation_id, link);
+      if (a.leader_id) byLeader.set(a.leader_id, link);
+    }
+    return { byDesignation, byLeader, byAnchor };
+  }, [props.anchors, props.pipes]);
+  const dimmed = (identity?: string) => props.selectedIdentity !== null && identity !== props.selectedIdentity;
   const mpp = props.meterPerPt ?? 0;
   const metres = (pts: number[][]) => pathLen(pts) * mpp;
   const fmt = (m: number) => `${num(m, 2)} m`;
@@ -866,10 +884,21 @@ const PdfViewer = forwardRef<ViewerHandle, ViewerProps>(function PdfViewer(props
                     <polyline points={pts} fill="none" stroke="transparent" strokeWidth={sw(14)}
                       strokeLinecap="round" strokeLinejoin="round"
                       style={{ pointerEvents: pick, cursor: "pointer" }} onClick={() => props.onPipeClick(p)} />
-                    <polyline points={pts} fill="none"
-                      stroke={sel ? "#ff2d00" : pipeColor(p)} strokeWidth={sw(sel ? 5 : 3.2)}
-                      strokeOpacity={dim ? 0.25 : 0.85} strokeLinecap="round" strokeLinejoin="round"
+                    {/* a white halo under the run lifts it off the drawing's own black line work */}
+                    <polyline points={pts} fill="none" stroke="#ffffff" strokeWidth={sw(sel ? 9 : 6.5)}
+                      strokeOpacity={dim ? 0.2 : 0.9} strokeLinecap="round" strokeLinejoin="round"
                       style={{ pointerEvents: "none" }} />
+                    <polyline points={pts} fill="none"
+                      stroke={sel ? "#ff2d00" : pipeColor(p)} strokeWidth={sw(sel ? 5.5 : 4)}
+                      strokeOpacity={dim ? 0.2 : 1} strokeLinecap="round" strokeLinejoin="round"
+                      style={{ pointerEvents: "none" }} />
+                    {/* where a run starts and ends - a joint, a branch, a label's landing - a white ring in its
+                        colour, so one run can be told from the next where they meet */}
+                    {pl.length > 1 && [pl[0], pl[pl.length - 1]].map((q: number[], e: number) => (
+                      <circle key={e} cx={q[0]} cy={q[1]} r={sw(3.6)} fill="#ffffff" fillOpacity={dim ? 0.3 : 1}
+                        stroke={sel ? "#ff2d00" : pipeColor(p)} strokeWidth={sw(1.8)} strokeOpacity={dim ? 0.2 : 1}
+                        style={{ pointerEvents: "none" }} />
+                    ))}
                   </g>
                 );
               });
@@ -899,17 +928,38 @@ const PdfViewer = forwardRef<ViewerHandle, ViewerProps>(function PdfViewer(props
                 "i vägg" layer was on, and a label the reading did read then looked exactly like one it had
                 missed. The wall still matters - the length there is outside the quantity - so it is said by
                 drawing it faintly, the same way the pipe itself is. */}
-            {props.layers.leaders && props.leaders.map((l) => (
-              <polyline key={l.id} points={l.points.map((q: number[]) => q.join(",")).join(" ")} fill="none"
-                stroke="#b000b0" strokeWidth={sw(1.2)}
-                strokeOpacity={l.in_wall && !props.layers.inWall ? 0.3 : 1} />
-            ))}
-            {props.layers.designations && props.designations.map((d) => (
-              <rect key={d.id} x={d.bbox[0] - 1} y={d.bbox[1] - 1} width={d.bbox[2] - d.bbox[0] + 2} height={d.bbox[3] - d.bbox[1] + 2}
-                fill="none" stroke={!d.names_a_pipe ? "#9aa3af" : d.dn != null ? "#0b5cad" : "#c77800"}
-                strokeOpacity={d.in_wall && !props.layers.inWall ? 0.35 : 1}
-                strokeWidth={sw(1)} strokeDasharray={d.names_a_pipe ? undefined : `${sw(3)} ${sw(2)}`} />
-            ))}
+            {/* A label, its leader and its end mark are part of the pipe they name: drawn in its colour whenever
+                the pipes are, so the connection can be followed. The layers below add the rest. */}
+            {(props.layers.leaders || props.layers.pipes) && props.leaders.map((l) => {
+              const link = linked.byLeader.get(l.id);
+              if (!props.layers.leaders && !link) return null;
+              const faint = l.in_wall && !props.layers.inWall;
+              return (
+                <polyline key={l.id} points={l.points.map((q: number[]) => q.join(",")).join(" ")} fill="none"
+                  stroke={link ? link.color : "#b000b0"} strokeWidth={sw(link ? 2.4 : 1.2)}
+                  strokeLinecap="round" strokeLinejoin="round"
+                  strokeOpacity={link && dimmed(link.identity) ? 0.15 : faint ? 0.3 : 1} />
+              );
+            })}
+            {(props.layers.designations || props.layers.pipes) && props.designations.map((d) => {
+              const link = linked.byDesignation.get(d.id);
+              if (!props.layers.designations && !link) return null;
+              const faint = d.in_wall && !props.layers.inWall;
+              if (link) {
+                const off = dimmed(link.identity);
+                return (
+                  <rect key={d.id} x={d.bbox[0] - 2} y={d.bbox[1] - 2} width={d.bbox[2] - d.bbox[0] + 4} height={d.bbox[3] - d.bbox[1] + 4}
+                    rx={sw(2)} fill={link.color} fillOpacity={off ? 0.05 : 0.35} stroke={link.color}
+                    strokeOpacity={off ? 0.2 : faint ? 0.5 : 1} strokeWidth={sw(2.2)} />
+                );
+              }
+              return (
+                <rect key={d.id} x={d.bbox[0] - 1} y={d.bbox[1] - 1} width={d.bbox[2] - d.bbox[0] + 2} height={d.bbox[3] - d.bbox[1] + 2}
+                  fill="none" stroke={!d.names_a_pipe ? "#9aa3af" : d.dn != null ? "#0b5cad" : "#c77800"}
+                  strokeOpacity={faint ? 0.35 : props.selectedIdentity !== null ? 0.3 : 1}
+                  strokeWidth={sw(1)} strokeDasharray={d.names_a_pipe ? undefined : `${sw(3)} ${sw(2)}`} />
+              );
+            })}
             {/* Every label on the sheet coloured by what the drawing's own designation list says its code is: a
                 pipe system, a fitting, a material - or nothing, when the list does not carry the code at all.
                 It is the fastest way to see whether the list was read the way the sheet meant it. */}
@@ -1086,14 +1136,23 @@ const PdfViewer = forwardRef<ViewerHandle, ViewerProps>(function PdfViewer(props
                 </g>
               );
             })()}
-            {props.layers.anchors && props.anchors.map((a) => (
-              <circle key={a.id} cx={a.endpoint[0]} cy={a.endpoint[1]} r={sw(a.names_a_pipe === false ? 2.5 : 4)} fill="none"
-                stroke={a.names_a_pipe === false ? "#9aa3af"
-                  : a.state === "VERIFIED_PIPE_ATTACHMENT" ? "#12a24b" : a.state === "AMBIGUOUS_PIPE_ATTACHMENT" ? "#ff9500" : "#b42318"}
-                strokeOpacity={a.in_wall && !props.layers.inWall ? 0.35 : 1}
-                strokeWidth={sw(a.names_a_pipe === false ? 1 : 1.5)}
-                strokeDasharray={a.names_a_pipe === false ? `${sw(2)} ${sw(2)}` : undefined} />
-            ))}
+            {(props.layers.anchors || props.layers.pipes) && props.anchors.map((a) => {
+              const link = linked.byAnchor.get(a.id);
+              if (!props.layers.anchors && !link) return null;
+              const state = a.names_a_pipe === false ? "#9aa3af"
+                : a.state === "VERIFIED_PIPE_ATTACHMENT" ? "#12a24b" : a.state === "AMBIGUOUS_PIPE_ATTACHMENT" ? "#ff9500" : "#b42318";
+              return (
+                <circle key={a.id} cx={a.endpoint[0]} cy={a.endpoint[1]} r={sw(a.names_a_pipe === false ? 2.5 : link ? 5 : 4)}
+                  fill={link ? link.color : "none"} fillOpacity={link ? (dimmed(link.identity) ? 0.1 : 0.9) : 0}
+                  stroke={link ? "#ffffff" : state}
+                  strokeOpacity={link && dimmed(link.identity) ? 0.2 : a.in_wall && !props.layers.inWall ? 0.35 : 1}
+                  strokeWidth={sw(a.names_a_pipe === false ? 1 : 1.5)}
+                  strokeDasharray={a.names_a_pipe === false ? `${sw(2)} ${sw(2)}` : undefined}>
+                  {/* the connection's state is still said, in the mark's tooltip */}
+                  <title>{`${a.display || a.designation || ""} · ${a.state === "VERIFIED_PIPE_ATTACHMENT" ? tr("verifierad") : a.state === "AMBIGUOUS_PIPE_ATTACHMENT" ? tr("tvetydig anslutning") : tr("ingen rörkontakt")}`}</title>
+                </circle>
+              );
+            })}
           </svg>
         )}
       </div>

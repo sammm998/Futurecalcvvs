@@ -986,6 +986,10 @@ def job_result(job_id: str, page: int | None = Query(default=None, ge=0), user: 
                           "in_wall": d.get("in_wall", False), "names_a_pipe": d.get("names_a_pipe", True)} for d in des],
         "leaders": [{"id": l["lid"], "points": l["points"], "family": l["family"], "in_wall": l.get("in_wall", False)} for l in leaders],
         "anchors": [{"id": a["anchor_id"], "designation": a["designation"], "dn": a["dn"], "state": a["state"], "reason": a["reason"],
+                     # which label box and which leader line this connection is: the viewer paints both in the
+                     # colour of the pipe the label names, so a reader can follow label -> leader -> pipe by eye
+                     "designation_id": a.get("designation_id"), "leader_id": a.get("leader_id"),
+                     "display": a.get("designation_display"),
                      "endpoint": a["leader_endpoint"], "in_wall": a.get("in_wall", False),
                      "names_a_pipe": a.get("names_a_pipe", True)} for a in anchors],
         "ambiguous_geometry": [{"x0": g["x0"], "y0": g["y0"], "x1": g["x1"], "y1": g["y1"], "candidates": g["candidates"], "reason": g["reason"]} for g in ambiguous],
