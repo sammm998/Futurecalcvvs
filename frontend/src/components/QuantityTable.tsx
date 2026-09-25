@@ -125,7 +125,12 @@ export default function QuantityTable({ rows, selected, onSelect, floorHeight, i
                       <span className="assumed" title={`Antaget: ${r.risers_calc} stigare × ${String(floorHeight).replace(".", ",")} m våningshöjd. Ritningen anger ingen höjd.`}> ant.</span>
                     )}
                   </>}</td>
-              <td className="num strong">{M(r.total_calc, noScale)}</td>
+              <td className="num strong">{M(r.total_calc, noScale)}
+                {/* metres measured on a tentative reading are in the total, and said to be: the reader checks
+                    those runs on the sheet (they are drawn broken, on an amber halo) */}
+                {!noScale && (r.review_m ?? 0) > 0.005 && (
+                  <span className="assumed" title={`${Number(r.review_m).toFixed(2)} m är mätta på bästa läsningen och bör kontrolleras på bladet. De visas streckade med gul kant.`}> varav {Number(r.review_m).toFixed(1)} att granska</span>
+                )}</td>
               <td className="num">{!noScale && r.ambiguous_m > 0 ? r.ambiguous_m.toFixed(2) : "–"}</td>
               <td className="num">{!noScale && (r.in_hatched_area_m ?? 0) > 0 ? Number(r.in_hatched_area_m).toFixed(2) : "–"}</td>
               <td className="num" title={`Ritade stigarsymboler: ${r.riser_count ?? 0} · etiketter med dimension på raden under: ${r.riser_count_from_labels ?? 0}`}>{r.risers_calc > 0 ? r.risers_calc : "–"}</td>
@@ -143,6 +148,7 @@ export default function QuantityTable({ rows, selected, onSelect, floorHeight, i
                         <td><span style={{ display: "inline-block", width: 12, height: 12, borderRadius: 2, background: pipeColor(p), marginRight: 6 }} />{String(i + 1).padStart(2, "0")} · sträcka</td>
                         <td colSpan={2} className="muted">
                           sida {(p.page ?? 0) + 1} · {labels} etikett{labels === 1 ? "" : "er"}
+                          {p.needs_review && <span className="assumed"> · att granska</span>}
                         </td>
                         <td className="num muted">{p.graph_nodes?.length ?? ""}</td>
                         <td className="num">{p.horizontal_m == null ? "–" : p.horizontal_m.toFixed(2)}</td>

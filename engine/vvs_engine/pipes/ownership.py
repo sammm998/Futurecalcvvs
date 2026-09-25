@@ -71,6 +71,7 @@ class PrimState:
     reason: str = ""
     anchors: set[str] = field(default_factory=set)
     evidence: list[str] = field(default_factory=list)
+    tentative: bool = False                   # CONFIRMED on the best reading only: measured, and marked for review
 
 
 @dataclass
@@ -94,6 +95,7 @@ class PhysicalPipe:
 
     section_levels: list[dict] = field(default_factory=list)
     elevation_anchor_ids: list[str] | None = None
+    needs_review: bool = False                # measured on a tentative reading; the person checks it on the sheet
 
     @property
     def length_pt(self) -> float:
@@ -1606,7 +1608,8 @@ def _build_pipes(g: PipeGraph, st: dict[int, PrimState], fk: str, page: int, sto
                 if stop_nodes and node in stop_nodes:
                     continue
                 for q in g.nodes[node].prims:
-                    if q != p and q not in visited and st[q].state == "CONFIRMED" and st[q].identity == s.identity:
+                    if q != p and q not in visited and st[q].state == "CONFIRMED" and st[q].identity == s.identity \
+                            and st[q].tentative == s.tentative:
                         visited.add(q)
                         dq.append(q)
         comp.sort()
@@ -1632,7 +1635,8 @@ def _build_pipes(g: PipeGraph, st: dict[int, PrimState], fk: str, page: int, sto
         pipes.append(PhysicalPipe(physical_pipe_id=ppid, page=page, family=fk, identity=s.identity, anchor_ids=anchors,
                                   prim_ids=comp, points=polylines, source_paths=sorted({q.pid for q in prims}),
                                   source_segments=[f"{q.pid}#{q.seg_index}" for q in prims], nodes=nodes,
-                                  raw_length_pt=raw, bridged_gap_pt=gap, frontier_reasons=[], evidence=evidence))
+                                  raw_length_pt=raw, bridged_gap_pt=gap, frontier_reasons=[], evidence=evidence,
+                                  needs_review=s.tentative))
     return pipes
 
 

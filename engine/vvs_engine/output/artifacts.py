@@ -446,7 +446,7 @@ def document_quantities(sheets: list[dict]) -> dict[str, Any]:
             r = rows.setdefault(key, {"designation": q.get("designation"), "base": q.get("base"), "dn": q.get("dn"),
                                       "sheets": [], "pipe_ids": [], "label_count": 0, "physical_pipe_count": 0,
                                       "confirmed_horizontal_m": 0.0, "confirmed_vertical_m": 0.0,
-                                      "confirmed_total_m": 0.0, "ambiguous_m": 0.0, "in_hatched_area_m": 0.0,
+                                      "confirmed_total_m": 0.0, "ambiguous_m": 0.0, "review_m": 0.0, "in_hatched_area_m": 0.0,
                                       "riser_count": 0, "riser_count_from_labels": 0})
             r["sheets"].append(sh.get("page"))
             # the runs behind the row, sheet by sheet: a set's figure has to lead back to the ink like a sheet's
@@ -456,16 +456,16 @@ def document_quantities(sheets: list[dict]) -> dict[str, Any]:
             for k in ("label_count", "physical_pipe_count", "riser_count", "riser_count_from_labels"):
                 r[k] += int(q.get(k) or 0)
             for k in ("confirmed_horizontal_m", "confirmed_vertical_m", "confirmed_total_m", "ambiguous_m",
-                      "in_hatched_area_m"):
+                      "in_hatched_area_m", "review_m"):
                 r[k] += float(q.get(k) or 0.0)
     out_rows = []
     for r in sorted(rows.values(), key=lambda r: (r["designation"] or "", r["dn"] if r["dn"] is not None else -1)):
         out_rows.append({**r, "sheets": sorted(set(r["sheets"])), "pipe_ids": sorted(set(r["pipe_ids"])),
                          **{k: round(r[k], 2) for k in ("confirmed_horizontal_m", "confirmed_vertical_m",
-                                                        "confirmed_total_m", "ambiguous_m", "in_hatched_area_m")}})
+                                                        "confirmed_total_m", "ambiguous_m", "in_hatched_area_m", "review_m")}})
     totals = {k: round(sum(r[k] for r in out_rows), 2)
               for k in ("confirmed_horizontal_m", "confirmed_vertical_m", "confirmed_total_m", "ambiguous_m",
-                        "in_hatched_area_m")}
+                        "in_hatched_area_m", "review_m")}
     totals.update({"m_under_an_unsettled_scale": round(unsettled_m, 2),
                    "designations": len(out_rows), "sheets": len(sheets),
                    "physical_pipes": sum(r["physical_pipe_count"] for r in out_rows),
@@ -587,6 +587,7 @@ def sheet_reading(pa, doc, doc_legend=None, profile: dict | None = None,
                                          "confirmed_vertical_m": round(sum(q["confirmed_vertical_m"] for q in pa.quantities), 3),
                                          "confirmed_total_m": round(sum(q["confirmed_total_m"] for q in pa.quantities), 3),
                                          "ambiguous_m": round(sum(q["ambiguous_m"] for q in pa.quantities), 3),
+                                         "review_m": round(sum(q.get("review_m", 0.0) for q in pa.quantities), 3),
                                          "in_hatched_area_m": round(sum(q.get("in_hatched_area_m", 0.0) for q in pa.quantities), 3),
                                          "riser_labels": sum(q.get("riser_count", 0) for q in pa.quantities)},
                               "hatched_areas": [h.as_dict() for h in pa.hatch_families],
@@ -699,7 +700,7 @@ def physical_pipe_dict(m) -> dict[str, Any]:
             "vertical_m": "UNKNOWN" if m.vertical_m is None else round(m.vertical_m, 3), "vertical_evidence": m.vertical_evidence,
             "total_m": None if m.total_m is None else round(m.total_m, 3), "evidence_state": m.state, "evidence": p.evidence,
             "in_hatched_area_m": None if m.hatched_m is None else round(m.hatched_m, 3),
-            "ambiguity_reason": None, "reasons": m.reasons,
+            "ambiguity_reason": None, "reasons": m.reasons, "needs_review": bool(getattr(p, "needs_review", False)),
             "frontier_reasons": list(p.frontier_reasons), "frontiers": list(getattr(p, "frontiers", []) or [])}
 
 
