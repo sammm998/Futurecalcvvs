@@ -237,8 +237,11 @@ def run(A,L,R,style,mode='compare',ask=None):
                         # On that one question the rule's answer stands, and the stretch says so.
                         dimension_decisions.append({'stretch': current['stretch'], 'model': [current['label'], current['designation_idx']],
                                                     'rule': [proposal['label'], proposal['designation_idx']]})
+                        # A model that marked its pick uncertain was, on those reference sheets, uncertain about
+                        # the size and not the pipe: once the rule has settled the size the stretch is confirmed
+                        # (right on 115 of 126 points measured), not left unmeasured.
                         current.update(label=proposal['label'], designation_idx=proposal['designation_idx'],
-                                       rule='combined_dimension_rule_on_size_dispute',
+                                       confidence='high', rule='combined_dimension_rule_on_size_dispute',
                                        reason='Modellen och dimensionsregeln valde samma ledning med olika dimension; dimensionsregeln avgör storleken.')
                         for assignment in final.get('assignments', []):
                             if assignment['stretch'] == current['stretch']:

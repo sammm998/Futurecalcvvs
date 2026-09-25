@@ -46,6 +46,15 @@ def test_combined_supplies_dimension_proposals_to_final_model_and_preserves_inpu
     assert (A,L,R)==original
 
 
+def test_a_size_the_rule_settles_is_confirmed_even_when_the_model_was_unsure():
+    sh=Sheet();a=sh.node(0,0);b=sh.node(100,0);sh.stretch(a,b)
+    big=sh.label('VS1-S13-22',a,22);small=sh.label('VS1-S13-15',b,15)
+    A={'nodes':sh.nodes,'stretches':sh.stretches};L=sh.labels;R={'leaders':sh.leaders,'bindings':[],'counts':{}}
+    ask=lambda qs:[{'stretch':q['stretch'],'label':small,'designation_idx':0,'ambiguous':True} for q in qs]
+    b=run(A,L,R,{'rules':[]},mode='combined',ask=ask)['combined']['result']['bindings'][0]
+    assert (b['label'],b['rule'],b['confidence'])==(big,'combined_dimension_rule_on_size_dispute','high')
+
+
 def test_combined_keeps_the_models_choice_when_it_names_another_pipe():
     sh=Sheet();a=sh.node(0,0);b=sh.node(100,0);sh.stretch(a,b)
     big=sh.label('VS1-S13-22',a,22);other=sh.label('VS2-S13-15',b,15)
