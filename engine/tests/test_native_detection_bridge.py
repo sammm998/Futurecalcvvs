@@ -53,4 +53,6 @@ def test_native_assignment_splits_a_single_source_path_at_dimension_boundary():
     assert report['adapter']['geometry']=='pipestudio_native_topology_original_pdf_ink'
     result['combined']['result']['bindings'][1]['confidence']='low'
     ownership,_=project(graphs,native,result,0,{})
-    assert sum(p.length_pt for p in ownership.pipes if p.state=='CONFIRMED')==50
+    # a low-confidence binding is measured on its one designation and marked for review, not dropped
+    assert sum(p.length_pt for p in ownership.pipes if p.state=='CONFIRMED')==100
+    assert sum(p.length_pt for p in ownership.pipes if p.needs_review)==50

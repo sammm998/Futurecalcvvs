@@ -288,7 +288,7 @@ def aggregate(measures: list[PipeMeasure], ambiguous_pt: dict[str, float], mpp: 
         k = m.pipe.identity.key
         r = rows.setdefault(k, {"designation": m.pipe.identity.display, "base": m.pipe.identity.base, "dn": m.pipe.identity.dn, "system": m.pipe.identity.system,
                                 "physical_pipe_count": 0, "confirmed_horizontal_m": 0.0, "confirmed_vertical_m": 0.0,
-                                "confirmed_total_m": 0.0, "horizontal_pdf_units": 0.0, "ambiguous_m": 0.0, "vertical_known": False,
+                                "confirmed_total_m": 0.0, "horizontal_pdf_units": 0.0, "ambiguous_m": 0.0, "review_m": 0.0, "vertical_known": False,
                                 "in_hatched_area_m": 0.0, "declared_m": 0.0, "double_line_m": 0.0, "state": "CONFIRMED", "pipe_ids": []})
         if m.twin_of is not None:
             # the second edge of a double line: its metres are the partner's, and it is not another run
@@ -303,6 +303,8 @@ def aggregate(measures: list[PipeMeasure], ambiguous_pt: dict[str, float], mpp: 
         if m.horizontal_m is not None:
             r["confirmed_horizontal_m"] += m.horizontal_m
             r["confirmed_total_m"] += m.horizontal_m
+            if getattr(m.pipe, "needs_review", False):
+                r["review_m"] += m.horizontal_m     # counted, and marked: the best reading, not a confirmed one
             r["in_hatched_area_m"] += m.hatched_m or 0.0      # excluded from the horizontal quantity
             r["hatched_only_pipes"] = r.get("hatched_only_pipes", 0) + (1 if m.state == HATCHED_ONLY else 0)
             if m.state in UNSETTLED_ROW_STATE.values() and r["state"] == "CONFIRMED":
@@ -316,7 +318,7 @@ def aggregate(measures: list[PipeMeasure], ambiguous_pt: dict[str, float], mpp: 
     for k, pt in ambiguous_pt.items():
         r = rows.setdefault(k, {"designation": k.split("|DN")[0], "base": k.split("|DN")[0], "dn": _dn_from_key(k), "system": "", "physical_pipe_count": 0,
                                 "confirmed_horizontal_m": 0.0, "confirmed_vertical_m": 0.0, "confirmed_total_m": 0.0,
-                                "horizontal_pdf_units": 0.0, "ambiguous_m": 0.0, "vertical_known": False, "state": "AMBIGUOUS", "pipe_ids": []})
+                                "horizontal_pdf_units": 0.0, "ambiguous_m": 0.0, "review_m": 0.0, "vertical_known": False, "state": "AMBIGUOUS", "pipe_ids": []})
         r["ambiguous_m"] += pt * mpp if mpp else 0.0
         # geometry the reading could not give to anyone exists whether or not there is a scale to measure it in;
         # tracking it in the drawing's own units keeps a scaleless sheet from reporting the ambiguity away
@@ -346,6 +348,7 @@ def aggregate(measures: list[PipeMeasure], ambiguous_pt: dict[str, float], mpp: 
         r.setdefault("in_hatched_area_m", 0.0)
         r.setdefault("double_line_m", 0.0)
         r.setdefault("ambiguous_pdf_units", 0.0)
+        r.setdefault("review_m", 0.0)
         if r["physical_pipe_count"] == 0 and r["ambiguous_pdf_units"] == 0 \
                 and max(r["riser_count"], r["riser_count_from_labels"]) > 0:
             r["state"] = "RISER_LABELS_ONLY"
@@ -355,7 +358,7 @@ def aggregate(measures: list[PipeMeasure], ambiguous_pt: dict[str, float], mpp: 
             r["state"] = HATCHED_ONLY
         r.pop("hatched_only_pipes", None)
         for f in ("confirmed_horizontal_m", "confirmed_vertical_m", "confirmed_total_m", "ambiguous_m",
-                  "horizontal_pdf_units", "in_hatched_area_m", "ambiguous_pdf_units", "double_line_m"):
+                  "horizontal_pdf_units", "in_hatched_area_m", "ambiguous_pdf_units", "double_line_m", "review_m"):
             r[f] = round(r[f], 3)
         r["vertical_m"] = r["confirmed_vertical_m"] if r["vertical_known"] else "UNKNOWN"
         out.append(r)
@@ -366,7 +369,7 @@ def _empty_row(k: str) -> dict[str, Any]:
     """A quantity row for a designation with nothing measured under it yet."""
     return {"designation": k.split("|DN")[0], "base": k.split("|DN")[0], "dn": _dn_from_key(k), "system": "",
             "physical_pipe_count": 0, "confirmed_horizontal_m": 0.0, "confirmed_vertical_m": 0.0,
-            "confirmed_total_m": 0.0, "horizontal_pdf_units": 0.0, "ambiguous_m": 0.0, "vertical_known": False,
+            "confirmed_total_m": 0.0, "horizontal_pdf_units": 0.0, "ambiguous_m": 0.0, "review_m": 0.0, "vertical_known": False,
             "in_hatched_area_m": 0.0, "state": "CONFIRMED", "pipe_ids": []}
 
 

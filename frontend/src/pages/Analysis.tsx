@@ -669,6 +669,9 @@ export default function AnalysisPage() {
             {why && (
               <div style={{ marginTop: 12 }}>
                 <h4>Varför? {why.pipe.designation} DN{why.pipe.dn ?? "?"} · {typeof why.pipe.horizontal_m === "number" ? `${why.pipe.horizontal_m.toFixed(2)} m` : "ingen skala"}</h4>
+                {why.pipe.needs_review && (
+                  <p style={{ color: "#92400e", background: "#fef3c7", padding: "6px 10px", borderRadius: 6 }}>Mätt på bästa läsningen: beteckningen var känd men kopplingen osäker, och ingen andra läsning bekräftade den. Sträckan ingår i mängden - kontrollera den på bladet och rätta om den hör till en annan beteckning.</p>
+                )}
                 <p className="muted">Rör-id {why.pipe.physical_pipe_id} · {why.pipe.raw_pt.toFixed(1)} pt + {why.pipe.bridged_gap_pt.toFixed(1)} pt överbryggade mikrogap · {why.pipe.source_path_ids.length} PDF-objekt</p>
                 {/* Vägen från det utpekade röret till agenten. Frågan skrivs färdig med rörets eget namn och
                     id, och läggs i rutan - inte i samtalet - så att den går att läsa och ändra innan den

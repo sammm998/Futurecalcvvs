@@ -885,13 +885,18 @@ const PdfViewer = forwardRef<ViewerHandle, ViewerProps>(function PdfViewer(props
                       strokeLinecap="round" strokeLinejoin="round"
                       style={{ pointerEvents: pick, cursor: "pointer" }} onClick={() => props.onPipeClick(p)} />
                     {/* a white halo under the run lifts it off the drawing's own black line work */}
-                    <polyline points={pts} fill="none" stroke="#ffffff" strokeWidth={sw(sel ? 9 : 6.5)}
+                    {/* a run measured on a tentative reading wears an amber halo and a broken line: it is in the
+                        quantity, on the best reading there was, and asks to be checked on the sheet */}
+                    <polyline points={pts} fill="none" stroke={p.needs_review ? "#f59e0b" : "#ffffff"} strokeWidth={sw(sel ? 9 : p.needs_review ? 8 : 6.5)}
                       strokeOpacity={dim ? 0.2 : 0.9} strokeLinecap="round" strokeLinejoin="round"
                       style={{ pointerEvents: "none" }} />
                     <polyline points={pts} fill="none"
                       stroke={sel ? "#ff2d00" : pipeColor(p)} strokeWidth={sw(sel ? 5.5 : 4)}
+                      strokeDasharray={p.needs_review ? `${sw(7)} ${sw(4)}` : undefined}
                       strokeOpacity={dim ? 0.2 : 1} strokeLinecap="round" strokeLinejoin="round"
-                      style={{ pointerEvents: "none" }} />
+                      style={{ pointerEvents: "none" }}>
+                      {p.needs_review && <title>{`${p.designation}: mätt på bästa läsningen – kontrollera på bladet`}</title>}
+                    </polyline>
                     {/* where a run starts and ends - a joint, a branch, a label's landing - a white ring in its
                         colour, so one run can be told from the next where they meet */}
                     {pl.length > 1 && [pl[0], pl[pl.length - 1]].map((q: number[], e: number) => (

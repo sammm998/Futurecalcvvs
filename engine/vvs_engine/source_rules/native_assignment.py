@@ -82,7 +82,7 @@ def project(graphs, native, result, page, elevations, host_reading=None):
     # A piece the native reading could name only tentatively - one designation, but a low-confidence binding - is
     # settled the same way when the host, reading its own leaders and contacts, independently confirmed that very
     # designation on it. Two separate readings agreeing on one name is the confirmation the tentative one lacked;
-    # where the host names something else, or nothing, the piece stays unconfirmed.
+    # where the host names something else, or nothing, the piece stays tentative (below).
     filled=agreed=0
     if host_reading is not None:
         host=host_reading(graphs).prim_states
@@ -107,6 +107,20 @@ def project(graphs, native, result, page, elevations, host_reading=None):
                 state.evidence=['authority:host_reading','native:no_owner']+list(h.evidence or [])
                 state.anchors=set(h.anchors or ())
                 filled+=1
+    # What is still tentative - one designation, bound with low confidence, and no second reading to agree - is
+    # measured on that designation and marked for review, not left out of the quantity. Measured against three
+    # reference sheets the tentative name was right on about two thirds of such length, and no rule tried told the
+    # right ones from the wrong; a stretch left unmeasured was simply missing from the takeoff until someone
+    # redrew it. Marked, it counts, it shows as a proposal on the sheet, and its metres are reported per
+    # designation so the reader knows how much of the figure to check. Two competing designations stay unresolved.
+    tentative=0
+    for fk,family in states.items():
+        for pid,state in family.items():
+            if state.state=='AMBIGUOUS' and len(state.candidates)==1:
+                state.state='CONFIRMED';state.identity=next(iter(state.candidates));state.candidates=set()
+                state.tentative=True;state.reason='pipestudio_tentative_best_reading'
+                state.evidence=list(state.evidence or [])+['confidence:low','needs_review']
+                tentative+=1
     # Native joining points and VG/CL landings delimit measurement sections.
     native_points={(round(n['x'],2),round(n['y'],2)) for n in A['nodes']}
     local_levels=defaultdict(list)
@@ -140,7 +154,8 @@ def project(graphs, native, result, page, elevations, host_reading=None):
                  'labels':{str(l['id']):l['text'] for l in L},'partial_projection_count':partial,
                  'limitations':['Segments without a complete native assignment remain unconfirmed.']},
         primitive_map={str(sid):parts for sid,parts in reverse.items()},
-        host_filled_primitives=filled, host_confirmed_primitives=agreed)
+        host_filled_primitives=filled, host_confirmed_primitives=agreed,
+        tentative_primitives=tentative)
     result['swedish_rule_evidence'] = {
         'labels': {str(l['id']): label_facts(l) for l in L},
         'line_conventions': {str(s['id']): lookup((s.get('line_type') or 'unknown').replace('-','_')) for s in A['stretches']},
