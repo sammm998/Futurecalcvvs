@@ -79,15 +79,28 @@ def project(graphs, native, result, page, elevations, host_reading=None):
     # where it confirmed a piece on that evidence, the piece keeps that name rather than going unmeasured. Only
     # pieces the native reading left entirely unowned are filled, never one it named or found ambiguous, and
     # never one it set aside as wall or entry geometry.
-    filled=0
+    # A piece the native reading could name only tentatively - one designation, but a low-confidence binding - is
+    # settled the same way when the host, reading its own leaders and contacts, independently confirmed that very
+    # designation on it. Two separate readings agreeing on one name is the confirmation the tentative one lacked;
+    # where the host names something else, or nothing, the piece stays unconfirmed.
+    filled=agreed=0
     if host_reading is not None:
         host=host_reading(graphs).prim_states
         for fk,family in states.items():
             for pid,state in family.items():
-                if state.state!='UNOWNED' or (fk,pid) in set_aside:
+                if (fk,pid) in set_aside:
                     continue
                 h=host.get(fk,{}).get(pid)
                 if h is None or h.state!='CONFIRMED' or h.identity is None:
+                    continue
+                if state.state=='AMBIGUOUS':
+                    if len(state.candidates)==1 and next(iter(state.candidates)).key==h.identity.key:
+                        state.state='CONFIRMED';state.identity=h.identity;state.candidates=set()
+                        state.reason='pipestudio_native_assignment_confirmed_by_host_reading'
+                        state.evidence=list(state.evidence or [])+['authority:host_reading']
+                        agreed+=1
+                    continue
+                if state.state!='UNOWNED':
                     continue
                 state.state='CONFIRMED';state.identity=h.identity
                 state.reason='host_reading_where_the_native_graph_named_nothing'
@@ -127,7 +140,7 @@ def project(graphs, native, result, page, elevations, host_reading=None):
                  'labels':{str(l['id']):l['text'] for l in L},'partial_projection_count':partial,
                  'limitations':['Segments without a complete native assignment remain unconfirmed.']},
         primitive_map={str(sid):parts for sid,parts in reverse.items()},
-        host_filled_primitives=filled)
+        host_filled_primitives=filled, host_confirmed_primitives=agreed)
     result['swedish_rule_evidence'] = {
         'labels': {str(l['id']): label_facts(l) for l in L},
         'line_conventions': {str(s['id']): lookup((s.get('line_type') or 'unknown').replace('-','_')) for s in A['stretches']},
