@@ -128,6 +128,7 @@ def project(graphs, native, result, page, elevations, host_reading=None):
     # unnamed. Only ink in the same pen counts as joined: across pens, on the reference sheets, it mostly reached
     # walls and fittings. Measured there, the same-pen pieces were named right on all of their length.
     continued=_settle_unowned(graphs,states,set_aside,host if host_reading is not None else None)
+    continued['same_line_larger_on_both_sides']=_undo_a_smaller_size_between_larger(graphs,states)
     # Native joining points and VG/CL landings delimit measurement sections.
     native_points={(round(n['x'],2),round(n['y'],2)) for n in A['nodes']}
     local_levels=defaultdict(list)
@@ -285,3 +286,60 @@ def _settle_unowned(graphs,states,set_aside,host):
                     counts[rule]+=1
                 changed=True
     return counts
+
+
+def _line_of(identity):
+    """The pipe line a designation names, whatever its size and whether it is written wall-mounted."""
+    import re
+    return re.sub(r'-W$','',identity.base or '')
+
+
+def _undo_a_smaller_size_between_larger(graphs,states):
+    """A stretch named one size smaller than the same line on both its ends takes the line's size.
+
+    A line does not step down a size for one stretch and back up again. Where a stretch between two ends of the
+    same line reads smaller than both, what was read was the label of a branch leaving there, landed on the
+    main; on the reference sheets the surrounding size was right on all such length. A stretch that reads
+    larger than both ends is left - there the larger size was right on all of it - and so is one between
+    different lines, or one that meets its neighbours at only one end: that is a branch.
+    """
+    moved=0
+    for fk,g in graphs.items():
+        family=states[fk]
+        changed=True
+        while changed:
+            changed=False
+            seen=set()
+            for start in list(family):
+                st=family[start]
+                if st.state!='CONFIRMED' or st.identity is None or start in seen:
+                    continue
+                comp=[start];seen.add(start);k=0;boundary={}
+                while k<len(comp):
+                    pid=comp[k];k+=1
+                    for node in g.prim_nodes.get(pid,()):
+                        for q in g.nodes[node].prims if node in g.nodes else ():
+                            if q==pid:continue
+                            o=family.get(q)
+                            if o is None or o.state!='CONFIRMED' or o.identity is None:
+                                continue
+                            if o.identity==st.identity:
+                                if q not in seen:
+                                    seen.add(q);comp.append(q)
+                            else:
+                                boundary.setdefault(node,set()).add(o.identity)
+                if len(boundary)<2 or not all(len(v)==1 for v in boundary.values()):
+                    continue
+                around={next(iter(v)) for v in boundary.values()}
+                if len(around)!=1:
+                    continue
+                x=next(iter(around));y=st.identity
+                if _line_of(x)!=_line_of(y) or x.dn is None or y.dn is None or y.dn>=x.dn:
+                    continue
+                for pid in comp:
+                    s=family[pid]
+                    s.identity=x;s.reason='same_line_larger_on_both_sides'
+                    s.evidence=list(s.evidence or [])+['size:the_line_on_both_ends']
+                    moved+=1
+                changed=True
+    return moved
