@@ -121,6 +121,41 @@ def project(graphs, native, result, page, elevations, host_reading=None):
                 state.tentative=True;state.reason='pipestudio_tentative_best_reading'
                 state.evidence=list(state.evidence or [])+['confidence:low','needs_review']
                 tentative+=1
+    # Drawn pipe that no label reached but that is joined, in its own pen, to a named pipe is that pipe: a short
+    # piece between a run and the riser its label points at, a stub past the last landing. The unnamed piece -
+    # with whatever unnamed pieces it runs on into - takes the name when every named pipe it touches carries the
+    # same one; where it joins two different pipes it is a junction the drawing does not settle, and it stays
+    # unnamed. Only ink in the same pen counts as joined: across pens, on the reference sheets, it mostly reached
+    # walls and fittings. Measured there, the same-pen pieces were named right on all of their length.
+    continued=0
+    for fk,g in graphs.items():
+        family=states[fk];seen=set()
+        for start,state in family.items():
+            if state.state!='UNOWNED' or start in seen or (fk,start) in set_aside:
+                continue
+            comp=[start];seen.add(start);touch={};k=0
+            while k<len(comp):
+                pid=comp[k];k+=1
+                for node in g.prim_nodes.get(pid,()):
+                    for q in g.nodes[node].prims:
+                        if q==pid:continue
+                        s=family.get(q)
+                        if s is None:continue
+                        if s.state=='UNOWNED' and q not in seen and (fk,q) not in set_aside:
+                            seen.add(q);comp.append(q)
+                        elif s.state=='CONFIRMED' and s.identity is not None:
+                            touch.setdefault(s.identity.key,[]).append(s)
+            if len(touch)!=1:
+                continue
+            owners=next(iter(touch.values()))
+            for pid in comp:
+                s=family[pid]
+                s.state='CONFIRMED';s.identity=owners[0].identity
+                s.tentative=all(o.tentative for o in owners)
+                s.reason='continues_the_connected_pipe'
+                s.evidence=['topology:joined_in_the_same_pen','native:no_owner']
+                s.anchors=set().union(*(o.anchors for o in owners))
+                continued+=1
     # Native joining points and VG/CL landings delimit measurement sections.
     native_points={(round(n['x'],2),round(n['y'],2)) for n in A['nodes']}
     local_levels=defaultdict(list)
@@ -155,7 +190,7 @@ def project(graphs, native, result, page, elevations, host_reading=None):
                  'limitations':['Segments without a complete native assignment remain unconfirmed.']},
         primitive_map={str(sid):parts for sid,parts in reverse.items()},
         host_filled_primitives=filled, host_confirmed_primitives=agreed,
-        tentative_primitives=tentative)
+        tentative_primitives=tentative, continued_primitives=continued)
     result['swedish_rule_evidence'] = {
         'labels': {str(l['id']): label_facts(l) for l in L},
         'line_conventions': {str(s['id']): lookup((s.get('line_type') or 'unknown').replace('-','_')) for s in A['stretches']},
