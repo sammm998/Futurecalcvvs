@@ -670,7 +670,13 @@ export default function AnalysisPage() {
               <div style={{ marginTop: 12 }}>
                 <h4>Varför? {why.pipe.designation} DN{why.pipe.dn ?? "?"} · {typeof why.pipe.horizontal_m === "number" ? `${why.pipe.horizontal_m.toFixed(2)} m` : "ingen skala"}</h4>
                 {why.pipe.needs_review && (
-                  <p style={{ color: "#92400e", background: "#fef3c7", padding: "6px 10px", borderRadius: 6 }}>Mätt på bästa läsningen: beteckningen var känd men kopplingen osäker, och ingen andra läsning bekräftade den. Sträckan ingår i mängden - kontrollera den på bladet och rätta om den hör till en annan beteckning.</p>
+                  <p style={{ color: "#92400e", background: "#fef3c7", padding: "6px 10px", borderRadius: 6 }}>{
+                    (why.pipe.evidence ?? []).includes("straight_through_the_junction")
+                      ? "Gissad: ingen etikett når hit, och sträckan sitter mellan två ledningar. Den har fått beteckningen på den ledning den fortsätter rakt in i - ett rör går rakt genom en förgrening."
+                      : (why.pipe.evidence ?? []).includes("host_reading_single_candidate")
+                      ? "Gissad: ingen etikett når hit i huvudläsningen, men den andra läsningen hittade en enda beteckning som når sträckan."
+                      : "Mätt på bästa läsningen: beteckningen var känd men kopplingen osäker, och ingen andra läsning bekräftade den."
+                  } Sträckan ingår i mängden - kontrollera den på bladet och rätta om den hör till en annan beteckning.</p>
                 )}
                 <p className="muted">Rör-id {why.pipe.physical_pipe_id} · {why.pipe.raw_pt.toFixed(1)} pt + {why.pipe.bridged_gap_pt.toFixed(1)} pt överbryggade mikrogap · {why.pipe.source_path_ids.length} PDF-objekt</p>
                 {/* Vägen från det utpekade röret till agenten. Frågan skrivs färdig med rörets eget namn och

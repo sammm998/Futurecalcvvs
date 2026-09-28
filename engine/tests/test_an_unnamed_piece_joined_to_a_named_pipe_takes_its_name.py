@@ -2,8 +2,9 @@
 
 In production a short piece between a VP1 run and the riser its label points at was drawn as pipe, joined to
 the run, and still reported "Ritad som rör, men ingen beteckning nådde hit" - unmeasured. An unnamed piece now
-follows the pipe it is joined to. Where it joins two different pipes the drawing does not say which it belongs
-to, and it stays unnamed.
+follows the pipe it is joined to. Where it joins two different pipes it goes to the one it runs straight into -
+a pipe runs straight through a tee - and is marked for review; where it runs straight into neither it stays
+unnamed.
 """
 from copy import deepcopy
 
@@ -50,7 +51,32 @@ def test_a_piece_joined_to_one_named_pipe_takes_its_name():
     assert st[1].reason == 'continues_the_connected_pipe' and report['continued_primitives'] == 2
 
 
-def test_a_piece_between_two_different_pipes_stays_unnamed():
+def test_a_piece_between_two_pipes_goes_to_the_one_it_runs_straight_into_and_is_marked():
     ownership, report = project(_graphs(branch_to_other=True), _native(), _result(), 0, {})
     st = ownership.prim_states['f']
-    assert st[1].state == st[2].state == 'UNOWNED' and report['continued_primitives'] == 0
+    assert st[1].identity.display == st[2].identity.display == 'VP1-S13-42'
+    assert st[1].tentative and st[1].reason == 'straight_through_the_junction'
+    assert report['settled_unowned']['straight_through_the_junction'] == 2
+
+
+def _corner_graphs():
+    # prim 1 runs up from the end of the VP1 run and meets the VS1 run side-on: straight into neither
+    prims = {0: Prim(0, 'named', 0, Seg(0, 0, 100, 0), 'f', 'pipe', 1),
+             1: Prim(1, 'stub', 0, Seg(100, 0, 100, 10), 'f', 'pipe', 1),
+             3: Prim(3, 'other', 0, Seg(100, 10, 200, 10), 'f', 'pipe', 1)}
+    nodes = {0: Node(0, 0, 0, [0]), 1: Node(1, 100, 0, [0, 1]), 3: Node(3, 100, 10, [1, 3]), 4: Node(4, 200, 10, [3])}
+    return {'f': PipeGraph('f', prims, nodes, {0: (0, 1), 1: (1, 3), 3: (3, 4)}, [], None)}
+
+
+def test_a_piece_that_runs_straight_into_neither_pipe_stays_unnamed():
+    native = _native()
+    native['graph']['stretches'][1]['points'] = [[100, 10], [200, 10]]
+    ownership, report = project(_corner_graphs(), native, _result(), 0, {})
+    assert ownership.prim_states['f'][1].state == 'UNOWNED'
+
+
+def test_a_bridge_to_a_node_the_graph_no_longer_holds_is_ignored():
+    graphs = _graphs()
+    graphs['f'].bridges.append({'from_node': 2, 'to_node': 999, 'gap_pt': 1.0})
+    ownership, _ = project(graphs, _native(), _result(), 0, {})
+    assert ownership.prim_states['f'][1].identity.display == 'VP1-S13-42'

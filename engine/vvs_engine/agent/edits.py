@@ -520,3 +520,217 @@ def foresla_forlang_ror(m: DrawingModel, ror_id: str = "", skal: str = "") -> di
                   bevis={"mangd_nu_m": round(_num(p.get("horizontal_m")), 2),
                          "bortom_anden_pt": round(pt, 2),
                          "kanter": sorted({f.get("reason") for f in fronts})})
+
+
+# ---------------------------------------------------------------- what the reading left open, and settling it
+#
+# Three kinds of drawn pipe are not settled when the reading is done: runs measured on a tentative reading and
+# marked for review, ink drawn as pipe that no label reached, and ink two labels both claim. Each case below is
+# said with the evidence the sheet itself gives - which named pipes it is joined to in its own pen, which labels'
+# leaders reach it, which designations the reading weighed - and a case is only ever settled on that evidence:
+# a designation the sheet writes and that the sheet ties to that very ink. Where the sheet ties it to two
+# different pipes, or to none, the case is said and left, with the reason.
+
+
+def _open_cases(m: DrawingModel) -> list[dict]:
+    """Unowned and ambiguous pipe ink, grouped into the connected pieces the drawing draws, with its evidence."""
+    edges: dict[tuple, tuple[int, int]] = {}
+    for f in m.topology:
+        key = (f.get("page", 0), f.get("family"))
+        for e in f.get("edges") or []:
+            edges[key + (int(e["prim"]),)] = (int(e["a"]), int(e["b"]))
+    node_pipes: dict[tuple, set] = {}
+    for p in m.pipes:
+        key = (p.get("page", 0), p.get("representation_family"))
+        for nid in p.get("graph_nodes") or []:
+            node_pipes.setdefault(key + (int(nid),), set()).add(p["physical_pipe_id"])
+    rows: dict[tuple, dict] = {}
+    by_node: dict[tuple, list[tuple]] = {}
+    for q in m.inventory:
+        if q.get("state") not in ("UNOWNED", "AMBIGUOUS") or q.get("in_hatch"):
+            continue
+        k = (q.get("page", 0), q.get("family"), int(q["prim"]))
+        rows[k] = q
+        for nid in edges.get(k, ()):
+            by_node.setdefault(k[:2] + (nid,), []).append(k)
+    seen: set = set()
+    mpp = m.meters_per_pt
+    cases = []
+    for k in sorted(rows, key=lambda t: (t[0], str(t[1]), t[2])):
+        if k in seen:
+            continue
+        state = rows[k]["state"]
+        comp, stack = [], [k]
+        seen.add(k)
+        touching: set = set()
+        while stack:
+            cur = stack.pop()
+            comp.append(cur)
+            for nid in edges.get(cur, ()):
+                nk = cur[:2] + (nid,)
+                touching |= node_pipes.get(nk, set())
+                for o in by_node.get(nk, ()):
+                    if o not in seen and rows[o]["state"] == state:
+                        seen.add(o)
+                        stack.append(o)
+        prims = [rows[c] for c in comp]
+        pt = sum(_num(q.get("length")) for q in prims)
+        if pt < 0.5:
+            continue                  # a sliver where two runs meet: nothing to measure, nothing to settle
+        xs = [v for q in prims for v in (q["x0"], q["x1"])]
+        ys = [v for q in prims for v in (q["y0"], q["y1"])]
+        joined = sorted({m.pipe_by_id[i].get("designation") for i in touching if i in m.pipe_by_id} - {None})
+        cases.append({
+            "geometri_id": f"{'u' if state == 'UNOWNED' else 'a'}|{k[0]}|{k[1]}|{k[2]}",
+            "typ": "utan_beteckning" if state == "UNOWNED" else "tvetydig",
+            "blad": k[0], "meter": round(pt * mpp, 3) if mpp else None, "langd_pt": round(pt, 2),
+            "omrade": [round(min(xs), 1), round(min(ys), 1), round(max(xs), 1), round(max(ys), 1)],
+            "ansluten_till": joined,
+            "hanvisningar": sorted({c for q in prims for c in (q.get("claimed_by") or [])}),
+            "kandidater": sorted({c for q in prims for c in (q.get("candidates") or [])}),
+            "points": [[q["x0"], q["y0"]] for q in prims] + [[prims[-1]["x1"], prims[-1]["y1"]]],
+            "pipe_ids": sorted(touching),
+        })
+    return cases
+
+
+def _display(m: DrawingModel, key: str) -> str | None:
+    """The written designation for an identity key the reading weighed (KV1-X7-W|DN40 -> KV1-X7-40/W)."""
+    for p in m.pipes:
+        if p.get("identity") == key:
+            return p.get("designation")
+    return None
+
+
+def _settle(m: DrawingModel, case: dict) -> tuple[str | None, str]:
+    """The one designation the sheet ties this ink to, or why there is none."""
+    written = set(_written_designations(m))
+    named = set(case["hanvisningar"]) | set(case["ansluten_till"])
+    if case["typ"] == "tvetydig":
+        cands = {d for d in (_display(m, k) for k in case["kandidater"]) if d}
+        if case["ansluten_till"]:
+            cands &= set(case["ansluten_till"]) or cands
+        named = cands
+    named &= written
+    if len(named) == 1:
+        return next(iter(named)), ""
+    if not named:
+        return None, ("inget på bladet knyter den till en beteckning: ingen hänvisningslinje når den och den "
+                      "sitter inte ihop med något namngivet rör i samma penna")
+    return None, f"bladet knyter den till flera beteckningar ({', '.join(sorted(named))}) och säger inte vilken"
+
+
+@tool("hitta_obekraftade",
+      "Allt läsningen lämnat olöst: rör mätta på en osäker läsning (att granska), ritat rör som ingen beteckning "
+      "nådde, och ritat rör två beteckningar gör anspråk på - med vad bladet säger om varje fall.", {})
+def hitta_obekraftade(m: DrawingModel) -> dict:
+    mpp = m.meters_per_pt
+    granska = []
+    for p in m.pipes:
+        if not p.get("needs_review"):
+            continue
+        grannar = sorted({m.pipe_by_id[i].get("designation") for i in m.adjacency.get(p["physical_pipe_id"], ())
+                          if i in m.pipe_by_id} - {p.get("designation"), None})
+        granska.append({"ror_id": p["physical_pipe_id"], "beteckning": p.get("designation"), "dn": p.get("dn"),
+                        "blad": p.get("page", 0), "meter": round(_num(p.get("horizontal_m")), 3),
+                        "omrade": m.bbox_of_pipe(p), "andra_beteckningar_den_moter": grannar})
+    cases = _open_cases(m)
+    for c in cases:
+        c["forslag"], c["varfor_inte"] = _settle(m, c)
+    trim = lambda c: {k: v for k, v in c.items() if k not in ("points",)}
+    return {"att_granska": granska[:60],
+            "utan_beteckning": [trim(c) for c in cases if c["typ"] == "utan_beteckning"][:60],
+            "tvetydiga": [trim(c) for c in cases if c["typ"] == "tvetydig"][:60],
+            "summa_m": {"att_granska": round(sum(g["meter"] for g in granska), 2),
+                        "utan_beteckning": round(sum(_num(c["meter"]) for c in cases if c["typ"] == "utan_beteckning"), 2),
+                        "tvetydiga": round(sum(_num(c["meter"]) for c in cases if c["typ"] == "tvetydig"), 2)},
+            "skala_fastställd": bool(mpp)}
+
+
+@tool("foresla_tilldela_geometri",
+      "Föreslå att ritat rör som ingen beteckning nådde, eller som två beteckningar gör anspråk på, räknas under "
+      "en beteckning. Bara en beteckning bladet själv knyter till just den geometrin - via en hänvisningslinje, "
+      "ett rör den sitter ihop med i samma penna, eller läsningens egna kandidater - kan väljas.",
+      {"geometri_id": {"type": "string", "description": "Id från hitta_obekraftade.", "required": True},
+       "beteckning": {"type": "string", "description": "Beteckningen den ska tillhöra.", "required": True},
+       "skal": {"type": "string", "description": "Vad på ritningen som knyter geometrin till beteckningen."}},
+      writes=True)
+def foresla_tilldela_geometri(m: DrawingModel, geometri_id: str = "", beteckning: str = "", skal: str = "") -> dict:
+    if not m.meters_per_pt:
+        return _refuse("ritningens skala är inte fastställd, så geometrin har ingen längd att lägga till")
+    case = next((c for c in _open_cases(m) if c["geometri_id"] == geometri_id), None)
+    if case is None:
+        return _refuse(f"läsningen har inget olöst fall med id {geometri_id}")
+    target = str(beteckning or "").strip()
+    if target not in _written_designations(m):
+        return _refuse(f"{target} är ingen beteckning läsningen mängdar på")
+    tied = set(case["hanvisningar"]) | set(case["ansluten_till"]) | \
+        {d for d in (_display(m, k) for k in case["kandidater"]) if d}
+    if target not in tied:
+        return _refuse(f"bladet knyter inte den här geometrin till {target}; det som når den är "
+                       f"{', '.join(sorted(tied)) or 'ingenting'}", ansluten_till=case["ansluten_till"],
+                       hanvisningar=case["hanvisningar"])
+    meters = round(_num(case["meter"]), 3)
+    if meters <= 0:
+        return _refuse("geometrin har ingen längd")
+    forslag = [_correction("draw", target, meters, f"{meters:.2f} m ritat rör räknas som {target}",
+                           meters=meters, points=case["points"], geometry_case=geometri_id,
+                           reason=skal or None)]
+    return _offer(forslag, f"Lägger {meters:.2f} m till {target}: ritat rör som "
+                           f"{'ingen beteckning nådde' if case['typ'] == 'utan_beteckning' else 'två beteckningar gjorde anspråk på'}.",
+                  case["pipe_ids"], bevis={k: case[k] for k in ("ansluten_till", "hanvisningar", "kandidater")})
+
+
+@tool("foresla_bekrafta_ror",
+      "Föreslå att rör som mätts på en osäker läsning (att granska) bekräftas som de är, när ritningen visar att "
+      "beteckningen stämmer. Mängden ändras inte; rören slutar vänta på granskning.",
+      {"ror_id": {"type": "array", "items": {"type": "string"},
+                  "description": "Rören som ska bekräftas, med läsningens egna id.", "required": True},
+       "skal": {"type": "string", "description": "Vad på ritningen som visar att beteckningen stämmer."}},
+      writes=True)
+def foresla_bekrafta_ror(m: DrawingModel, ror_id=None, skal: str = "") -> dict:
+    pipes, why = _pipes(m, ror_id)
+    if why:
+        return _refuse(why)
+    not_open = [p["physical_pipe_id"] for p in pipes if not p.get("needs_review")]
+    if not_open:
+        return _refuse("de här rören är redan bekräftade av läsningen; det finns inget att bekräfta",
+                       ror_id=not_open)
+    forslag = [_correction("confirm", p.get("designation"), _num(p.get("horizontal_m")),
+                           f"{_num(p.get('horizontal_m')):.2f} m {p.get('designation')} bekräftas",
+                           meters=round(_num(p.get("horizontal_m")), 3), pipe_ids=[p["physical_pipe_id"]],
+                           reason=skal or None) for p in pipes]
+    return _offer(forslag, f"Bekräftar {len(pipes)} rör som mätts på en osäker läsning.",
+                  [p["physical_pipe_id"] for p in pipes])
+
+
+@tool("foresla_losning_for_obekraftade",
+      "Gå igenom allt läsningen lämnat olöst och föreslå en lösning för varje fall bladet själv avgör: ritat rör "
+      "som bara en beteckning knyts till får den beteckningen. Fall bladet inte avgör listas med skälet.", {},
+      writes=True)
+def foresla_losning_for_obekraftade(m: DrawingModel) -> dict:
+    if not m.meters_per_pt:
+        return _refuse("ritningens skala är inte fastställd, så ingen geometri har en längd att lägga till")
+    forslag, kvar, ids = [], [], []
+    for c in _open_cases(m):
+        target, why = _settle(m, c)
+        meters = round(_num(c["meter"]), 3)
+        if target is None or meters <= 0:
+            kvar.append({"geometri_id": c["geometri_id"], "typ": c["typ"], "meter": c["meter"],
+                         "omrade": c["omrade"], "skal": why or "ingen längd"})
+            continue
+        forslag.append(_correction("draw", target, meters, f"{meters:.2f} m ritat rör räknas som {target}",
+                                   meters=meters, points=c["points"], geometry_case=c["geometri_id"],
+                                   reason=("sitter ihop med " + ", ".join(c["ansluten_till"])) if c["ansluten_till"]
+                                   else ("hänvisningslinje från " + ", ".join(c["hanvisningar"]))))
+        ids += c["pipe_ids"]
+    granska = [p for p in m.pipes if p.get("needs_review")]
+    if not forslag:
+        return _refuse("inget olöst fall avgörs av bladet självt", olosta=kvar[:40],
+                       att_granska=len(granska))
+    return _offer(forslag, f"{len(forslag)} fall avgörs av bladet: "
+                           f"{round(sum(f['meter'] for f in forslag), 2)} m läggs till. {len(kvar)} fall lämnas, "
+                           f"och {len(granska)} rör väntar på granskning.",
+                  sorted(set(ids)), olosta=kvar[:40],
+                  att_granska=[{"ror_id": p["physical_pipe_id"], "beteckning": p.get("designation"),
+                                "meter": round(_num(p.get("horizontal_m")), 2)} for p in granska][:40])

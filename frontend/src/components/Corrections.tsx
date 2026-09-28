@@ -189,7 +189,7 @@ export default function Corrections({ drawingId, jobId, page, quantities, correc
 }
 
 const LABELS: Record<string, string> = {
-  extend: "Förlängt", draw: "Ritat rör", erase: "Suddat", retag: "Bytt beteckning", quantity: "Rättad mängd",
+  extend: "Förlängt", draw: "Ritat rör", erase: "Suddat", retag: "Bytt beteckning", quantity: "Rättad mängd", confirm: "Bekräftad",
 };
 
 /** Which tools need a run to be selected first: all but drawing a run the engine never saw. */
