@@ -83,7 +83,7 @@ def project(graphs, native, result, page, elevations, host_reading=None):
     # settled the same way when the host, reading its own leaders and contacts, independently confirmed that very
     # designation on it. Two separate readings agreeing on one name is the confirmation the tentative one lacked;
     # where the host names something else, or nothing, the piece stays tentative (below).
-    filled=agreed=0
+    filled=agreed=0;host=None
     if host_reading is not None:
         host=host_reading(graphs).prim_states
         for fk,family in states.items():
@@ -127,35 +127,7 @@ def project(graphs, native, result, page, elevations, host_reading=None):
     # same one; where it joins two different pipes it is a junction the drawing does not settle, and it stays
     # unnamed. Only ink in the same pen counts as joined: across pens, on the reference sheets, it mostly reached
     # walls and fittings. Measured there, the same-pen pieces were named right on all of their length.
-    continued=0
-    for fk,g in graphs.items():
-        family=states[fk];seen=set()
-        for start,state in family.items():
-            if state.state!='UNOWNED' or start in seen or (fk,start) in set_aside:
-                continue
-            comp=[start];seen.add(start);touch={};k=0
-            while k<len(comp):
-                pid=comp[k];k+=1
-                for node in g.prim_nodes.get(pid,()):
-                    for q in g.nodes[node].prims:
-                        if q==pid:continue
-                        s=family.get(q)
-                        if s is None:continue
-                        if s.state=='UNOWNED' and q not in seen and (fk,q) not in set_aside:
-                            seen.add(q);comp.append(q)
-                        elif s.state=='CONFIRMED' and s.identity is not None:
-                            touch.setdefault(s.identity.key,[]).append(s)
-            if len(touch)!=1:
-                continue
-            owners=next(iter(touch.values()))
-            for pid in comp:
-                s=family[pid]
-                s.state='CONFIRMED';s.identity=owners[0].identity
-                s.tentative=all(o.tentative for o in owners)
-                s.reason='continues_the_connected_pipe'
-                s.evidence=['topology:joined_in_the_same_pen','native:no_owner']
-                s.anchors=set().union(*(o.anchors for o in owners))
-                continued+=1
+    continued=_settle_unowned(graphs,states,set_aside,host if host_reading is not None else None)
     # Native joining points and VG/CL landings delimit measurement sections.
     native_points={(round(n['x'],2),round(n['y'],2)) for n in A['nodes']}
     local_levels=defaultdict(list)
@@ -190,7 +162,8 @@ def project(graphs, native, result, page, elevations, host_reading=None):
                  'limitations':['Segments without a complete native assignment remain unconfirmed.']},
         primitive_map={str(sid):parts for sid,parts in reverse.items()},
         host_filled_primitives=filled, host_confirmed_primitives=agreed,
-        tentative_primitives=tentative, continued_primitives=continued)
+        tentative_primitives=tentative, continued_primitives=sum(continued.values()),
+        settled_unowned=continued)
     result['swedish_rule_evidence'] = {
         'labels': {str(l['id']): label_facts(l) for l in L},
         'line_conventions': {str(s['id']): lookup((s.get('line_type') or 'unknown').replace('-','_')) for s in A['stretches']},
@@ -212,3 +185,103 @@ def analyze(graphs,native,page,ask,elevations,raw_page,host_reading=None):
         why=(result['combined'].get('result') or {}).get('failure_reason') or result['combined'].get('reason')
         raise RuntimeError('Native combined assignment failed: '+result['combined']['status']+(f' ({why})' if why else ''))
     return project(graphs,native,result,page,elevations,host_reading)
+
+
+def _direction_away(seg,x,y):
+    """Unit direction of a segment leaving the point (x, y) - the end of it that lies there."""
+    import math
+    if math.hypot(seg.x0-x,seg.y0-y)<=math.hypot(seg.x1-x,seg.y1-y):
+        dx,dy=seg.x1-seg.x0,seg.y1-seg.y0
+    else:
+        dx,dy=seg.x0-seg.x1,seg.y0-seg.y1
+    n=math.hypot(dx,dy)
+    return (dx/n,dy/n) if n>1e-9 else None
+
+
+STRAIGHT_COS=-0.985          # leaving a joint in opposite directions within about ten degrees: straight through
+
+
+def _settle_unowned(graphs,states,set_aside,host):
+    """Give drawn pipe no label reached the name the drawing gives it, and guess where the drawing makes it plain.
+
+    Rules, in the order they are trusted, repeated until nothing changes - a piece named by one can let the next
+    piece along be named:
+
+      continues_the_connected_pipe   joined in its own pen (directly, or across a bridged dash gap) to named
+                                     pipe of one designation only: that designation. Confirmed.
+      host_reading_single_candidate  the host's own reading reached this ink with exactly one designation it
+                                     could not settle: that designation, marked for review.
+      straight_through_the_junction  joined to named pipes of several designations, and exactly one of them
+                                     leaves the joint straight on from this piece: that one, marked for review -
+                                     a pipe runs straight through a tee, the branch leaves it at an angle.
+
+    Ink joined to nothing named is left: on the reference sheets it was mostly not pipe at all.
+    """
+    counts={'continues_the_connected_pipe':0,'host_reading_single_candidate':0,'straight_through_the_junction':0}
+    for fk,g in graphs.items():
+        family=states[fk]
+        partner=defaultdict(set)
+        for br in g.bridges or []:
+            a,b=br.get('from_node'),br.get('to_node')
+            if a is not None and b is not None:
+                partner[a].add(b);partner[b].add(a)
+        def at(node):
+            # a bridge can name a node the landing split has since replaced; only nodes the graph holds count
+            yield node
+            yield from (n for n in partner.get(node,()) if n in g.nodes)
+        changed=True
+        while changed:
+            changed=False
+            seen=set()
+            for start in list(family):
+                st=family[start]
+                if st.state!='UNOWNED' or start in seen or (fk,start) in set_aside:
+                    continue
+                comp=[start];seen.add(start);touch={};joints=[];k=0
+                while k<len(comp):
+                    pid=comp[k];k+=1
+                    for node in g.prim_nodes.get(pid,()):
+                        for nn in at(node):
+                            for q in (g.nodes[nn].prims if nn in g.nodes else ()):
+                                if q==pid:continue
+                                s=family.get(q)
+                                if s is None:continue
+                                if s.state=='UNOWNED' and q not in seen and (fk,q) not in set_aside:
+                                    seen.add(q);comp.append(q)
+                                elif s.state=='CONFIRMED' and s.identity is not None:
+                                    touch.setdefault(s.identity.key,[]).append(s)
+                                    joints.append((pid,nn,q))
+                rule=owners=None
+                if len(touch)==1:
+                    rule,owners='continues_the_connected_pipe',next(iter(touch.values()))
+                if rule is None and host is not None:
+                    cands=set()
+                    for pid in comp:
+                        h=host.get(fk,{}).get(pid)
+                        if h is not None and h.state=='AMBIGUOUS':
+                            cands|={c.key:c for c in h.candidates}.items()
+                    if len({c for c,_ in cands})==1:
+                        ident=next(iter(cands))[1]
+                        rule,owners='host_reading_single_candidate',[SimpleNamespace(identity=ident,tentative=True,anchors=set())]
+                if rule is None and len(touch)>1:
+                    straight={}
+                    for pid,nn,q in joints:
+                        n=g.nodes[nn]
+                        u=_direction_away(g.prims[pid].seg,n.x,n.y);v=_direction_away(g.prims[q].seg,n.x,n.y)
+                        if u and v and u[0]*v[0]+u[1]*v[1]<=STRAIGHT_COS:
+                            s=family[q];straight.setdefault(s.identity.key,[]).append(s)
+                    if len(straight)==1:
+                        rule,owners='straight_through_the_junction',next(iter(straight.values()))
+                if rule is None:
+                    continue
+                guess=rule!='continues_the_connected_pipe'
+                for pid in comp:
+                    s=family[pid]
+                    s.state='CONFIRMED';s.identity=owners[0].identity
+                    s.tentative=guess or all(o.tentative for o in owners)
+                    s.reason=rule
+                    s.evidence=['native:no_owner','rule:'+rule]+(['needs_review'] if s.tentative else [])
+                    s.anchors=set().union(*(o.anchors for o in owners))
+                    counts[rule]+=1
+                changed=True
+    return counts
