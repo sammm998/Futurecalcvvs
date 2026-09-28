@@ -110,6 +110,11 @@ class DrawingModel:
         return self._gather("pipe-topology.json", "families")
 
     @cached_property
+    def inventory(self) -> list[dict]:
+        """Every drawn pipe primitive and what the reading made of it: owned, ambiguous, or unowned."""
+        return self._gather("pipe-geometry-inventory.json", "primitives")
+
+    @cached_property
     def declined(self) -> dict:
         """Ink the reading looked at and decided was not pipe, gathered over the sheets it was declined on."""
         out: dict = {"families": [], "unconsidered": [], "drawn_twice": {}, "totals": {}}

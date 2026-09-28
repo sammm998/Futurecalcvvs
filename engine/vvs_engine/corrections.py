@@ -14,7 +14,7 @@ from __future__ import annotations
 import math
 from typing import Any
 
-KINDS = ("extend", "draw", "erase", "retag", "quantity")
+KINDS = ("extend", "draw", "erase", "retag", "quantity", "confirm")
 
 
 def _length_m(points: list[list[float]], meters_per_pt: float) -> float:
@@ -140,6 +140,21 @@ def apply(quantities: list[dict], corrections: list[dict], meters_per_pt: float 
             r = row(name)
             r["confirmed_horizontal_m"] = round(r.get("confirmed_horizontal_m", 0.0) + moved, 3)
             delta = moved
+        elif kind == "confirm":
+            # A person looked at runs measured on a tentative reading and says they are right. The metres were
+            # already in the quantity; what changes is that they no longer wait for a look.
+            if not keys_named(name):
+                log.append({"id": c.get("id"), "kind": kind, "designation": name, "applied": False,
+                            "why": f"{name} har ingen mängd att bekräfta"})
+                continue
+            r = row(name)
+            want = float(given or 0.0)
+            before = float(r.get("review_m") or 0.0)
+            r["review_m"] = round(max(0.0, before - want), 3)
+            r["confirmed_total_m"] = round(r["confirmed_horizontal_m"] + (r.get("confirmed_vertical_m") or 0.0), 3)
+            log.append({"id": c.get("id"), "kind": kind, "designation": name, "applied": True,
+                        "delta_m": 0.0, "confirmed_m": round(before - r["review_m"], 3), "note": c.get("note")})
+            continue
         elif kind == "quantity":
             r = row(name)
             before = r.get("confirmed_horizontal_m", 0.0)
