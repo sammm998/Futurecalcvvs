@@ -144,6 +144,8 @@ def project(graphs, native, result, page, elevations, host_reading=None):
             node=nodes.get(landing.get('node'))
             if node is not None:
                 local_levels[(round(node['x'],2),round(node['y'],2))].append((label,aid))
+    continued['gravity_walk_lower_invert']=_walk_gravity_runs(graphs,states,local_levels)
+    continued['gravity_walk_stats']=dict(STATS)
     pipes=[]
     for fk,g in graphs.items():
         stops={nid for nid,n in g.nodes.items() if n.degree!=2 or (round(n.x,2),round(n.y,2)) in native_points}
@@ -163,7 +165,7 @@ def project(graphs, native, result, page, elevations, host_reading=None):
                  'limitations':['Segments without a complete native assignment remain unconfirmed.']},
         primitive_map={str(sid):parts for sid,parts in reverse.items()},
         host_filled_primitives=filled, host_confirmed_primitives=agreed,
-        tentative_primitives=tentative, continued_primitives=sum(continued.values()),
+        tentative_primitives=tentative, continued_primitives=sum(v for v in continued.values() if isinstance(v,int)),
         settled_unowned=continued)
     result['swedish_rule_evidence'] = {
         'labels': {str(l['id']): label_facts(l) for l in L},
@@ -342,4 +344,106 @@ def _undo_a_smaller_size_between_larger(graphs,states):
                     s.evidence=list(s.evidence or [])+['size:the_line_on_both_ends']
                     moved+=1
                 changed=True
+    return moved
+
+
+LANDING_TOL=0.6
+STATS=Counter()
+GRAVITY_SYSTEM=__import__('re').compile(r'^(S|D)\d')       # spillvatten, dagvatten: runs laid to fall, VG printed
+
+
+def _walk_gravity_runs(graphs,states,local_levels):
+    """On a gravity run, the length between two consecutive designations carries the size printed at the lower.
+
+    The quantity surveyor's walk (the drawing skill, W-50-1-A-0011): start at the lowest invert and walk uphill;
+    a designation closes the length before it and opens the one after it, and between two consecutive
+    designations there is one dimension - the one printed at the lower of the two VG levels. The reading bound
+    labels to stretches one at a time and could give such a stretch the upper label's size; here, where two
+    designations of the same line land at the two ends of one unbranched stretch, both with a VG, the stretch
+    takes the lower one's. A stretch that branches before the next designation is left: which way the walk
+    goes there is not one stretch's question.
+    """
+    import math
+    STATS.clear()
+    moved=0
+    for fk,g in graphs.items():
+        family=states[fk]
+        # a landing is a native node; the host graph was cut there, but the two round the same point differently
+        landing={}
+        near=defaultdict(list)
+        for nid,n in g.nodes.items():
+            near[(int(n.x//LANDING_TOL),int(n.y//LANDING_TOL))].append(nid)
+        for (x,y),hit in local_levels.items():
+            cx,cy=int(x//LANDING_TOL),int(y//LANDING_TOL)
+            best=None
+            for dx in (-1,0,1):
+                for dy in (-1,0,1):
+                    for nid in near.get((cx+dx,cy+dy),()):
+                        n=g.nodes[nid];d=math.hypot(n.x-x,n.y-y)
+                        if d<=LANDING_TOL and (best is None or d<best[0]):
+                            best=(d,nid)
+            if best is not None:
+                landing.setdefault(best[1],[]).extend(hit)
+        STATS['landings']+=len(landing)
+        if not landing:
+            continue
+        def vg_of(nid,line):
+            """The VG and identity of a designation of this line landing at the node, if one does."""
+            for label,aid in landing.get(nid,()):
+                lv=label.get('level') or {}
+                if lv.get('kind')!='VG':
+                    continue
+                for d in label.get('designations') or []:
+                    if not d.get('dimension'):
+                        continue
+                    ident=identity(d)
+                    if _line_of(ident)==line:
+                        return lv['value'],ident
+            return None
+        done=set()
+        for start in landing:
+            for first in g.nodes[start].prims:
+                st=family.get(first)
+                if st is None or st.state!='CONFIRMED' or st.identity is None or first in done:
+                    continue
+                line=_line_of(st.identity)
+                if not GRAVITY_SYSTEM.match(line) or vg_of(start,line) is None:
+                    continue
+                chain=[first];node=start;pid=first;end=None
+                while True:
+                    a,b=g.prim_nodes[pid]
+                    node=b if a==node else a
+                    if node in landing and vg_of(node,line) is not None:
+                        end=node;break
+                    nxt=[q for q in g.nodes[node].prims if q!=pid] if node in g.nodes else []
+                    nxt=[q for q in nxt if family.get(q) is not None and family[q].state=='CONFIRMED'
+                         and family[q].identity is not None and _line_of(family[q].identity)==line]
+                    if len(nxt)>1:
+                        # through a tee the run goes straight on; the branch leaves it at an angle
+                        n=g.nodes[node];u=_direction_away(g.prims[pid].seg,n.x,n.y)
+                        nxt=[q for q in nxt if u and (v:=_direction_away(g.prims[q].seg,n.x,n.y))
+                             and u[0]*v[0]+u[1]*v[1]<=STRAIGHT_COS]
+                    if len(nxt)!=1:
+                        STATS['stop:'+('end' if len(g.nodes[node].prims)<=1 else 'no_straight' if len(nxt)==0 else 'fork')]+=1
+                        break
+                    q=nxt[0]
+                    if q in chain:
+                        break
+                    chain.append(q);pid=q
+                done.update(chain)
+                STATS['chains']+=1
+                if end is None or end==start:
+                    STATS['no_end:'+('junction' if node in g.nodes and len(g.nodes[node].prims)>2 else 'other')]+=1
+                    continue
+                (va,ia),(vb,ib)=vg_of(start,line),vg_of(end,line)
+                if va==vb:
+                    continue
+                want=ia if va<vb else ib
+                for q in chain:
+                    s2=family[q]
+                    if s2.identity==want:
+                        continue
+                    s2.identity=want;s2.reason='gravity_walk_lower_invert'
+                    s2.evidence=list(s2.evidence or [])+[f'vg:{min(va,vb)}<{max(va,vb)}']
+                    moved+=1
     return moved
