@@ -145,6 +145,7 @@ def project(graphs, native, result, page, elevations, host_reading=None):
             if node is not None:
                 local_levels[(round(node['x'],2),round(node['y'],2))].append((label,aid))
     continued['gravity_walk_lower_invert']=_walk_gravity_runs(graphs,states,local_levels)
+    continued['terminal_label_owns_its_stretch']=_terminal_label_owns_its_stretch(graphs,states,A,R,labels)
     continued['gravity_walk_stats']=dict(STATS)
     pipes=[]
     for fk,g in graphs.items():
@@ -348,6 +349,7 @@ def _undo_a_smaller_size_between_larger(graphs,states):
 
 
 LANDING_TOL=0.6
+STUB_PT=12.0          # a leader landing this close to where the pipe ends labels the pipe, not the stub past it
 STATS=Counter()
 GRAVITY_SYSTEM=__import__('re').compile(r'^(S|D)\d')       # spillvatten, dagvatten: runs laid to fall, VG printed
 
@@ -446,4 +448,101 @@ def _walk_gravity_runs(graphs,states,local_levels):
                     s2.identity=want;s2.reason='gravity_walk_lower_invert'
                     s2.evidence=list(s2.evidence or [])+[f'vg:{min(va,vb)}<{max(va,vb)}']
                     moved+=1
+    return moved
+
+
+def _terminal_label_owns_its_stretch(graphs,states,A,R,labels):
+    """A designation landing where a pipe ends names the stretch that runs to that end.
+
+    A fixture's connection pipe is labelled where it ends, at the basin or WC (KV1-X31-16 on W-50-1-A-0114); the
+    distribution pipe it leaves is labelled at the joint (KV1-X7-16/W). The reading could give the whole stretch
+    between the two the joint's name, and the reference names it after the label at the end. So where a label
+    lands on a dead end, the stretch from there to the first junction or other designation takes that label's
+    designation - when exactly one of its rows is of the system the stretch already carries, so that a fitting
+    tag or another system's label at the same end changes nothing.
+    """
+    import math
+    nodes={n['id']:n for n in A['nodes']}
+    points=defaultdict(list)
+    for leader in R['leaders']:
+        label=labels.get(leader['label'])
+        if label is None:
+            continue
+        for landing in leader.get('landings',[]):
+            n=nodes.get(landing.get('node'))
+            if n is not None:
+                points[(n['x'],n['y'])].append(label)
+    moved=0
+    for fk,g in graphs.items():
+        family=states[fk]
+        near=defaultdict(list)
+        for nid,n in g.nodes.items():
+            near[(int(n.x//LANDING_TOL),int(n.y//LANDING_TOL))].append(nid)
+        landed={}
+        for (x,y),hit in points.items():
+            cx,cy=int(x//LANDING_TOL),int(y//LANDING_TOL);best=None
+            for dx in (-1,0,1):
+                for dy in (-1,0,1):
+                    for nid in near.get((cx+dx,cy+dy),()):
+                        n=g.nodes[nid];d=math.hypot(n.x-x,n.y-y)
+                        if d<=LANDING_TOL and (best is None or d<best[0]):
+                            best=(d,nid)
+            if best is not None:
+                landed.setdefault(best[1],[]).extend(hit)
+        def to_dead_end(node,pid):
+            """How far the pipe runs from node along pid to where it ends, if it ends within STUB_PT."""
+            run=0.0
+            while True:
+                run+=g.prims[pid].seg.length
+                if run>STUB_PT:
+                    return None
+                a,b=g.prim_nodes[pid];node=b if a==node else a
+                nxt=[q for q in g.nodes[node].prims if q!=pid] if node in g.nodes else []
+                if not nxt:
+                    return run
+                if len(nxt)!=1:
+                    return None
+                pid=nxt[0]
+        for end,hit in landed.items():
+            ps=g.nodes[end].prims
+            if len(ps)==1:
+                first=ps[0]
+            elif len(ps)==2:
+                # landed just short of the end - the stub past the leader is the fixture's tail, the stretch
+                # the label names runs the other way
+                stub=[to_dead_end(end,q) is not None for q in ps]
+                if stub.count(True)!=1:
+                    continue
+                first=ps[stub.index(False)]
+            else:
+                continue
+            st=family.get(first)
+            if st is None or st.state!='CONFIRMED' or st.identity is None:
+                continue
+            if GRAVITY_SYSTEM.match(_line_of(st.identity)):
+                continue                      # a gravity run's sizes are the invert walk's to settle
+            system=st.identity.system
+            rows=[identity(d) for lb in hit for d in (lb.get('designations') or []) if d.get('dimension')]
+            rows=[r for r in rows if r.system==system]
+            if len({r.key for r in rows})!=1:
+                continue
+            want=rows[0]
+            if want==st.identity:
+                continue
+            chain=[first];node=end;pid=first
+            while True:
+                a,b=g.prim_nodes[pid];node=b if a==node else a
+                if node in landed:
+                    break                     # the next designation: the joint's own label names what lies past it
+                nxt=[q for q in g.nodes[node].prims if q!=pid] if node in g.nodes else []
+                if len(nxt)!=1:
+                    break
+                q=nxt[0];s2=family.get(q)
+                if s2 is None or s2.state!='CONFIRMED' or s2.identity!=st.identity or q in chain:
+                    break
+                chain.append(q);pid=q
+            for q in chain:
+                s2=family[q];s2.identity=want;s2.reason='terminal_label_owns_its_stretch'
+                s2.evidence=list(s2.evidence or [])+['label:lands_at_the_dead_end']
+                moved+=1
     return moved
