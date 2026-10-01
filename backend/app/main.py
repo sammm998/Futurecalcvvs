@@ -21,6 +21,7 @@ from . import (academy as academy_legacy, academy_api, admin as admin_api, cad a
                credits as credits_api, desk as desk_api, exports, jobs, markups as markups_api, projects_api,
                public as public_api)
 from vvs_engine.output.schema import upgrade
+from vvs_engine.coverage import completion_checks
 from vvs_engine.corrections import KINDS as CORRECTION_KINDS, apply as apply_corrections
 from vvs_engine.learning import KEYS, lessons, settle, situation
 from .auth import (create_token, current_user, hash_password, login_blocked, login_failed, current_admin,
@@ -940,6 +941,7 @@ def job_result(job_id: str, page: int | None = Query(default=None, ge=0), user: 
     elif pages and page not in pages:
         raise HTTPException(404, "Det valda bladet har inget analysresultat.")
     rd = _sheet_dir(root, page)
+    review = _load_optional(root, "review-findings.json") if page == (pages[0] if pages else 0) else None
     quantities = _load(rd, "quantities.json")
     pipes = _load(rd, "physical-pipes.json")["physical_pipes"]
     issues = _load(rd, "unresolved-issues.json")["issues"]
@@ -970,7 +972,8 @@ def job_result(job_id: str, page: int | None = Query(default=None, ge=0), user: 
         "job": _job_out(j), "page": page, "input": prof.get("input"), "scale": quantities["scale"], "quantities": rows, "totals": quantities["totals"],
         "corrections": corr,
         "drawing_style": _load_optional(rd, "drawing-style.json"),
-        "quality": _load_optional(rd, "coverage-validity.json"),
+        "quality": completion_checks(_load_optional(rd, "coverage-validity.json"), rows,
+            _load_optional(rd, "source-assignment.json"), review),
         "reference_comparison": _load_optional(root, "reference-comparison.json"),
         "declarations": _load_optional(rd, "drawing-declarations.json"),
         "label_audit": _load_optional(root, "label-audit-status.json"),

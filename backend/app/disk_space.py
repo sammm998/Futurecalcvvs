@@ -156,13 +156,13 @@ def remove_superseded_runs(keep: int = KEEP_RUNS_PER_DRAWING) -> int:
 
 
 def reclaim(results_root: str) -> dict:
-    """Everything above, over every stored result. Safe to run while analyses run."""
+    """Reclaim frozen outputs only; an active detector may still be reading its files."""
     from .diagnostic_storage import compress_native_diagnostics
     out = {"temp": sweep_temp(), "failed": remove_failed_results(), "linked": 0, "compressed": 0}
     root = Path(results_root)
     if root.is_dir():
         for job_dir in root.glob("*/*"):
-            if not job_dir.is_dir():
+            if not job_dir.is_dir() or not (job_dir / "freeze-manifest.json").is_file():
                 continue
             out["linked"] += link_sheet_copies(str(job_dir))
             try:
@@ -177,8 +177,7 @@ def ensure_room(storage_root: str, results_root: str) -> None:
     if free_bytes(storage_root) >= MIN_FREE_BYTES:
         return
     got = reclaim(results_root)
-    if free_bytes(storage_root) < MIN_FREE_BYTES:
-        got["superseded_runs"] = remove_superseded_runs()
+    # Completed results are customer history, not disposable cache.
     log.warning("Lite diskutrymme: städade %s", got)
     left = free_bytes(storage_root)
     if left < MIN_FREE_BYTES:

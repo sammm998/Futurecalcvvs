@@ -89,3 +89,27 @@ def coverage_validity(cov: dict[str, Any], anchors: list, reconciliation: dict |
             "geometry_conservation": (reconciliation or {}).get("state"),
             "accuracy_verified": False,
             "note": "konservering säger att inget dubbelräknas; giltighet säger om läsningen nådde bladet - två frågor"}
+
+
+def completion_checks(quality, quantities=(), source_assignment=None, review=None):
+    """Completion of checks is independent of how much pipe has an assigned name."""
+    from copy import deepcopy
+    result = deepcopy(quality or {'verdict': 'DEGRADED', 'reasons': [], 'measures': {}, 'accuracy_verified': False})
+    reasons = result.setdefault('reasons', [])
+    checks = []
+    if any(float(row.get('review_m') or 0) > 0 for row in quantities):
+        checks.append('TENTATIVE_QUANTITIES')
+    model = (source_assignment or {}).get('model') or {}
+    assignments = (model.get('result') or {}).get('assignments', [])
+    if any(a.get('status') == 'unresolved' and a.get('reason') in
+           ('unanswered', 'invalid_candidate', 'duplicate_decision') for a in assignments):
+        checks.append('MODEL_REVIEW_INCOMPLETE')
+    findings = review.get('findings', []) if isinstance(review, dict) else []
+    if any(f.get('code') in ('ocr_partial', 'ocr_failed', 'ocr_unavailable') for f in findings):
+        checks.append('OCR_REVIEW_INCOMPLETE')
+    for reason in checks:
+        if reason not in reasons:
+            reasons.append(reason)
+    if checks and result.get('verdict') != 'INVALID':
+        result['verdict'] = 'DEGRADED'
+    return result

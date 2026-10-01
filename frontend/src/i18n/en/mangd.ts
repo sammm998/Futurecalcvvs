@@ -3,6 +3,9 @@
  * En rad per sträng, svensk nyckel först. Saknas en rad visas svenskan.
  */
 export const mangd: Record<string, string> = {
+  "Mängden innehåller uppskattade sträckor som behöver granskas.": "The quantities include estimated runs that need review.",
+  "Vissa analysfrågor saknar svar. Resultatet behöver granskas.": "Some analysis questions remain unanswered. The result needs review.",
+  "Textkontrollen kunde inte slutföras för hela ritningen.": "The text check could not be completed for the entire drawing.",
   "tvetydig anslutning": "ambiguous connection",
   "ingen rörkontakt": "no pipe contact",
   "Motorns programkod har ändrats sedan den här analysen gjordes. Resultatet räknas inte om automatiskt. Läs om bladet för att använda den aktuella motorn.": "The engine code has changed since this analysis was made. Results are not recalculated automatically. Read the sheet again to use the current engine.",

@@ -7,6 +7,9 @@ type Quality = {
 };
 
 const reasons: Record<string, string> = {
+  TENTATIVE_QUANTITIES: "Mängden innehåller uppskattade sträckor som behöver granskas.",
+  MODEL_REVIEW_INCOMPLETE: "Vissa analysfrågor saknar svar. Resultatet behöver granskas.",
+  OCR_REVIEW_INCOMPLETE: "Textkontrollen kunde inte slutföras för hela ritningen.",
   GEOMETRY_CONSERVATION_BROKEN: "Geometrikontrollen visar en avvikelse.",
   NO_SCALE: "Skalan saknas. Ange skalan innan mängden används.",
   SCALE_UNSETTLED: "Ritningens skaluppgifter är motstridiga.",

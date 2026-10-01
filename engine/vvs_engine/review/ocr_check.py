@@ -135,10 +135,13 @@ def ocr_words(page, dpi: int = 300, progress=None, regions=None,
     holding a reading that is otherwise finished.
     """
     global _ENGINE
+    from ..memory import release_unused_memory
     import pymupdf
     src = getattr(page, "source_path", None)
     if not src:
         raise RuntimeError("page carries no source path to render")
+    release_unused_memory()
+    engine = None
     doc = pymupdf.open(src)
     try:
         p = doc[page.info.index]
@@ -168,6 +171,8 @@ def ocr_words(page, dpi: int = 300, progress=None, regions=None,
                 ys = [(pix.y + float(q[1])) / s for q in box]
                 out.append((str(text).strip(), [min(xs), min(ys), max(xs), max(ys)], float(conf)))
             del img, pix
+            if (i + 1) % 4 == 0:
+                release_unused_memory()
             if stats is not None:
                 stats['crops_read'] += 1
             if seen:
@@ -182,6 +187,8 @@ def ocr_words(page, dpi: int = 300, progress=None, regions=None,
         # OCR assistance and review share this module. Do not retain three
         # ONNX sessions throughout the rest of the drawing analysis.
         _ENGINE = None
+        engine = None
+        release_unused_memory()
 
 
 def _dedupe(words: list[tuple[str, list[float], float]]) -> list[tuple[str, list[float], float]]:

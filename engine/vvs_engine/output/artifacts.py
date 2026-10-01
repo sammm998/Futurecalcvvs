@@ -598,10 +598,12 @@ def sheet_reading(pa, doc, doc_legend=None, profile: dict | None = None,
     rec = reconcile(pa)
     out["reconciliation.json"] = rec
     # giltigheten är en annan fråga än konserveringen: nådde läsningen bladet?
-    from ..coverage import coverage_validity
+    from ..coverage import coverage_validity, completion_checks
     from ..pipeline import reading_coverage as _rc
     out["coverage-validity.json"] = coverage_validity(_rc(pa), pa.anchors, rec, pa.scale.state if pa.scale else None,
                                                       len(pa.measures))
+    out["coverage-validity.json"] = completion_checks(out["coverage-validity.json"], pa.quantities,
+        getattr(pa, "source_assignment", None), pa.review_findings)
     out["route-crosscheck.json"] = pa.crosscheck
     out["reading-review.json"] = pa.review_findings
     if getattr(pa, "source_assignment", None) is not None:
@@ -644,6 +646,9 @@ def write_all(pdf_path: str, doc, analyses: list, out_dir: str, name: str, timin
     # whichever sheet happened to be kept in memory.
     for _fn, _obj in sheet_reading(pa, doc, doc_legend, profile=prof).items():
         if _fn != "page.json":
+            if _fn == "coverage-validity.json":
+                from ..coverage import completion_checks
+                _obj = completion_checks(_obj, pa.quantities, getattr(pa, "source_assignment", None), review)
             W(_fn, _obj)
     if review is not None:
         W("review-findings.json", review)

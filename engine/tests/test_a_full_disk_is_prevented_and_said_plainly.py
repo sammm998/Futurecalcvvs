@@ -89,3 +89,30 @@ def test_when_space_runs_out_only_older_runs_of_the_same_drawing_give_way(tmp_pa
     kept = sorted(j.result_key for j in jobs if j.result_key)
     assert kept == ["results/d1/2", "results/d1/3", "results/d2/0"]        # the two newest, and the only run of d2
     assert not (tmp_path / "results/d1/0").exists() and (tmp_path / "results/d1/3").exists()
+
+
+def test_low_space_never_automatically_deletes_completed_history(tmp_path, monkeypatch):
+    from app import disk_space
+    monkeypatch.setattr(disk_space, "free_bytes", lambda path: 0)
+    monkeypatch.setattr(disk_space, "reclaim", lambda root: {})
+    def forbidden(*args, **kwargs):
+        pytest.fail("Completed history must not be deleted automatically")
+    monkeypatch.setattr(disk_space, "remove_superseded_runs", forbidden)
+    with pytest.raises(OSError):
+        disk_space.ensure_room(str(tmp_path), str(tmp_path / "results"))
+
+
+def test_reclaim_does_not_touch_an_active_detection(tmp_path, monkeypatch):
+    from app import disk_space, diagnostic_storage
+    active = tmp_path / "drawing" / "active"
+    frozen = tmp_path / "drawing" / "frozen"
+    active.mkdir(parents=True)
+    frozen.mkdir(parents=True)
+    (frozen / "freeze-manifest.json").write_text('{}')
+    monkeypatch.setattr(disk_space, "sweep_temp", lambda: 0)
+    monkeypatch.setattr(disk_space, "remove_failed_results", lambda: 0)
+    visited = []
+    monkeypatch.setattr(disk_space, "link_sheet_copies", lambda p: visited.append(p) or 0)
+    monkeypatch.setattr(diagnostic_storage, "compress_native_diagnostics", lambda p: visited.append(p) or 0)
+    disk_space.reclaim(str(tmp_path))
+    assert visited == [str(frozen), str(frozen)]

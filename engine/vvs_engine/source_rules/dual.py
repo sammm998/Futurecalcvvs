@@ -189,11 +189,11 @@ def run(A,L,R,style,mode='compare',ask=None):
             model['request_seconds']=resilient.timings
             model['unresolved_by_model']=sum(a['status']=='unresolved' and a.get('reason')!='no_candidate'
                                              for a in model['assignments'])
-            nothing=model['questions']>0 and not model['decisions']
-            status='FAILED' if model['errors'] or (nothing and resilient.failures) else 'COMPLETED'
+            nothing=bool(planned) and not model['decisions']
+            status='FAILED' if model['errors'] or nothing else 'COMPLETED'
             if status=='FAILED':
                 model['failure_reason']=(resilient.failures[-1]['error'] if resilient.failures
-                                         else '; '.join(model['errors']))
+                                         else '; '.join(model['errors']) or 'Modellen lämnade inga giltiga svar på analysfrågorna.')
             if hasattr(ask, 'usage'):
                 model.update(model=ask.model, usage=list(ask.usage), usd=None,
                              candidate_aliases=list(getattr(ask, 'candidate_aliases', [])),

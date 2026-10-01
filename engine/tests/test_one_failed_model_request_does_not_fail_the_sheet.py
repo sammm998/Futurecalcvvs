@@ -80,3 +80,17 @@ def test_a_model_that_never_answers_is_a_failed_assignment_that_says_why():
     assert result['combined']['status'] == 'FAILED'
     assert 'invalid api key' in result['combined']['result']['failure_reason']
     assert len(calls) <= dual.GIVE_UP_AFTER + 2      # an unreachable model is not asked over and over
+
+
+def test_empty_successful_http_replies_are_not_a_completed_model_review():
+    A, L, R, _ = _many(2)
+    result = run(A, L, R, {'rules': []}, mode='combined', ask=lambda qs: [])
+    assert result['combined']['status'] == 'FAILED'
+    assert result['model']['result']['failure_reason']
+
+
+def test_no_candidate_questions_do_not_require_a_model_answer():
+    A, L, R, _ = _many(1)
+    result = run(A, [], {'leaders': [], 'bindings': [], 'counts': {}},
+                 {'rules': []}, mode='combined', ask=lambda qs: [])
+    assert result['model']['status'] == 'COMPLETED'
