@@ -384,12 +384,24 @@ def resubmit_unfinished() -> int:
     with SessionLocal() as db:
         stale = db.query(AnalysisJob).filter(AnalysisJob.status.in_(("QUEUED", "RUNNING"))).all()
         ids = []
+        stopped = []
         for job in stale:
+            restarts = int((job.summary or {}).get("resubmitted_after_restart", 0))
+            interrupted = job.status == "RUNNING"
+            if interrupted and restarts >= 2:
+                job.status, job.stage = "FAILED", "FAILED"
+                job.finished_at = dt.datetime.now(dt.timezone.utc)
+                job.error = ("Analysen avbröts vid upprepade serveromstarter. Automatisk omkörning har stoppats. "
+                             "Kontrollera serverns minne och logg innan analysen startas igen. Ingen ofullständig mängd publiceras.")
+                stopped.append(job.id)
+                continue
             job.status, job.stage, job.progress, job.error = "QUEUED", "QUEUED", 0.0, None
             job.started_at, job.finished_at = None, None
-            job.summary = {**(job.summary or {}), "resubmitted_after_restart": (job.summary or {}).get("resubmitted_after_restart", 0) + 1}
+            job.summary = {**(job.summary or {}), "resubmitted_after_restart": restarts + int(interrupted)}
             ids.append(job.id)
         db.commit()
+    for jid in stopped:
+        _settle_credits(jid)
     for jid in ids:
         log.warning("Jobb %s var oavslutat när tjänsten startade om: körs igen", jid)
         submit(jid)
