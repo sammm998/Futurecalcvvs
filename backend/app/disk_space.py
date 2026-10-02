@@ -183,4 +183,39 @@ def ensure_room(storage_root: str, results_root: str) -> None:
     if left < MIN_FREE_BYTES:
         raise OSError(
             f"Disken där ritningar och resultat sparas är full ({left // (1024 * 1024)} MB ledigt). "
-            "Utöka volymen i Railway (tjänsten -> Volumes) eller ta bort gamla projekt, och kör analysen igen.")
+            "Rensa under Admin -> System (tar bort äldre körningar av samma ritning), utöka volymen i Railway "
+            "(tjänsten -> Volumes) eller ta bort gamla projekt, och kör analysen igen.")
+
+
+def remove_detector_cache(cache_root: str, max_age_s: float = TEMP_MAX_AGE_S) -> int:
+    """The native detector's preprocessing cache: it only saves time on a re-run and is rebuilt when needed.
+
+    An entry touched within `max_age_s` may belong to an analysis running now and is left."""
+    saved = 0
+    now = time.time()
+    root = Path(cache_root)
+    if not root.is_dir():
+        return 0
+    for entry in root.glob("*/*"):
+        try:
+            if not entry.is_dir() or now - entry.stat().st_mtime < max_age_s:
+                continue
+            saved += sum(f.stat().st_size for f in entry.rglob("*") if f.is_file())
+            shutil.rmtree(entry, ignore_errors=True)
+        except OSError:
+            continue
+    return saved
+
+
+def clean_up(storage_root: str, results_root: str, cache_root: str) -> dict:
+    """Asked for by an administrator: everything reclaim() does, and also the older runs of each drawing and the
+    detector cache. The newest completed run of every drawing, and every run in progress, stay; so do all the
+    drawings and projects. Automatic housekeeping never does this on its own (completed runs are history)."""
+    before = free_bytes(storage_root)
+    out = reclaim(results_root)
+    out["older_runs"] = remove_superseded_runs(keep=1)
+    out["detector_cache"] = remove_detector_cache(cache_root)
+    out["free_before"] = before
+    out["free_after"] = free_bytes(storage_root)
+    log.warning("Rensning på begäran: %s", out)
+    return out

@@ -367,6 +367,15 @@ def system_health(admin: User = Depends(current_admin), db: Session = Depends(ge
     }
 
 
+@router.post("/system/cleanup")
+def system_cleanup(admin: User = Depends(current_admin)):
+    """Frigör lagret: äldre körningar av samma ritning, misslyckade körningar, kvarlämnade arbetsmappar och
+    detektorns cache. Den senaste färdiga körningen av varje ritning och allt som pågår står kvar."""
+    from .disk_space import clean_up
+    from .storage import storage as _storage
+    return clean_up(_storage.path(""), _storage.path("results"), _storage.path("cache/native"))
+
+
 @router.get("/accounts")
 def list_accounts(q: str = "", admin: User = Depends(current_admin), db: Session = Depends(get_db)):
     accounts = db.query(Account).order_by(Account.created_at.desc()).all()

@@ -116,3 +116,19 @@ def test_reclaim_does_not_touch_an_active_detection(tmp_path, monkeypatch):
     monkeypatch.setattr(diagnostic_storage, "compress_native_diagnostics", lambda p: visited.append(p) or 0)
     disk_space.reclaim(str(tmp_path))
     assert visited == [str(frozen), str(frozen)]
+
+
+def test_an_administrator_can_clear_older_runs_and_the_detector_cache(tmp_path, monkeypatch):
+    from app import disk_space
+    calls = {}
+    monkeypatch.setattr(disk_space, "reclaim", lambda root: {"temp": 0})
+    monkeypatch.setattr(disk_space, "remove_superseded_runs", lambda keep: calls.setdefault("keep", keep) and 500)
+    cache = tmp_path / "cache" / "native"
+    old = cache / "project1" / ("a" * 64); old.mkdir(parents=True); (old / "result.pkl.gz").write_bytes(b"0" * 300)
+    fresh = cache / "project2" / ("b" * 64); fresh.mkdir(parents=True); (fresh / "result.pkl.gz").write_bytes(b"0" * 7)
+    past = time.time() - 3 * 3600
+    os.utime(old, (past, past))
+    out = disk_space.clean_up(str(tmp_path), str(tmp_path / "results"), str(cache))
+    assert calls["keep"] == 1                                       # the newest run of every drawing stays
+    assert out["detector_cache"] == 300 and not old.exists() and fresh.exists()
+    assert "free_before" in out and "free_after" in out
