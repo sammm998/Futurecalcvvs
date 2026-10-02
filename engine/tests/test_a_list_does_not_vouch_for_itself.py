@@ -79,3 +79,15 @@ def test_a_borrowed_list_lends_no_geometry():
     lg.own = False
     assert lg.bbox() is None
     assert not lg.holds((300.0, 400.0, 340.0, 410.0))
+
+
+def test_a_whole_pipe_name_of_a_standard_system_survives_a_list_that_missed_it():
+    """W-50-1-A-0311: the list was read with S1 and S2 but not S3 or S4, and every S3-P5-110 it draws was erased."""
+    lg = _list_at(2049.0, 330.0)
+    known = [_Des("k1", "P1-22", (300.0, 400.0, 340.0, 410.0)),
+             _Des("k2", "R1-18", (500.0, 300.0, 540.0, 310.0)),
+             _Des("k3", "S2-110", (700.0, 520.0, 744.0, 530.0))]
+    pipes = [_Des("s3", "S3-P5-110", (800.0, 200.0, 860.0, 210.0)),
+             _Des("s4", "S4-P3-32", (900.0, 200.0, 960.0, 210.0))]
+    stray = _Des("c1", "C09-07", (800.0, 300.0, 844.0, 310.0))
+    assert _unknown_to_the_legend(lg, _rows_of_the_list(lg) + known + pipes + [stray]) == {"c1"}
