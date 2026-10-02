@@ -91,15 +91,16 @@ def test_when_space_runs_out_only_older_runs_of_the_same_drawing_give_way(tmp_pa
     assert not (tmp_path / "results/d1/0").exists() and (tmp_path / "results/d1/3").exists()
 
 
-def test_low_space_never_automatically_deletes_completed_history(tmp_path, monkeypatch):
+def test_a_disk_still_full_after_reclaim_gives_up_older_runs_but_keeps_the_newest(tmp_path, monkeypatch):
     from app import disk_space
     monkeypatch.setattr(disk_space, "free_bytes", lambda path: 0)
     monkeypatch.setattr(disk_space, "reclaim", lambda root: {})
-    def forbidden(*args, **kwargs):
-        pytest.fail("Completed history must not be deleted automatically")
-    monkeypatch.setattr(disk_space, "remove_superseded_runs", forbidden)
+    kept = []
+    monkeypatch.setattr(disk_space, "remove_superseded_runs", lambda keep: kept.append(keep) or 0)
+    monkeypatch.setattr(disk_space, "remove_detector_cache", lambda root: 0)
     with pytest.raises(OSError):
         disk_space.ensure_room(str(tmp_path), str(tmp_path / "results"))
+    assert kept == [1]                                     # the newest completed run of every drawing stays
 
 
 def test_reclaim_does_not_touch_an_active_detection(tmp_path, monkeypatch):
