@@ -1,10 +1,11 @@
 import { extension, withPipeExtensions } from "../live/gestures";
 import type { DrawingAction } from "../live/LiveDrawingAgent";
 import SourceAssignment from "../components/SourceAssignment";
-import { Suspense, lazy, useEffect, useRef, useState } from "react";
+import { Suspense, lazy, useEffect, useMemo, useRef, useState } from "react";
 import { t as tr } from "../i18n";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { api } from "../api";
+import { pipeRuns } from "../runs";
 import DiskFullHelp from "../components/DiskFullHelp";
 import AnalysisCompletionReveal from "../components/AnalysisCompletionReveal";
 import DrawingTo3DTransition from "../components/DrawingTo3DTransition";
@@ -27,7 +28,17 @@ import { StatusBadge, stageText } from "../components/Status";
 
 // three.js är tungt och behövs först när någon vill se ritningen i 3D: hämtas då, inte vid sidladdning.
 const LiveDrawingAgent = lazy(() => import("../live/LiveDrawingAgent"));
-const Drawing3DView = lazy(() => import("../components/Drawing3DView"));
+const Drawing3DView = lazy(() => import("../components/Drawing3DView").catch((e) => {
+  // a page opened before a deploy asks for a code chunk the server no longer has: fetch the new version once
+  try {
+    if (Date.now() - Number(sessionStorage.getItem("chunk-reload-at") || 0) > 60_000) {
+      sessionStorage.setItem("chunk-reload-at", String(Date.now()));
+      window.location.reload();
+      return new Promise<never>(() => { /* sidan laddas om */ });
+    }
+  } catch { /* ingen lagring */ }
+  throw e;
+}));
 
 
 // why a label never got a line to follow, said the way a person reads a drawing
@@ -209,6 +220,11 @@ export default function AnalysisPage() {
 
   /** A run's extent on the sheet, from the geometry it carries. The pipe record has never had a box of its
       own, so every "go to this run" in the application was quietly doing nothing at all. */
+  const runs = useMemo(() => pipeRuns(result?.pipes ?? []), [result]);
+  const runOf = (p: any): any[] => {
+    const ids = new Set(runs.get(p?.physical_pipe_id) ?? [p?.physical_pipe_id]);
+    return (result?.pipes ?? []).filter((q: any) => ids.has(q.physical_pipe_id));
+  };
   const boxOf = (p: any): number[] | null => {
     const xs: number[] = [], ys: number[] = [];
     for (const line of (p?.geometry ?? [])) for (const [x, y] of line) { xs.push(x); ys.push(y); }
@@ -249,7 +265,7 @@ export default function AnalysisPage() {
     setSelPipe(p); setSelIdent(p.identity);
     // while correcting, the click picks the run to correct: staying on the takeoff tab would hide the tools
     if (tab !== "rattelser") setTab("mangder");
-    goTo(boxOf(p), p.page ?? 0);
+    goTo(spanOf(runOf(p)) ?? boxOf(p), p.page ?? 0);
     try { setWhy(await api.why(id!, p.physical_pipe_id)); } catch { setWhy(null); }
   };
 
@@ -485,7 +501,7 @@ export default function AnalysisPage() {
         <Boundary what="ritningsvyn"><PdfViewer ref={viewer} data={pdf} page={displayedPage} pipes={pipesOnPage} ambiguous={result.ambiguous_geometry} unowned={result.unowned_geometry} claimed={result.claimed_geometry ?? []}
           designations={result.designations} legend={result.legend ?? null} leaders={result.leaders} anchors={result.anchors} hatched={result.hatched_geometry ?? []} selectedIdentity={selIdent}
           declined={[...(result.declined_geometry?.families ?? []), ...(result.declined_geometry?.unconsidered ?? [])]} selectedDeclined={selDeclined}
-          selectedPipe={selPipe?.physical_pipe_id ?? null} layers={layers} onPipeClick={onPipeClick} onPageCount={setNPages}
+          selectedPipe={selPipe?.physical_pipe_id ?? null} selectedRun={selPipe ? (runs.get(selPipe.physical_pipe_id) ?? null) : null} layers={layers} onPipeClick={onPipeClick} onPageCount={setNPages}
           ink={ink} onInkClick={setInk}
           editKind={(tab === "markera"
             ? (markTool ? "draw" : null)
