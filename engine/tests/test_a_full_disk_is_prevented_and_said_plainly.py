@@ -91,15 +91,16 @@ def test_when_space_runs_out_only_older_runs_of_the_same_drawing_give_way(tmp_pa
     assert not (tmp_path / "results/d1/0").exists() and (tmp_path / "results/d1/3").exists()
 
 
-def test_low_space_never_automatically_deletes_completed_history(tmp_path, monkeypatch):
+def test_a_disk_still_full_after_reclaim_gives_up_older_runs_but_keeps_the_newest(tmp_path, monkeypatch):
     from app import disk_space
     monkeypatch.setattr(disk_space, "free_bytes", lambda path: 0)
     monkeypatch.setattr(disk_space, "reclaim", lambda root: {})
-    def forbidden(*args, **kwargs):
-        pytest.fail("Completed history must not be deleted automatically")
-    monkeypatch.setattr(disk_space, "remove_superseded_runs", forbidden)
+    kept = []
+    monkeypatch.setattr(disk_space, "remove_superseded_runs", lambda keep: kept.append(keep) or 0)
+    monkeypatch.setattr(disk_space, "remove_detector_cache", lambda root: 0)
     with pytest.raises(OSError):
         disk_space.ensure_room(str(tmp_path), str(tmp_path / "results"))
+    assert kept == [1]                                     # the newest completed run of every drawing stays
 
 
 def test_reclaim_does_not_touch_an_active_detection(tmp_path, monkeypatch):
@@ -116,3 +117,19 @@ def test_reclaim_does_not_touch_an_active_detection(tmp_path, monkeypatch):
     monkeypatch.setattr(diagnostic_storage, "compress_native_diagnostics", lambda p: visited.append(p) or 0)
     disk_space.reclaim(str(tmp_path))
     assert visited == [str(frozen), str(frozen)]
+
+
+def test_an_administrator_can_clear_older_runs_and_the_detector_cache(tmp_path, monkeypatch):
+    from app import disk_space
+    calls = {}
+    monkeypatch.setattr(disk_space, "reclaim", lambda root: {"temp": 0})
+    monkeypatch.setattr(disk_space, "remove_superseded_runs", lambda keep: calls.setdefault("keep", keep) and 500)
+    cache = tmp_path / "cache" / "native"
+    old = cache / "project1" / ("a" * 64); old.mkdir(parents=True); (old / "result.pkl.gz").write_bytes(b"0" * 300)
+    fresh = cache / "project2" / ("b" * 64); fresh.mkdir(parents=True); (fresh / "result.pkl.gz").write_bytes(b"0" * 7)
+    past = time.time() - 3 * 3600
+    os.utime(old, (past, past))
+    out = disk_space.clean_up(str(tmp_path), str(tmp_path / "results"), str(cache))
+    assert calls["keep"] == 1                                       # the newest run of every drawing stays
+    assert out["detector_cache"] == 300 and not old.exists() and fresh.exists()
+    assert "free_before" in out and "free_after" in out

@@ -26,6 +26,7 @@ KEEP_RUNS_PER_DRAWING = 2                   # when space runs out, older runs of
 TEMP_PREFIXES = ("vvs-detector-cache-", "vvs-native-")
 TEMP_MAX_AGE_S = 2 * 3600
 FAILED_KEEP_S = 24 * 3600
+STARTUP_CLEAN_BELOW = 1024 ** 3             # at start-up, below this much free space the older runs give way
 
 
 def free_bytes(path: str) -> int:
@@ -177,10 +178,50 @@ def ensure_room(storage_root: str, results_root: str) -> None:
     if free_bytes(storage_root) >= MIN_FREE_BYTES:
         return
     got = reclaim(results_root)
-    # Completed results are customer history, not disposable cache.
     log.warning("Lite diskutrymme: städade %s", got)
+    if free_bytes(storage_root) < MIN_FREE_BYTES:
+        # Still full: the older runs of each drawing and the detector cache give way. The newest completed run of
+        # every drawing stays - an analysis that cannot run at all helps nobody, an old run of a drawing that has
+        # been read again since is not what anyone opens.
+        log.warning("Fortfarande fullt: %s", clean_up(storage_root, results_root, os.path.join(storage_root, "cache", "native")))
     left = free_bytes(storage_root)
     if left < MIN_FREE_BYTES:
         raise OSError(
             f"Disken där ritningar och resultat sparas är full ({left // (1024 * 1024)} MB ledigt). "
-            "Utöka volymen i Railway (tjänsten -> Volumes) eller ta bort gamla projekt, och kör analysen igen.")
+            "Rensa under Admin -> System (tar bort äldre körningar av samma ritning), utöka volymen i Railway "
+            "(tjänsten -> Volumes) eller ta bort gamla projekt, och kör analysen igen.")
+
+
+def remove_detector_cache(cache_root: str, max_age_s: float = TEMP_MAX_AGE_S) -> int:
+    """The native detector's preprocessing cache: it only saves time on a re-run and is rebuilt when needed.
+
+    An entry touched within `max_age_s` may belong to an analysis running now and is left."""
+    saved = 0
+    now = time.time()
+    root = Path(cache_root)
+    if not root.is_dir():
+        return 0
+    for entry in root.glob("*/*"):
+        try:
+            if not entry.is_dir() or now - entry.stat().st_mtime < max_age_s:
+                continue
+            saved += sum(f.stat().st_size for f in entry.rglob("*") if f.is_file())
+            shutil.rmtree(entry, ignore_errors=True)
+        except OSError:
+            continue
+    return saved
+
+
+def clean_up(storage_root: str, results_root: str, cache_root: str) -> dict:
+    """Asked for by an administrator: everything reclaim() does, and also the older runs of each drawing and the
+    detector cache. The newest completed run of every drawing, and every run in progress, stay; so do all the
+    drawings and projects. Run on request, at start-up when the volume is nearly full, and before an analysis
+    that would otherwise not have room."""
+    before = free_bytes(storage_root)
+    out = reclaim(results_root)
+    out["older_runs"] = remove_superseded_runs(keep=1)
+    out["detector_cache"] = remove_detector_cache(cache_root)
+    out["free_before"] = before
+    out["free_after"] = free_bytes(storage_root)
+    log.warning("Rensning på begäran: %s", out)
+    return out

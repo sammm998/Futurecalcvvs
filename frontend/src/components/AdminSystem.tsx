@@ -15,6 +15,16 @@ export function SystemHealth() {
   const [h, setH] = useState<any>(null);
   const [v, setV] = useState<any>(null);
   const [err, setErr] = useState("");
+  const [cleaning, setCleaning] = useState(false);
+  const [cleaned, setCleaned] = useState<any>(null);
+  const cleanUp = () => {
+    if (!window.confirm(tr("Ta bort äldre körningar av samma ritning, misslyckade körningar och detektorns cache? Den senaste körningen av varje ritning står kvar."))) return;
+    setCleaning(true);
+    api.admPost("system/cleanup", {})
+      .then((r) => { setCleaned(r); return api.adm("system").then(setH); })
+      .catch((e) => setErr(e.message))
+      .finally(() => setCleaning(false));
+  };
   useEffect(() => {
     api.adm("system").then(setH).catch((e) => setErr(e.message));
     api.version().then(setV).catch(() => { /* versionen är inte livsviktig */ });
@@ -41,6 +51,18 @@ export function SystemHealth() {
           </div>
         ))}
       </div>
+      <section className="card" style={{ marginTop: 16 }}>
+        <h3 style={{ marginTop: 0 }}>{tr("Rensa lagret")}</h3>
+        <p className="muted">
+          {tr("Tar bort äldre körningar av samma ritning, misslyckade körningar, kvarlämnade arbetsmappar och detektorns cache. Den senaste körningen av varje ritning, alla ritningar och alla projekt står kvar.")}
+        </p>
+        <button className="btn" onClick={cleanUp} disabled={cleaning}>{cleaning ? tr("Rensar…") : tr("Rensa")}</button>
+        {cleaned && (
+          <p style={{ marginBottom: 0 }}>
+            {tr("Ledigt före")}: {bytes(cleaned.free_before)} · {tr("efter")}: <b>{bytes(cleaned.free_after)}</b>
+          </p>
+        )}
+      </section>
       <section className="card" style={{ marginTop: 16 }}>
         <h3 style={{ marginTop: 0 }}>{tr("Vad som styr en läsning")}</h3>
         <p className="muted" style={{ marginBottom: 0 }}>

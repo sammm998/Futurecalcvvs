@@ -60,8 +60,11 @@ async def _lifespan(_app: FastAPI):
 
         def _reclaim():
             try:
-                from .disk_space import reclaim
+                from .disk_space import reclaim, free_bytes, clean_up, STARTUP_CLEAN_BELOW
                 print(f"[disk] återtaget: {reclaim(storage.path('results'))}", flush=True)
+                if free_bytes(storage.path("")) < STARTUP_CLEAN_BELOW:
+                    got = clean_up(storage.path(""), storage.path("results"), storage.path("cache/native"))
+                    print(f"[disk] nästan fullt, äldre körningar och cache rensade: {got}", flush=True)
             except Exception as e:                             # noqa: BLE001
                 print(f"[disk] kunde inte städa: {type(e).__name__}: {e}", flush=True)
         threading.Thread(target=_reclaim, name="disk-reclaim", daemon=True).start()
