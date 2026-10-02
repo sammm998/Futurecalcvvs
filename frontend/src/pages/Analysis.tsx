@@ -5,6 +5,7 @@ import { Suspense, lazy, useEffect, useRef, useState } from "react";
 import { t as tr } from "../i18n";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { api } from "../api";
+import DiskFullHelp from "../components/DiskFullHelp";
 import AnalysisCompletionReveal from "../components/AnalysisCompletionReveal";
 import DrawingTo3DTransition from "../components/DrawingTo3DTransition";
 import PdfViewer, { Drawn, EditKind, InkVerdict, Layer, ViewerHandle } from "../components/PdfViewer";
@@ -309,7 +310,7 @@ export default function AnalysisPage() {
         </div>
         <div className="rule" style={{ marginBottom: 26 }} />
         {job.status === "FAILED"
-          ? <pre className="error">{job.error}</pre>
+          ? <><pre className="error">{job.error}</pre><DiskFullHelp error={job.error} /></>
           : <AnalysisFilm jobId={id!} stage={job.stage} progress={job.progress} />}
         <LearnWizard open={learn} onClose={() => setLearn(false)} />
       </main>

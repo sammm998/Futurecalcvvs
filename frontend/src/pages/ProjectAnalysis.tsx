@@ -2,6 +2,7 @@ import { Fragment, useEffect, useState } from "react";
 import { t as tr, locale } from "../i18n";
 import { Link, useParams } from "react-router-dom";
 import { api } from "../api";
+import DiskFullHelp from "../components/DiskFullHelp";
 import ProjectAgentChat from "../components/ProjectAgentChat";
 
 /* Projektet läst som en handling.
@@ -482,7 +483,7 @@ export default function ProjectAnalysisPage() {
       {run && run.status !== "DONE" && (
         <div className="card">
           {run.status === "FAILED"
-            ? <pre className="error">{run.error}</pre>
+            ? <><pre className="error">{run.error}</pre><DiskFullHelp error={run.error} /></>
             : <>
               <p className="muted" style={{ marginTop: 0 }}>{run.stage}</p>
               <div className="bar"><span style={{ width: `${Math.round((run.progress || 0) * 100)}%` }} /></div>
