@@ -66,6 +66,7 @@ export interface ViewerProps {
   selectedDeclined?: string | null;
   selectedIdentity: string | null;
   selectedPipe: string | null;
+  selectedRun?: string[] | null;   // every piece of the picked pipe: it lights up as one pipe
   layers: Record<Layer, boolean>;
   onPipeClick: (pipe: any) => void;
   /** A click on ink with no edit mode active: what the reading made of it. */
@@ -872,7 +873,7 @@ const PdfViewer = forwardRef<ViewerHandle, ViewerProps>(function PdfViewer(props
                 fill="none" stroke="#ff5a3d" strokeWidth={sw(2.5)} />
             )}
             {props.layers.pipes && props.pipes.map((p) => {
-              const sel = props.selectedPipe !== null ? props.selectedPipe === p.physical_pipe_id : (props.selectedIdentity !== null && props.selectedIdentity === p.identity);
+              const sel = props.selectedPipe !== null ? (props.selectedRun?.includes(p.physical_pipe_id) ?? props.selectedPipe === p.physical_pipe_id) : (props.selectedIdentity !== null && props.selectedIdentity === p.identity);
               const dim = props.selectedIdentity !== null && !sel;
               const pick = kind === "erase" || kind === "draw" ? "none" : "stroke";
               return p.geometry.map((pl: number[][], k: number) => {
