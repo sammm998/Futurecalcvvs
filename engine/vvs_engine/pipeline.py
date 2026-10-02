@@ -1670,6 +1670,9 @@ def analyze_page(page: RawPage, progress: Callable[[str], None] | None = None, o
         native_merge = merge_detection(page, native, graphs, pipe_families, anchors,
                                        native_identities, native_elevations)
         native_merge['label_sizes_from_drawing_lettering'] = label_sizes
+        from .source_rules.lost_suffix import restore as restore_lost_suffixes
+        native_merge['suffixes_from_drawing_lettering'] = restore_lost_suffixes(
+            native.get('labels') or [], [d.text for d in designations])
     graphs, pipe_families = _split_at_tick_contacts(page, graphs, pipe_families, anchors)
     prims = {fk: graphs[fk].prims for fk in graphs}
     # a family taken after the passes ran is not a declined one, whatever the pass that looked at it decided

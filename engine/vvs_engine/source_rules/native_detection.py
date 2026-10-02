@@ -83,8 +83,6 @@ def detect_page(pdf_path, page_number=0, style=None, progress=None, artifact_dir
             from .rotated_labels import repair
             with pymupdf.open(clean) as text_doc:
                 rotated_repairs = repair(text_doc[page_number], L)
-            from .lost_suffix import restore
-            rotated_repairs = rotated_repairs + [dict(r, kind='lost_suffix') for r in restore(L)]
         save('detection-inputs.json', {'extraction': asdict(ex), 'profile': P,
                                      'detection': det, 'labels': L, 'timings': timings})
         # Unknown styles still use the original automatic measurement/calibration.

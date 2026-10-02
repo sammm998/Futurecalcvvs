@@ -29,3 +29,10 @@ def test_another_size_says_nothing_about_this_one():
 def test_a_label_without_a_slash_is_never_given_a_suffix():
     labels = [_label(0, 'VP1-S13-42/W', 'W'), _label(1, 'VP1-S13-42', None)]
     assert restore(labels) == []
+
+
+def test_the_sheets_own_lettering_counts_as_writing_it():
+    """On W-50-1-A-0114 the only other reading of that label was the host's, from the strokes."""
+    labels = [_label(1, 'VP1-S13-42/', None)]
+    restore(labels, ['VP1-S13-42/W', 'CL 3400 ÖFG'])
+    assert labels[0]['designations'][0]['raw'] == 'VP1-S13-42/W'

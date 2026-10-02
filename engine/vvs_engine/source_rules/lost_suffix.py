@@ -5,7 +5,8 @@ designation then names a pipe of its own, and one line drawn in one size splits 
 6.1 m under `VP1-S13-42/` beside 6.5 m under `VP1-S13-42/W` on W-50-1-A-0114.
 
 The slash says something followed. Where the sheet writes that line in that size with one suffix and no other,
-that is what followed. Where it writes it with two - or never - nothing is filled in.
+that is what followed. Where it writes it with two - or never - nothing is filled in. The sheet's own lettering
+read from its strokes counts as writing it: on that sheet it was the only other reading of the label.
 """
 from collections import defaultdict
 
@@ -18,9 +19,17 @@ def _cut(d):
     return (d.get('raw') or '').rstrip().endswith('/') and not d.get('suffix')
 
 
-def restore(labels):
-    """Fill a suffix lost after a trailing slash from the sheet's other labels of the same line and size."""
+def restore(labels, lettering=()):
+    """Fill a suffix lost after a trailing slash from the sheet's other labels of the same line and size.
+
+    `lettering` is the host's reading of the sheet's own lettering (texts), counted alongside the labels.
+    """
+    from .pipestudio import vvs
     written = defaultdict(set)
+    for text in lettering:
+        parsed = vvs.parse_designation(text or '')
+        if parsed is not None and parsed.suffix and not (text or '').rstrip().endswith('/'):
+            written[(parsed.system, parsed.number, tuple(parsed.middle or ()), parsed.dimension)].add(parsed.suffix)
     for label in labels:
         for d in label.get('designations') or []:
             if d.get('suffix') and not _cut(d):
