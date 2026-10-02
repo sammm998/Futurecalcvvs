@@ -619,6 +619,7 @@ export default function Drawing3DView({ result, title, onClose, controlRef }: Pr
     const t0 = performance.now();
     let last = performance.now();
     let wantLabels = true;
+    let risen = false;
     let raf = 0;
     const tick = (now: number) => {
       const dt = Math.min(0.1, (now - last) / 1000);
@@ -630,10 +631,14 @@ export default function Drawing3DView({ result, title, onClose, controlRef }: Pr
       pipeGroup.visible = t > 0.35;
       pipeGroup.scale.y = Math.max(0.001, easeOut(Math.max(0, (t - 0.35) / 0.65)));
       labelGroup.visible = wantLabels && t >= 1;
-      if (RISE && !walker.on && t < 1) {
+      // The camera rises with the walls. A first frame that comes after the rise is over (a slow machine, a large
+      // model, reduced motion) must still land on the final view: left at its start it stayed at ground level and
+      // the house showed as a thin strip on the horizon.
+      if (!walker.on && !risen) {
         state.phi = 0.02 + (0.62 - 0.02) * e;
         state.dist = radius * (1.35 - 0.35 * e);
         place();
+        if (t >= 1) risen = true;
       }
       if (walker.on) {
         const speed = (keys.has("shift") ? RUN : WALK) * dt;

@@ -86,7 +86,7 @@ export default function LiveDrawingAgent({ jobId, onClose, execute, onMotion }: 
         } catch { setErr(tr("Ett samtalsmeddelande kunde inte behandlas.")); }
       };
       const offer = await peer.createOffer(); await peer.setLocalDescription(offer);
-      const answer = await fetch('https://api.openai.com/v1/realtime/calls', { method: 'POST', signal: controller.signal,
+      const answer = await fetch(`https://api.openai.com/v1/realtime/calls${secret.model ? `?model=${encodeURIComponent(secret.model)}` : ''}`, { method: 'POST', signal: controller.signal,
         headers: { Authorization: `Bearer ${secret.value}`, 'Content-Type': 'application/sdp' }, body: offer.sdp });
       if (!answer.ok) throw new Error(trf("Röstanslutningen nekades ({0}).", answer.status));
       if (gen !== generation.current) return;
