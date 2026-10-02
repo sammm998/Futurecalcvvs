@@ -17,6 +17,29 @@ def tile_starts(length, size, overlap):
     return starts
 
 
+# A box this close to a tile's inner edge was cut by the tile, not by the label.
+EDGE_PX = 2.0
+
+
+def drop_cut_boxes(found):
+    """Leave out a box a tile edge cut through when a neighbouring tile saw the whole label.
+
+    The tiles overlap by more than a label is wide, so every label lies whole inside some tile. The tile next
+    to it sees only the part on its side of its edge and often scores that part higher, and NMS then keeps the
+    part: the label is read as `-S13-22/W` and loses the system that names the pipe. A cut box is kept only when
+    no whole box covers it, so a label wider than the overlap is still read.
+    """
+    def area(r):
+        return max(0., r[2] - r[0]) * max(0., r[3] - r[1])
+
+    def inter(a, b):
+        return area((max(a[0], b[0]), max(a[1], b[1]), min(a[2], b[2]), min(a[3], b[3])))
+
+    whole = [f for f in found if not f[3]]
+    return [f for f in found
+            if not f[3] or not any(w[2] == f[2] and inter(w[0], f[0]) >= .6 * area(f[0]) for w in whole)]
+
+
 @contextmanager
 def bounded_model():
     """Release the model and its allocations before OCR and graph assembly."""
@@ -81,18 +104,22 @@ def _detect_tiles(pdf_path, page_no, classes, provider, *, progress=None):
                     if kind not in pipe_ai.LABEL_CLASSES:
                         continue
                     x0, y0, x1, y1 = map(float, box)
+                    cut = ((x0 <= EDGE_PX and pix.x > 0) or (y0 <= EDGE_PX and pix.y > 0)
+                           or (x1 >= pix.width - EDGE_PX and pix.x + pix.width < width)
+                           or (y1 >= pix.height - EDGE_PX and pix.y + pix.height < height))
                     rect = [(max(0, x0) + pix.x) / scale, (max(0, y0) + pix.y) / scale,
                             (min(pix.width, x1) + pix.x) / scale, (min(pix.height, y1) + pix.y) / scale]
                     if rect[2] > rect[0] and rect[3] > rect[1]:
-                        found.append((rect, float(score), kind))
+                        found.append((rect, float(score), kind, cut))
                 del image, pix, boxes, scores, ids
+    found = drop_cut_boxes(found)
     # Original per-class NMS also removes detections repeated in tile overlaps.
     kept = []
     for kind in sorted({f[2] for f in found}):
         group = [f for f in found if f[2] == kind]
-        xywh = [[r[0], r[1], r[2] - r[0], r[3] - r[1]] for r, _, _ in group]
+        xywh = [[r[0], r[1], r[2] - r[0], r[3] - r[1]] for r, *_ in group]
         indices = cv2.dnn.NMSBoxes(xywh, [f[1] for f in group], floor, pipe_ai.CONFIG['nms_iou'])
-        kept.extend(group[int(i)] for i in np.asarray(indices).reshape(-1))
+        kept.extend(group[int(i)][:3] for i in np.asarray(indices).reshape(-1))
     kept.sort(key=lambda f: (-f[1], f[0]))
     return {'label_boxes': [{'id': i, 'rect': [round(v, 2) for v in rect],
                              'score': round(score, 3), 'cls': kind}

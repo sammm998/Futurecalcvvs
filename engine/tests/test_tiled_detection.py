@@ -69,3 +69,45 @@ def test_model_memory_options_and_session_restored_on_failure(monkeypatch):
             assert pipe._session[0] is sessions[0]
             raise RuntimeError('cancelled')
     assert pipe._session is previous
+
+
+def test_a_label_a_tile_edge_cuts_is_read_from_the_tile_that_sees_it_whole():
+    from vvs_engine.source_rules.tiled_detection import drop_cut_boxes
+    whole = ([1140., 1076., 1202., 1102.], .90, 'Label_Box', False)
+    cut = ([1152., 1076., 1202., 1102.], .97, 'Label_Box', True)
+    assert drop_cut_boxes([whole, cut]) == [whole]
+
+
+def test_a_cut_label_no_tile_sees_whole_is_still_kept():
+    from vvs_engine.source_rules.tiled_detection import drop_cut_boxes
+    cut = ([1152., 1076., 1202., 1102.], .97, 'Label_Box', True)
+    elsewhere = ([400., 400., 460., 420.], .9, 'Label_Box', False)
+    assert drop_cut_boxes([cut, elsewhere]) == [cut, elsewhere]
+
+
+def test_tile_edges_do_not_cut_a_label_out_of_the_result(tmp_path, monkeypatch):
+    # The label straddles the left edge of the second tile. That tile reports the part on its side with a higher
+    # score; the first tile sees it whole. The whole box must survive NMS.
+    monkeypatch.setenv('VVS_DETECTION_TILE_PX', '1024')
+    from vvs_engine.source_rules import tiled_detection
+    @contextmanager
+    def model():
+        yield ['Label_Box'], 'test'
+    monkeypatch.setattr(tiled_detection, 'bounded_model', model)
+    def boxes(image, conf):
+        ys, xs = np.where(image[:, :, 0] < 100)
+        if not len(xs):
+            return np.empty((0, 4)), np.empty(0), np.empty(0, dtype=int)
+        x0, x1 = xs.min(), xs.max() + 1
+        score = .97 if x0 == 0 else .90
+        return np.array([[x0, ys.min(), x1, ys.max()+1]]), np.array([score]), np.array([0])
+    monkeypatch.setitem(sys.modules, 'pipe_ai', SimpleNamespace(
+        CONFIG={'render_dpi':144, 'nms_iou':.45}, LABEL_CLASSES=('Label_Box',),
+        _get_session=lambda:(None,['Label_Box'],'test'), detect_boxes=boxes))
+    doc = pymupdf.open(); page = doc.new_page(width=1000, height=400)
+    # Tiles of 1024 px at 2 px/pt start every 384 pt; the label spans 370..420 pt across that edge.
+    page.draw_rect(pymupdf.Rect(370, 100, 420, 120), color=None, fill=(0,0,0))
+    path = tmp_path/'sheet.pdf'; doc.save(path); doc.close()
+    found = detect(path)['label_boxes']
+    assert len(found) == 1
+    assert abs(found[0]['rect'][0] - 370) < 1 and abs(found[0]['rect'][2] - 420) < 1

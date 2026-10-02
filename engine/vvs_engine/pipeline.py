@@ -1670,6 +1670,9 @@ def analyze_page(page: RawPage, progress: Callable[[str], None] | None = None, o
         native_merge = merge_detection(page, native, graphs, pipe_families, anchors,
                                        native_identities, native_elevations)
         native_merge['label_sizes_from_drawing_lettering'] = label_sizes
+        from .source_rules.lost_suffix import restore as restore_lost_suffixes
+        native_merge['suffixes_from_drawing_lettering'] = restore_lost_suffixes(
+            native.get('labels') or [], [d.text for d in designations])
     graphs, pipe_families = _split_at_tick_contacts(page, graphs, pipe_families, anchors)
     prims = {fk: graphs[fk].prims for fk in graphs}
     # a family taken after the passes ran is not a declined one, whatever the pass that looked at it decided
@@ -2165,6 +2168,8 @@ def _pipe_identities(designations, anchors, grammar, dn_rows_are_vertical_only: 
             continue        # the legend says this code names an object, not a pipe
         if d.did in (unknown_codes or set()):
             continue        # bladets egen förklaringslista nämner aldrig den här koden
+        if _is_an_apparatus_tag(d, legend):
+            continue        # AV21-10 är en ventil på röret, inte röret
         gf = grammar.families.get(d.pattern)
         dn_idx = gf.dn_token_index if gf is not None else None
         if dn_idx is None and d.dn_source == "inline":
@@ -2175,11 +2180,53 @@ def _pipe_identities(designations, anchors, grammar, dn_rows_are_vertical_only: 
     return out
 
 
+# Ventilkoder i svensk VVS-praxis: avstängnings-, styr-, injusterings-, back-, säkerhets-, tapp- och
+# termostatventil. Se reference_sources/swedish-vvs-drawings-main/data/valves.json.
+APPARATUS_HEADS = ("AV", "SV", "RV", "BV", "SÄV", "TV", "TRV", "STV")
+
+
+def _is_an_apparatus_tag(d, legend) -> bool:
+    """Om etiketten är en ventils märkning och inte ett rörs namn.
+
+    `AV21-10` och `SV611-10` står i samma etikettblock som rören och har samma form som en rörbeteckning utan
+    material: kod, löpnummer, dimension. Hela formfamiljen bär en dimension, så statistiken kallade den en
+    rörfamilj, och ventilen fick metrarna i röret den sitter på (A0222: 1,2 % av bladet under `AV21-10`).
+
+    Ett rörs namn bär system och material (`VS1-S13-22`, `SV01-51-110`); en ventil bär bara kod och dimension.
+    Så en ventilkod med exakt två fält är en ventil - utom där bladets egen förklaringslista kallar koden ett
+    system, för på ett blad där `SV` är spillvatten är `SV1-110` ett rör.
+    """
+    tokens = [t for t in (getattr(d, "tokens", None) or []) if t]
+    if len(tokens) != 2 or not tokens[1].isdigit():
+        return False
+    m = re.match(r"^([A-ZÅÄÖ]+)\d+$", tokens[0].upper())
+    if not m or m.group(1) not in APPARATUS_HEADS:
+        return False
+    return not (legend is not None and legend.role_of_head(tokens[0].upper()) == "system")
+
+
 # Hur stor en förklaringslista ska vara för att få stänga ute en kod, och hur mycket av bladets egna etiketter
 # den ska ha visat sig känna igen innan den får göra det. Båda finns för att en lista som inte täcker bladets
 # rörordförråd aldrig ska kunna radera ett rör den bara råkat utelämna.
 LEGEND_MIN_ENTRIES = 8
 LEGEND_MIN_KNOWN_HEADS = 3
+
+
+def _a_whole_pipe_name_of_a_standard_system(text: str) -> bool:
+    """Om etiketten är ett helt rörnamn - system, material, dimension - för ett system ur den svenska tabellen.
+
+    Läsningen av förklaringslistan missar rader: på W-50-1-A-0311 fick den med S1 och S2 men inte S3 eller S4, och
+    då raderades varje `S3-P5-110` och `S4-P3-32` som bladet ritar - ett helt spillvattenstråk utan en meter. Ett
+    rumsnummer, som regeln finns till för, har aldrig den formen: tre fält med dimensionen sist, och ett system
+    som svensk VVS-praxis känner (S, D, KV, VV, VS ...). Ett sådant namn är en rörbeteckning vad listan än missat.
+    """
+    from .source_rules.systems import systems, system_code
+    tokens = [t for t in (text or "").upper().split("/")[0].split("-") if t]
+    if len(tokens) < 3 or not tokens[-1].rstrip("LV").isdigit():
+        return False
+    if not re.match(r"^[A-ZÅÄÖ]+\d+$", tokens[0]) or not re.match(r"^[A-ZÅÄÖ]+\d+$", tokens[1]):
+        return False
+    return system_code(tokens[0]) in systems()
 
 
 def _unknown_to_the_legend(legend, designations) -> set[str]:
@@ -2213,7 +2260,9 @@ def _unknown_to_the_legend(legend, designations) -> set[str]:
         head = (getattr(d, "system_token", "") or "").upper()
         if legend.role_of_head(text) is not None or (head and legend.role_of_head(head) is not None):
             return True
-        return any((text and text.startswith(c)) or (head and head.startswith(c)) for c in codes)
+        if any((text and text.startswith(c)) or (head and head.startswith(c)) for c in codes):
+            return True
+        return _a_whole_pipe_name_of_a_standard_system(text)
 
     # Whether the list knows this sheet is asked of the labels out on the drawing, never of the list's own rows.
     # The rows are read as designations like everything else, so every code in the list also stands in the
