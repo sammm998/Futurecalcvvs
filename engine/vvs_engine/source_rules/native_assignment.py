@@ -147,6 +147,7 @@ def project(graphs, native, result, page, elevations, host_reading=None):
                 local_levels[(round(node['x'],2),round(node['y'],2))].append((label,aid))
     continued['gravity_walk_lower_invert']=_walk_gravity_runs(graphs,states,local_levels)
     continued['terminal_label_owns_its_stretch']=_terminal_label_owns_its_stretch(graphs,states,A,R,labels)
+    continued['twin_lines_carry_one_size']=_twins_carry_one_size(graphs,states)
     continued['gravity_walk_stats']=dict(STATS)
     pipes=[]
     for fk,g in graphs.items():
@@ -356,6 +357,91 @@ def _undo_a_smaller_size_between_larger(graphs,states,landed=None):
                     moved+=1
                 changed=True
     return moved
+
+
+TWIN_OFFSET_PT=(3.0,20.0)   # how far apart the two lines of a pair are drawn
+TWIN_RUN_PT=60.0            # how long two lines must run side by side to be one pair, not a riser past a main
+PARALLEL_COS=0.995
+
+
+def _twins_carry_one_size(graphs,states):
+    """The two lines of a supply-and-return pair carry one size: where they read two, the pair takes the smaller.
+
+    A two-line system (VS, VP and the others the Swedish table gives line_count 2) is drawn as two parallel lines
+    and labelled once: `VS1-S13-22/W` names both. The reading binds a label to one of the two lines, and the other
+    line can run on from a junction carrying the size of the main it left - a pair drawn 22 read 22 and 28, or 28
+    and 35. On nine reference sheets, where the two lines of a pair read different sizes, the reference gave both
+    the same size on 3 001 pt and different sizes on 855; where they agreed, the smaller was right on 2 742 pt and
+    the larger on 259. The main the larger one runs on from is the larger pipe; the pair it reaches is not.
+
+    Only a real pair qualifies: two lines of the same line of the same two-line system, side by side within a few
+    points, with no third such line beside them, running together over a length a riser or a connection beside a
+    main never does. Measured, that changed 1 173 pt and was right on 1 164 of them. Most such pairs came from a
+    label a detection tile had cut in half (see tiled_detection.drop_cut_boxes); with whole labels read the rule
+    finds no split pair on six of the sheets, and stays as the guard for a pair the reading still splits.
+    """
+    import math
+    from .systems import permits_unlabelled_twin
+    items=[]
+    for fk,g in graphs.items():
+        for pid,st in states[fk].items():
+            if st.state!='CONFIRMED' or st.identity is None or st.identity.dn is None:
+                continue
+            if not permits_unlabelled_twin(st.identity.system):
+                continue
+            p=g.prims.get(pid)
+            if p is None:
+                continue
+            sg=p.seg;dx,dy=sg.x1-sg.x0,sg.y1-sg.y0;n=math.hypot(dx,dy)
+            if n<0.5:
+                continue
+            items.append((fk,pid,sg,dx/n,dy/n,n,st.identity))
+    lo,hi=TWIN_OFFSET_PT
+    grid=defaultdict(list)
+    for k,(fk,pid,sg,ux,uy,n,ident) in enumerate(items):
+        grid[(int((sg.x0+sg.x1)/2//hi),int((sg.y0+sg.y1)/2//hi))].append(k)
+
+    def line_key(k):
+        _,_,sg,ux,uy,_,ident=items[k]
+        a=round(math.degrees(math.atan2(uy,ux))%180/2)*2%180;th=math.radians(a)
+        return (ident.key,a,round(-sg.x0*math.sin(th)+sg.y0*math.cos(th)))
+
+    partner={}
+    for k,(fk,pid,sg,ux,uy,n,ident) in enumerate(items):
+        mx,my=(sg.x0+sg.x1)/2,(sg.y0+sg.y1)/2;sides={}
+        cx,cy=int(mx//hi),int(my//hi)
+        for ddx in (-2,-1,0,1,2):
+            for ddy in (-2,-1,0,1,2):
+                for j in grid.get((cx+ddx,cy+ddy),()):
+                    if j==k:
+                        continue
+                    _,_,sj,ex,ey,m,oj=items[j]
+                    if _line_of(oj)!=_line_of(ident):
+                        continue
+                    c=ux*ex+uy*ey
+                    if abs(c)<PARALLEL_COS:
+                        continue
+                    px,py=mx-sj.x0,my-sj.y0;t=px*ex+py*ey
+                    d=(px*ey-py*ex)*(1 if c>0 else -1)
+                    if not (-6<=t<=m+6) or not (lo<=abs(d)<=hi):
+                        continue
+                    sides.setdefault(round(d/2)*2,[]).append(j)
+        if len(sides)==1:
+            partner[k]=next(iter(sides.values()))[0]
+    together=Counter()
+    for k,j in partner.items():
+        together[(line_key(k),line_key(j))]+=items[k][5]
+    change=[]
+    for k,j in partner.items():
+        a,b=items[k][6],items[j][6]
+        if a.dn>b.dn and together[(line_key(k),line_key(j))]>=TWIN_RUN_PT:
+            change.append((k,b))
+    for k,b in change:
+        fk,pid=items[k][0],items[k][1]
+        s=states[fk][pid]
+        s.identity=b;s.reason='twin_lines_carry_one_size'
+        s.evidence=list(s.evidence or [])+['size:the_pair_reads_the_smaller']
+    return len(change)
 
 
 LANDING_TOL=0.6
