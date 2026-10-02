@@ -49,3 +49,13 @@ def test_a_smaller_size_between_the_same_line_takes_the_lines_size():
 def test_a_larger_size_between_the_same_line_is_left():
     ownership, _ = project(_graphs(), _native(54), _result(), 0, {})
     assert ownership.prim_states['f'][1].identity.display == 'VS1-S13-54'
+
+
+def test_a_stretch_whose_own_label_lands_on_it_keeps_that_size():
+    """Over nine reference sheets the rule was wrong on most stretches the drawing labels itself."""
+    native = _native(22)
+    native['association'] = {'leaders': [{'label': 1, 'landings': [{'node': 1}]}]}
+    native['graph']['nodes'][1]['id'] = 1
+    ownership, report = project(_graphs(), native, _result(), 0, {})
+    assert ownership.prim_states['f'][1].identity.display == 'VS1-S13-22'
+    assert report['settled_unowned']['same_line_larger_on_both_sides'] == 0

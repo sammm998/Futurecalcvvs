@@ -128,7 +128,8 @@ def project(graphs, native, result, page, elevations, host_reading=None):
     # unnamed. Only ink in the same pen counts as joined: across pens, on the reference sheets, it mostly reached
     # walls and fittings. Measured there, the same-pen pieces were named right on all of their length.
     continued=_settle_unowned(graphs,states,set_aside,host if host_reading is not None else None)
-    continued['same_line_larger_on_both_sides']=_undo_a_smaller_size_between_larger(graphs,states)
+    landed=_landed_labels(graphs,A,R,labels)
+    continued['same_line_larger_on_both_sides']=_undo_a_smaller_size_between_larger(graphs,states,landed)
     # Native joining points and VG/CL landings delimit measurement sections.
     native_points={(round(n['x'],2),round(n['y'],2)) for n in A['nodes']}
     local_levels=defaultdict(list)
@@ -297,7 +298,7 @@ def _line_of(identity):
     return re.sub(r'-W$','',identity.base or '')
 
 
-def _undo_a_smaller_size_between_larger(graphs,states):
+def _undo_a_smaller_size_between_larger(graphs,states,landed=None):
     """A stretch named one size smaller than the same line on both its ends takes the line's size.
 
     A line does not step down a size for one stretch and back up again. Where a stretch between two ends of the
@@ -305,8 +306,13 @@ def _undo_a_smaller_size_between_larger(graphs,states):
     main; on the reference sheets the surrounding size was right on all such length. A stretch that reads
     larger than both ends is left - there the larger size was right on all of it - and so is one between
     different lines, or one that meets its neighbours at only one end: that is a branch.
+
+    A stretch the drawing labels itself - a leader of a designation of its own, smaller size landing on it - is
+    left too: there the drawing says the size outright. Measured over nine reference sheets, the rule was right on
+    3 376 pt where no such label landed and wrong on most of the length where one did.
     """
     moved=0
+    landed=landed or {}
     for fk,g in graphs.items():
         family=states[fk]
         changed=True
@@ -332,6 +338,10 @@ def _undo_a_smaller_size_between_larger(graphs,states):
                             else:
                                 boundary.setdefault(node,set()).add(o.identity)
                 if len(boundary)<2 or not all(len(v)==1 for v in boundary.values()):
+                    continue
+                own=landed.get(fk,{})
+                if any(identity(d)==st.identity for nid in {n for p in comp for n in g.prim_nodes.get(p,())}
+                       for lb in own.get(nid,()) for d in (lb.get('designations') or []) if d.get('dimension')):
                     continue
                 around={next(iter(v)) for v in boundary.values()}
                 if len(around)!=1:
@@ -546,3 +556,36 @@ def _terminal_label_owns_its_stretch(graphs,states,A,R,labels):
                 s2.evidence=list(s2.evidence or [])+['label:lands_at_the_dead_end']
                 moved+=1
     return moved
+
+
+def _landed_labels(graphs,A,R,labels):
+    """Which labels' leaders land at which node of each family's graph, matched by distance."""
+    import math
+    nodes={n['id']:n for n in A['nodes']}
+    points=defaultdict(list)
+    for leader in R['leaders']:
+        label=labels.get(leader['label'])
+        if label is None:
+            continue
+        for landing in leader.get('landings',[]):
+            n=nodes.get(landing.get('node'))
+            if n is not None:
+                points[(n['x'],n['y'])].append(label)
+    out={}
+    for fk,g in graphs.items():
+        near=defaultdict(list)
+        for nid,n in g.nodes.items():
+            near[(int(n.x//LANDING_TOL),int(n.y//LANDING_TOL))].append(nid)
+        landed={}
+        for (x,y),hit in points.items():
+            cx,cy=int(x//LANDING_TOL),int(y//LANDING_TOL);best=None
+            for dx in (-1,0,1):
+                for dy in (-1,0,1):
+                    for nid in near.get((cx+dx,cy+dy),()):
+                        n=g.nodes[nid];d=math.hypot(n.x-x,n.y-y)
+                        if d<=LANDING_TOL and (best is None or d<best[0]):
+                            best=(d,nid)
+            if best is not None:
+                landed.setdefault(best[1],[]).extend(hit)
+        out[fk]=landed
+    return out
