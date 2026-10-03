@@ -36,6 +36,9 @@ async def _lifespan(_app: FastAPI):
     # gå upp alls. Ett varningsmeddelande i en logg ingen läser är samma sak som ingenting.
     demand_a_real_secret()
     init_db()
+    if os.environ.get("PYTEST_CURRENT_TEST") is None:
+        from .reset_once import run as _reset_once
+        _reset_once(storage.path(""))
     # Var data bor, sagt i loggen vid varje uppstart. Den som letar efter försvunna ritningar hittar svaret här
     # i stället för att gissa, och den som driftsätter ser det innan den första ritningen laddas upp.
     try:
@@ -165,7 +168,7 @@ class RegisterIn(BaseModel):
 
 @app.post("/api/auth/register")
 def register(body: RegisterIn, db: Session = Depends(get_db)):
-    if not settings.allow_registration:
+    if not settings.allow_registration and db.query(User).count() > 0:   # the first account is always possible
         raise HTTPException(403, "Registrering är avstängd")
     if db.query(User).filter(User.email == body.email.lower()).first():
         raise HTTPException(400, "E-postadressen är redan registrerad")
