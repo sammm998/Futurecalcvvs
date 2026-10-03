@@ -19,6 +19,8 @@ DOUBLE_LINE_MAX = 8.0       # pt: never further apart than this, whatever the si
 DOUBLE_LINE_MIN = 1.5       # pt: never closer than the pen itself allows
 DOUBLE_LINE_FACTOR = 1.6    # the edges lie the pipe's outer diameter apart, at the sheet's scale, give or take
 DOUBLE_LINE_SHARE = 0.6     # share of the shorter run that has to lie alongside the longer
+DOUBLE_LINE_DRAWABLE = 2.5  # pt: a pipe narrower than this on the sheet (0.9 mm) is never drawn as two lines
+DUPLICATE_LINE_MAX = 0.75   # pt: lines this close are one line drawn twice
 TWIN_REASON = "second_edge_of_a_double_line"
 # Outer diameter in mm for a nominal size - the distance the two drawn edges of a double-line pipe lie apart.
 # A DN16 pipe is one point wide at 1:50: it cannot be drawn as two lines, and two DN16 lines a few points
@@ -34,6 +36,12 @@ def double_line_gap(dn: int | None, mpp: float | None) -> float | None:
     if dn is None or not mpp:
         return None
     dy_pt = (DN_TO_DY_MM.get(int(dn), float(dn)) / 1000.0) / mpp
+    if dy_pt < _R("measure.measure.DOUBLE_LINE_DRAWABLE", DOUBLE_LINE_DRAWABLE):
+        # Too thin on this sheet to be drawn as two lines: what lies alongside is either the same line drawn
+        # twice, on top of itself, or another pipe. Measured on eleven reference sheets the folded pairs of such
+        # sizes were coincident (0-0.5 pt apart) wherever the reference drew one line for both, and 1.3-3.6 pt
+        # apart wherever it measured two pipes - 436 pt of real pipe the old 1.5 pt floor had folded away.
+        return _R("measure.measure.DUPLICATE_LINE_MAX", DUPLICATE_LINE_MAX)
     return min(_R("measure.measure.DOUBLE_LINE_MAX", DOUBLE_LINE_MAX), max(DOUBLE_LINE_MIN, DOUBLE_LINE_FACTOR * dy_pt))
 
 

@@ -24,6 +24,7 @@ from vvs_engine.pipes.ownership import Identity
 
 MPP = 0.0176389            # 1:50
 DN20 = Identity(base="KV01-X7", dn=20, system="KV", display="KV01-X7-20")
+DN100 = Identity(base="S1-P5", dn=100, system="S", display="S1-P5-100")     # wide enough to be drawn as two lines
 
 
 def _pipe(pid: str, pts, ident=DN20, family="pen|s|w1.44|c(0,0,0)") -> PhysicalPipe:
@@ -51,8 +52,18 @@ B = [(45.0, 1.0), (145.0, 1.0)]
 
 
 def test_the_gap_a_double_line_is_drawn_with_is_smaller_than_the_two_runs_are_apart():
-    """Förutsättningen: en punkt isär ligger inom vad en DN20-dubbellinje kan vara, så provet gäller."""
-    assert double_line_gap(20, MPP) > 1.0
+    """Förutsättningen: en punkt isär ligger inom vad en DN100-dubbellinje kan vara, så provet gäller."""
+    assert double_line_gap(100, MPP) > 1.0
+
+
+def test_a_pipe_too_thin_to_draw_as_two_lines_folds_only_a_line_drawn_twice():
+    """W-50-1-A-0111: two KV1-X31-16 to two basins, 1.3 pt apart, are two pipes, and the reference measures both.
+    A 16 mm pipe is 0.3 mm wide at 1:50 and nobody draws it as two lines; what lies on top of it is the same line
+    drawn twice."""
+    assert double_line_gap(20, MPP) < 1.0
+    a = _pipe("a", [(0.0, 0.0), (200.0, 0.0)])
+    assert twin_edges([a, _pipe("b", [(0.0, 1.3), (200.0, 1.3)])], MPP) == {}
+    assert twin_edges([a, _pipe("b", [(0.0, 0.3), (200.0, 0.3)])], MPP) == {"b": "a"}
 
 
 def test_splitting_the_runs_into_small_segments_does_not_change_the_answer():
@@ -75,8 +86,8 @@ def test_only_the_part_that_lies_alongside_is_handed_over():
     """En andra kant som sticker ut i änden lämnar ifrån sig det som ligger bredvid - inte resten."""
     from vvs_engine.measure.measure import twin_overlap_pt
     # den längre sträckan behåller metrarna; den kortare följer den i 200 av sina 250 punkter
-    a = _pipe("a", [(0.0, 0.0), (300.0, 0.0)])
-    b = _pipe("b", [(100.0, 1.0), (350.0, 1.0)])
+    a = _pipe("a", [(0.0, 0.0), (300.0, 0.0)], ident=DN100)
+    b = _pipe("b", [(100.0, 1.0), (350.0, 1.0)], ident=DN100)
     ov = twin_overlap_pt([a, b], MPP)
     assert ov["b"][0] == "a", ov
     assert 195.0 <= ov["b"][1] <= 205.0, f"överlappet är 200 punkter, inte {ov['b'][1]:.1f}"
@@ -84,8 +95,8 @@ def test_only_the_part_that_lies_alongside_is_handed_over():
 
 def test_a_real_double_line_still_folds_end_to_end():
     """Två kanter av samma rör: hela den andra kanten ligger bredvid den första och lämnar allt."""
-    a = _pipe("a", [(0.0, 0.0), (200.0, 0.0)])
-    b = _pipe("b", [(0.0, 1.0), (200.0, 1.0)])
+    a = _pipe("a", [(0.0, 0.0), (200.0, 0.0)], ident=DN100)
+    b = _pipe("b", [(0.0, 1.0), (200.0, 1.0)], ident=DN100)
     from vvs_engine.measure.measure import twin_overlap_pt
     ov = twin_overlap_pt([a, b], MPP)
     assert ov["b"][0] == "a"
