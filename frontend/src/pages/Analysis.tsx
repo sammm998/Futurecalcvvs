@@ -499,7 +499,7 @@ export default function AnalysisPage() {
           </div>
         </div>
         <Boundary what="ritningsvyn"><PdfViewer ref={viewer} data={pdf} page={displayedPage} pipes={pipesOnPage} ambiguous={result.ambiguous_geometry} unowned={result.unowned_geometry} claimed={result.claimed_geometry ?? []}
-          designations={result.designations} legend={result.legend ?? null} leaders={result.leaders} anchors={result.anchors} hatched={result.hatched_geometry ?? []} selectedIdentity={selIdent}
+          designations={result.designations} legend={result.legend ?? null} leaders={result.leaders} anchors={result.anchors} nativeLabels={result.native_labels ?? []} hatched={result.hatched_geometry ?? []} selectedIdentity={selIdent}
           declined={[...(result.declined_geometry?.families ?? []), ...(result.declined_geometry?.unconsidered ?? [])]} selectedDeclined={selDeclined}
           selectedPipe={selPipe?.physical_pipe_id ?? null} selectedRun={selPipe ? (runs.get(selPipe.physical_pipe_id) ?? null) : null} layers={layers} onPipeClick={onPipeClick} onPageCount={setNPages}
           ink={ink} onInkClick={setInk}
@@ -680,6 +680,7 @@ export default function AnalysisPage() {
             </details>
             <QuantityTable rows={result.quantities} selected={selIdent} onSelect={onIdentityPick} floorHeight={floorH}
               pipes={result.pipes} meterPerPt={result.scale?.meters_per_pdf_point ?? null} onPipeClick={onPipeClick}
+              selectedPipe={selPipe?.physical_pipe_id ?? null}
               includeHatched={includeHatched} onIncludeHatched={(v) => { setIncludeHatched(v); try { localStorage.setItem("vvs.includeHatched", v ? "1" : "0"); } catch { /* private window: the setting just does not persist */ } }}
               includeDeclared={includeDeclared} onIncludeDeclared={(v) => { setIncludeDeclared(v); try { localStorage.setItem("vvs.includeDeclared", v ? "1" : "0"); } catch { /* privat läge: valet gäller bara den här sessionen */ } }}
               riserSource={riserSource} />
