@@ -3242,3 +3242,34 @@ button.d3-open:hover { box-shadow: 0 6px 20px rgba(18, 158, 176, 0.45), inset 0 
 .app-language button { padding:6px 9px; min-width:32px; }
 .railed .app-language { flex-direction:column; }
 .login-language { position:absolute; top:20px; right:24px; z-index:5; }
+
+/* Domarens utslag: en ruta per beslut, ett kort per skäl, beteckningarna som knappar */
+.verdictsec { margin-bottom: 28px; }
+.vsummary { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin: 12px 0 16px; }
+.vtile { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; text-align: left; padding: 12px 14px;
+  border-radius: 12px; border: 1px solid var(--line, #e5e5e5); background: var(--bg, #fff); cursor: pointer;
+  text-transform: none; letter-spacing: normal; font: inherit; color: inherit; }
+.vtile:hover { border-color: #bdbdbd; }
+.vtile.on { box-shadow: inset 0 0 0 2px var(--ink, #111); }
+.vtile .vcount { font-size: 26px; font-weight: 700; line-height: 1.1; }
+.vtile .vname { font-weight: 600; }
+.vtile .vmeans { font-size: 12.5px; color: var(--muted, #666); line-height: 1.35; }
+.vtile.warn .vcount { color: #b45309; }
+.vtile.ok .vcount { color: #15803d; }
+.vgroups { display: flex; flex-direction: column; gap: 10px; }
+.vgroup { border: 1px solid var(--line, #e5e5e5); border-left-width: 4px; border-radius: 10px; padding: 12px 14px;
+  background: var(--bg, #fff); }
+.vgroup.warn { border-left-color: #f59e0b; }
+.vgroup.ok { border-left-color: #22c55e; }
+.vgroup.bad { border-left-color: #ef4444; }
+.vgroup header { display: flex; align-items: center; gap: 10px; }
+.vgroup .vn { font-size: 12.5px; color: var(--muted, #666); }
+.vgroup .vwhy { margin: 8px 0 10px; line-height: 1.45; }
+.vchips { display: flex; flex-wrap: wrap; gap: 6px; }
+.vchip { font-family: var(--mono, ui-monospace, monospace); font-size: 12px; padding: 4px 9px; border-radius: 999px;
+  border: 1px solid var(--line, #e2e2e2); background: var(--bg-2, #f6f6f6); color: var(--ink, #111);
+  text-transform: none; letter-spacing: normal; cursor: default; }
+.vchip.go { cursor: pointer; }
+.vchip.go:hover { border-color: var(--ink, #111); background: #fff; }
+.vchip small { color: var(--muted, #666); margin-left: 3px; }
+.vchip:disabled { opacity: 1; }

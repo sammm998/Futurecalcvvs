@@ -32,6 +32,80 @@ function AgentCard({ children }: { children: React.ReactNode }) {
   );
 }
 
+const ORDER = ["GENOMFOR", "RITNINGEN_SAGER_INTE", "LAMNA"];
+const MEANS: Record<string, string> = {
+  GENOMFOR: "Ritningen erbjuder svaret och det förs in i mängden.",
+  RITNINGEN_SAGER_INTE: "Ritningen ger inget som avgör fallet. Mängden rörs inte; kontrollera på bladet.",
+  LAMNA: "Noterat men ingenting att ändra: kontakten är förklarad och linjen ägd.",
+};
+
+/* The judge's verdicts, said once per reason instead of once per label.
+ *
+ * A sheet gives the same reason for twenty labels - "etiketten namnger flera system som ritningen drar som en
+ * enda linje" - and printed twenty times it buried the two cases that mattered. Here each reason is one card
+ * and the labels it covers are chips under it: a click on one goes to it on the sheet. The tiles at the top
+ * count what was decided and filter the list. */
+function Verdicts({ dom, onZoom }: { dom: any; onZoom?: (b: number[]) => void }) {
+  const all: any[] = dom.utslag ?? [];
+  const [only, setOnly] = useState<string | null>(null);
+  const counts = new Map<string, number>();
+  for (const v of all) counts.set(v.beslut, (counts.get(v.beslut) ?? 0) + 1);
+  const groups = new Map<string, { beslut: string; skäl: string; items: any[] }>();
+  for (const v of all) {
+    if (only && v.beslut !== only) continue;
+    const key = `${v.beslut}|${v.skäl}`;
+    (groups.get(key) ?? groups.set(key, { beslut: v.beslut, skäl: v.skäl, items: [] }).get(key)!).items.push(v);
+  }
+  const rank = (b: string) => { const i = ORDER.indexOf(b); return i < 0 ? ORDER.length : i; };
+  const list = [...groups.values()].sort((x, y) => rank(x.beslut) - rank(y.beslut) || y.items.length - x.items.length);
+  return (
+    <section className="verdictsec">
+      <h3>{tr("Domarens utslag")}</h3>
+      <p className="muted">{dom.regel}</p>
+      {all.length === 0 && <p className="muted">{tr("Ingenting återstod att avgöra på det här bladet.")}</p>}
+      {all.length > 0 && (
+        <div className="vsummary">
+          {ORDER.filter((b) => counts.get(b)).map((b) => (
+            <button key={b} className={`vtile ${BESLUT[b]?.cls ?? "ok"}${only === b ? " on" : ""}`}
+              onClick={() => setOnly(only === b ? null : b)} aria-pressed={only === b}>
+              <span className="vcount">{counts.get(b)}</span>
+              <span className="vname">{BESLUT[b]?.text ?? b}</span>
+              <span className="vmeans">{MEANS[b]}</span>
+            </button>
+          ))}
+        </div>
+      )}
+      <div className="vgroups">
+        {list.map((g) => (
+          <article key={`${g.beslut}|${g.skäl}`} className={`vgroup ${BESLUT[g.beslut]?.cls ?? "ok"}`}>
+            <header>
+              <span className={`badge ${BESLUT[g.beslut]?.cls ?? "ok"}`}>{BESLUT[g.beslut]?.text ?? g.beslut}</span>
+              <span className="vn">{g.items.length} {g.items.length === 1 ? "fall" : "fall"}</span>
+            </header>
+            <p className="vwhy">{g.skäl}</p>
+            <div className="vchips">
+              {g.items.map((v, i) => {
+                const more = [
+                  v.kandidater?.length ? `Ritningens kandidater: ${v.kandidater.join(", ")}` : "",
+                  v.delar_linje_med?.length ? `Delar linjen med: ${v.delar_linje_med.join(", ")}` : "",
+                  v.kostar_m === 0 ? "Kostar mängden 0 m" : "",
+                ].filter(Boolean).join("\n");
+                return (
+                  <button key={i} className={`vchip${v.bbox ? " go" : ""}`} disabled={!v.bbox}
+                    title={more || undefined} onClick={() => v.bbox && onZoom?.(v.bbox)}>
+                    {v.gäller || "—"}
+                    {v.delar_linje_med?.length ? <small> + {v.delar_linje_med.length}</small> : null}
+                  </button>
+                );
+              })}
+            </div>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 export default function Reasoning({ jobId, result, onZoom }: { jobId: string; result: any; onZoom?: (b: number[]) => void }) {
   const [frames, setFrames] = useState<Frame[]>([]);
   const [dom, setDom] = useState<any>(null);
@@ -111,32 +185,7 @@ export default function Reasoning({ jobId, result, onZoom }: { jobId: string; re
           </div>
         </div>
 
-        {dom && (
-          <>
-            <h3>{tr("Domarens utslag")}</h3>
-            <p className="muted">{dom.regel}</p>
-            <div className="verdicts">
-              {(dom.utslag ?? []).length === 0 && <p className="muted">{tr("Ingenting återstod att avgöra på det här bladet.")}</p>}
-              {(dom.utslag ?? []).map((v: any, i: number) => (
-                <div key={i} className={`verdict ${v.beslut}`} onClick={() => v.bbox && onZoom?.(v.bbox)}>
-                  <div className="vhead">
-                    <span className={`badge ${BESLUT[v.beslut]?.cls ?? "ok"}`}>{BESLUT[v.beslut]?.text ?? v.beslut}</span>
-                    <b>{v.gäller}</b>
-                    <span className="muted vtyp">{v.typ.replace(/_/g, " ")}</span>
-                  </div>
-                  <p>{v.skäl}</p>
-                  {v.kandidater && v.kandidater.length > 0 && (
-                    <p className="muted">Ritningens egna kandidater: {v.kandidater.join(", ")}</p>
-                  )}
-                  {v.delar_linje_med && v.delar_linje_med.length > 0 && (
-                    <p className="muted">Delar den ritade linjen med: {v.delar_linje_med.join(", ")}</p>
-                  )}
-                  {v.kostar_m === 0 && <p className="muted">{tr("Kostar mängden 0 m — kontakten är noterad, linjen är ägd.")}</p>}
-                </div>
-              ))}
-            </div>
-          </>
-        )}
+        {dom && <Verdicts dom={dom} onZoom={onZoom} />}
 
         <h3>{tr("Så kom läsningen fram till svaret")}</h3>
         <p className="muted">

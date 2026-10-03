@@ -37,6 +37,8 @@ export type ModelWall = {
 export type BuildingModel = {
   /** Modellens utsträckning i meter, med origo i mitten. */
   size: { width: number; depth: number };
+  /** Where the sheet lies in the world: a sheet point (x, y) is at ((x - cx) * k, (y - cy) * k). */
+  sheet: { cx: number; cy: number; k: number; w: number; h: number };
   floorHeight: number;
   walls: ModelWall[];
   pipes: ModelPipe[];
@@ -215,7 +217,9 @@ export function buildModel(result: Result, opts: { floorHeight?: number; wallLim
   }
   if (!Number.isFinite(minX)) { minX = 0; minY = 0; maxX = 100; maxY = 100; }
   const cx = (minX + maxX) / 2, cy = (minY + maxY) / 2;
-  const to = (x: number, y: number): Vec2 => [(x - cx) * k, (cy - y) * k];   // y vänds: pappret ner, världen upp
+  // Pappret sett ovanifrån: x åt höger, pappret nedåt blir +z. Med z = cy - y låg huset spegelvänt mot ritningen,
+  // vilket syntes först när ritningen lades som golv under det.
+  const to = (x: number, y: number): Vec2 => [(x - cx) * k, (y - cy) * k];
 
   // ---- väggar: de längsta först, med tjocklek ur parvisa linjer ---------------------------------------
   const byLength = rawWalls
@@ -281,6 +285,7 @@ export function buildModel(result: Result, opts: { floorHeight?: number; wallLim
   const width = (maxX - minX) * k, depth = (maxY - minY) * k;
   return {
     size: { width: width || 1, depth: depth || 1 },
+    sheet: { cx, cy, k, w: maxX - minX, h: maxY - minY },
     floorHeight,
     walls,
     pipes,
