@@ -3273,3 +3273,15 @@ button.d3-open:hover { box-shadow: 0 6px 20px rgba(18, 158, 176, 0.45), inset 0 
 .vchip.go:hover { border-color: var(--ink, #111); background: #fff; }
 .vchip small { color: var(--muted, #666); margin-left: 3px; }
 .vchip:disabled { opacity: 1; }
+/* CAD: kommandoraden längst ned i planen, ändringskommandona i verktygsraden och lagerhanteraren */
+.bcad-cmd { position: absolute; left: 8px; right: 8px; bottom: 40px; display: flex; gap: 8px; align-items: center;
+  background: rgba(255,255,255,0.96); border: 1px solid var(--line-2); border-radius: 6px; padding: 4px 8px; font-size: 12px; }
+.bcad-cmd-p { color: #c2410c; font-family: ui-monospace, monospace; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 60%; }
+.bcad-cmd input { flex: 1; min-width: 120px; border: 1px solid var(--line-2); border-radius: 4px; padding: 3px 6px; font: 12px ui-monospace, monospace; }
+.bcad-sep { width: 1px; align-self: stretch; background: var(--line-2); margin: 0 4px; }
+.bcad-tool.mod { color: #9a3412; }
+.bcad-tool.mod.on { background: #fff4e6; border-color: #e8590c; }
+.bcad-layer { display: flex; align-items: center; gap: 4px; }
+.bcad-layer input[type="color"] { width: 18px; height: 18px; padding: 0; border: 1px solid var(--line-2); border-radius: 3px; background: none; }
+.bcad-layer .bcad-link { flex: 1; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bcad-layer.on .bcad-link { font-weight: 600; }
