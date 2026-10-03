@@ -21,7 +21,7 @@ from pathlib import Path
 
 log = logging.getLogger(__name__)
 
-MIN_FREE_BYTES = 150 * 1024 * 1024          # an analysis writes ~60 MB at its peak; below this it could not finish
+MIN_FREE_BYTES = 100 * 1024 * 1024          # an analysis writes ~60 MB at its peak; below this it could not finish
 KEEP_RUNS_PER_DRAWING = 2                   # when space runs out, older runs of the same drawing give way first
 TEMP_PREFIXES = ("vvs-detector-cache-", "vvs-native-")
 TEMP_MAX_AGE_S = 2 * 3600
@@ -186,8 +186,9 @@ def ensure_room(storage_root: str, results_root: str) -> None:
         log.warning("Fortfarande fullt: %s", clean_up(storage_root, results_root, os.path.join(storage_root, "cache", "native")))
     left = free_bytes(storage_root)
     if left < MIN_FREE_BYTES:
+        held = ", ".join(f"{k} {v:.0f} MB" for k, v in list(usage(storage_root).items())[:4])
         raise OSError(
-            f"Disken där ritningar och resultat sparas är full ({left // (1024 * 1024)} MB ledigt). "
+            f"Disken där ritningar och resultat sparas är full ({left // (1024 * 1024)} MB ledigt; upptaget av: {held}). "
             "Rensa under Admin -> System (tar bort äldre körningar av samma ritning), utöka volymen i Railway "
             "(tjänsten -> Volumes) eller ta bort gamla projekt, och kör analysen igen.")
 
@@ -212,6 +213,61 @@ def remove_detector_cache(cache_root: str, max_age_s: float = TEMP_MAX_AGE_S) ->
     return saved
 
 
+# Review overlays nobody downloads once a reading is done: each is a full copy of the drawing with one layer of
+# debugging drawn on it. The marked PDF the export hands out (production) and the frontier sheet stay.
+REVIEW_OVERLAYS = ("designation-overlay.pdf", "endpoint-pipe-attachment-overlay.pdf", "topology-overlay.pdf",
+                   "ambiguous-overlay.pdf", "unsupported-style-overlay.pdf", "leader-overlay.pdf")
+
+
+def _size(path: Path) -> int:
+    try:
+        if path.is_file():
+            return path.stat().st_size
+        return sum(f.stat().st_size for f in path.rglob("*") if f.is_file() and f.stat().st_nlink == 1) + \
+            sum(f.stat().st_size // f.stat().st_nlink for f in path.rglob("*") if f.is_file() and f.stat().st_nlink > 1)
+    except OSError:
+        return 0
+
+
+def slim_results(results_root: str) -> int:
+    """Finished readings without what nothing reads: the native detector's internal diagnostics (never served or
+    read back) and the review overlays. Quantities, pipes, evidence and the marked PDF are untouched."""
+    saved = 0
+    root = Path(results_root)
+    if not root.is_dir():
+        return 0
+    for job_dir in root.glob("*/*"):
+        if not job_dir.is_dir() or not (job_dir / "freeze-manifest.json").is_file():
+            continue                                   # still being written
+        diag = job_dir / "native-detection"
+        if diag.is_dir():
+            saved += _size(diag)
+            shutil.rmtree(diag, ignore_errors=True)
+        for name in REVIEW_OVERLAYS:
+            for f in [job_dir / name, *job_dir.glob(f"sheets/*/{name}")]:
+                try:
+                    if f.is_file():
+                        saved += f.stat().st_size // max(1, f.stat().st_nlink)
+                        f.unlink()
+                except OSError:
+                    continue
+    return saved
+
+
+def usage(storage_root: str) -> dict:
+    """What holds the volume, in MB: each top-level folder of the store, and the database beside it."""
+    out = {}
+    root = Path(storage_root)
+    try:
+        for p in root.iterdir():
+            out[p.name] = round(_size(p) / 1024 ** 2, 1)
+    except OSError:
+        pass
+    for db in root.parent.glob("*.db*"):
+        out[db.name] = round(_size(db) / 1024 ** 2, 1)
+    return dict(sorted(out.items(), key=lambda kv: -kv[1]))
+
+
 def clean_up(storage_root: str, results_root: str, cache_root: str) -> dict:
     """Asked for by an administrator: everything reclaim() does, and also the older runs of each drawing and the
     detector cache. The newest completed run of every drawing, and every run in progress, stay; so do all the
@@ -221,6 +277,7 @@ def clean_up(storage_root: str, results_root: str, cache_root: str) -> dict:
     out = reclaim(results_root)
     out["older_runs"] = remove_superseded_runs(keep=1)
     out["detector_cache"] = remove_detector_cache(cache_root)
+    out["slimmed"] = slim_results(results_root)
     out["free_before"] = before
     out["free_after"] = free_bytes(storage_root)
     log.warning("Rensning på begäran: %s", out)

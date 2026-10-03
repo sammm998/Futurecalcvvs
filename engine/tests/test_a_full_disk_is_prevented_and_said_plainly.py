@@ -133,3 +133,21 @@ def test_an_administrator_can_clear_older_runs_and_the_detector_cache(tmp_path, 
     assert calls["keep"] == 1                                       # the newest run of every drawing stays
     assert out["detector_cache"] == 300 and not old.exists() and fresh.exists()
     assert "free_before" in out and "free_after" in out
+
+
+def test_a_finished_reading_gives_up_its_diagnostics_and_review_overlays_but_keeps_the_takeoff(tmp_path):
+    from app.disk_space import slim_results, usage
+    run = tmp_path / "results" / "d1" / "j1"
+    (run / "native-detection" / "0").mkdir(parents=True)
+    (run / "native-detection" / "0" / "result.json.gz").write_bytes(b"0" * 1000)
+    (run / "sheets" / "0").mkdir(parents=True)
+    for name in ("topology-overlay.pdf", "production-overlay.pdf", "quantities.json", "freeze-manifest.json"):
+        (run / name).write_bytes(b"0" * 100)
+    (run / "sheets" / "0" / "leader-overlay.pdf").write_bytes(b"0" * 50)
+    busy = tmp_path / "results" / "d2" / "j2"                    # no freeze manifest: still being written
+    (busy / "native-detection").mkdir(parents=True)
+    assert slim_results(str(tmp_path / "results")) == 1150
+    assert not (run / "native-detection").exists() and not (run / "topology-overlay.pdf").exists()
+    assert (run / "production-overlay.pdf").exists() and (run / "quantities.json").exists()
+    assert (busy / "native-detection").exists()
+    assert "results" in usage(str(tmp_path))
