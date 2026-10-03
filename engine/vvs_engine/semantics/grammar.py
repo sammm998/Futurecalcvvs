@@ -241,8 +241,25 @@ class DesignationGrammar:
                 return 0
             return 2 if r.text.isdigit() else 1
 
+        base = next((r for r in readings if r.flips == 0), None)
+        base_tokens = split_tokens(base.text) if base is not None else []
+
+        def invented_numbers(r: WordReading) -> int:
+            """Fields a twin flip turned into a number that is no pipe size: `VS1-S13` read as `VS1-513`.
+
+            A flip that makes a size out of a misread one (`11O` -> `110`) is what flipping is for. One that turns
+            a material code into a three-digit number that no pipe has is not, however common that wrong shape
+            happens to be on a small sheet - there it outvoted the right reading three to one."""
+            if base is None or r.flips == 0:
+                return 0
+            toks = split_tokens(r.text)
+            if len(toks) != len(base_tokens):
+                return 0
+            return sum(1 for a, b in zip(base_tokens, toks)
+                       if a != b and b.isdigit() and not a.isdigit() and len(b) >= 3 and int(b) not in NOMINAL_SIZES)
+
         def key(r: WordReading):
-            return (-dimension(r), -weight(r), -round(self.typicality(r), 3),
+            return (-dimension(r), invented_numbers(r), -weight(r), -round(self.typicality(r), 3),
                     -self.nominal_tokens(r.text), r.flips, r.cost, r.text)
         code = [r for r in readings if self._admissible(r)]
         pool = code if code else readings
