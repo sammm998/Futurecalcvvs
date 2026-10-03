@@ -12,6 +12,8 @@ import { quantities, materialQuantities, label as qLabel } from "../cad/quantiti
 import { findClashes, proposeOpenings, type Clash } from "../cad/clash";
 import { sectionOfDocument, elevationPlane, elevationOfDocument, type SectionShape } from "../cad/solids";
 import BuildingView3D, { type ViewName } from "../components/BuildingView3D";
+import { type Map2, type ModCmd, COMMANDS, commandOf, translation, rotation, mirroring, scaling, transformed, copies, arrayed, offsetEntity, trim, extend, measure } from "../cad/modify";
+import { segmentsOf } from "../cad/plan";
 import { FileMenu, SheetsPanel, AgentPanel, ghostsOf, txOf, type Proposal } from "./BuildingCadPanels";
 
 /* Bygg-CAD: ett rum där en hel byggnad ritas - från ett tomt blad till en modell med nivåer, väggar, dörrar,
@@ -82,7 +84,14 @@ export default function BuildingCadPage() {
   const level = doc.settings.active_level;
   const view: View = useMemo(() => doc.views.find((v) => v.id === doc.settings.active_view && v.kind === "plan") ?? { id: "v_tmp", kind: "plan", name: "Plan", level }, [doc, level]);
   const tools = useMemo(() => toolsFor(discipline), [discipline]);
-  const layerFor = useMemo(() => doc.layers.find((l) => l.discipline === discipline)?.id ?? doc.layers[0]?.id ?? "l_ark", [doc.layers, discipline]);
+  // Det aktuella lagret: det man valt i lagerhanteraren, annars disciplinens eget
+  const [curLayer, setCurLayer] = useState<string | null>(null);
+  const layerFor = useMemo(() => (curLayer && doc.layers.some((l) => l.id === curLayer) ? curLayer : doc.layers.find((l) => l.discipline === discipline)?.id ?? doc.layers[0]?.id ?? "l_ark"), [doc.layers, discipline, curLayer]);
+  // Ändringskommandot som pågår: vilket, på vilka objekt, och punkterna det fått hittills
+  const [mod, setMod] = useState<{ cmd: ModCmd; ids: string[]; pts: Pt[]; target?: string } | null>(null);
+  const [cmdline, setCmdline] = useState("");
+  const offsetDist = useRef(500);
+  const clip = useRef<Entity[]>([]);
   const ctx = useMemo(() => ({ doc, view, discipline, layer: layerFor, level, defaults }), [doc, view, discipline, layerFor, level, defaults]);
   const selected = useMemo(() => new Set(sel), [sel]);
   const tol = 10 / cam.s;
@@ -184,11 +193,21 @@ export default function BuildingCadPage() {
     if (calib) { g.fillStyle = "#e8590c"; for (const q of calib.pts) { const P = toScreen(cam, q); g.beginPath(); g.arc(P[0], P[1], 5, 0, Math.PI * 2); g.fill(); } g.font = "12px system-ui, sans-serif"; g.fillText(calib.pts.length ? "klicka den andra punkten" : "kalibrera: klicka en punkt med känt avstånd till en annan", 12, 20); }
     // snittlinjen
     if (sectionLine) { const A = toScreen(cam, sectionLine[0]), B = toScreen(cam, sectionLine[1]); g.strokeStyle = "#e8590c"; g.setLineDash([10, 5]); g.lineWidth = 2; g.beginPath(); g.moveTo(A[0], A[1]); g.lineTo(B[0], B[1]); g.stroke(); g.setLineDash([]); g.font = "12px ui-monospace"; g.fillStyle = "#e8590c"; g.fillText("A", A[0] - 14, A[1] - 6); g.fillText("A", B[0] + 6, B[1] - 6); }
+    // ändringskommandot: det valda där det skulle hamna, streckat, och mätkedjan
+    if (mod) {
+      const m = modMap(mod, hover?.p ?? null);
+      g.save(); g.setLineDash([6, 4]); g.strokeStyle = "#e8590c"; g.lineWidth = 1.5;
+      if (m) for (const e of doc.entities) if (mod.ids.includes(e.id)) for (const [a, b] of segmentsOf(doc, transformed(e, m))) { const A = toScreen(cam, a), B = toScreen(cam, b); g.beginPath(); g.moveTo(A[0], A[1]); g.lineTo(B[0], B[1]); g.stroke(); }
+      const chain = mod.cmd === "mat" ? [...mod.pts, ...(hover ? [hover.p] : [])] : mod.cmd === "spegla" && mod.pts[0] && hover ? [mod.pts[0], hover.p] : mod.pts[0] && hover && mod.cmd !== "forskjut" ? [mod.pts[0], hover.p] : [];
+      if (chain.length >= 2) { g.beginPath(); chain.forEach((q, i) => { const Q = toScreen(cam, q); if (i) g.lineTo(Q[0], Q[1]); else g.moveTo(Q[0], Q[1]); }); g.stroke(); }
+      g.setLineDash([]); g.fillStyle = "#e8590c"; for (const q of mod.pts) { const Q = toScreen(cam, q); g.beginPath(); g.arc(Q[0], Q[1], 4, 0, Math.PI * 2); g.fill(); }
+      g.restore();
+    }
     // markeringsrutan och måttet som ritas
     const d = drag.current;
     if (d?.kind === "box" && d.box) { const A = toScreen(cam, d.box[0]), B = toScreen(cam, d.box[1]); g.strokeStyle = "#1f6feb"; g.setLineDash([4, 3]); g.lineWidth = 1; g.strokeRect(Math.min(A[0], B[0]), Math.min(A[1], B[1]), Math.abs(B[0] - A[0]), Math.abs(B[1] - A[1])); g.fillStyle = "rgba(31,111,235,0.07)"; g.fillRect(Math.min(A[0], B[0]), Math.min(A[1], B[1]), Math.abs(B[0] - A[0]), Math.abs(B[1] - A[1])); g.setLineDash([]); }
     if (pts.length >= 2) { const a = pts[pts.length - 2], b = pts[pts.length - 1]; const B = toScreen(cam, b); const L = Math.hypot(b[0] - a[0], b[1] - a[1]); const ang = ((Math.atan2(b[1] - a[1], b[0] - a[0]) * 180) / Math.PI + 360) % 360; g.fillStyle = "#0b7285"; g.font = "12px ui-monospace, monospace"; g.fillText(`${typed ? typed + " mm" : fmtMm(L)}  ${typedAngle !== null ? typedAngle + "°" : ang.toFixed(1) + "°"}`, B[0] + 12, B[1] - 10); }
-  }, [doc, view, selected, hover, draft, tool, ctx, cam, snaps.grid, sectionLine, typed, typedAngle, proposals, calib, imgTick]);
+  }, [doc, view, selected, hover, draft, tool, ctx, cam, snaps.grid, sectionLine, typed, typedAngle, proposals, calib, imgTick, mod]);
   useEffect(() => { paint(); }, [paint]);
   useEffect(() => { const on = () => paint(); window.addEventListener("resize", on); return () => window.removeEventListener("resize", on); }, [paint]);
 
@@ -196,11 +215,11 @@ export default function BuildingCadPage() {
 
   const snapAt = useCallback((x: number, y: number): Snap => {
     const raw = toWorld(cam, x, y);
-    const ref = draft.length ? draft[draft.length - 1] : null;
+    const ref = draft.length ? draft[draft.length - 1] : mod?.pts.length ? mod.pts[mod.pts.length - 1] : null;
     const s = snapPoint(doc, view, raw, snaps, tol, ref);
     if (s.kind === "fri" && ref && ortho) return { p: constrain(ref, raw, ortho), kind: "fri" };
     return s;
-  }, [cam, draft, doc, view, snaps, tol, ortho]);
+  }, [cam, draft, doc, view, snaps, tol, ortho, mod]);
 
   const finish = useCallback((pts: Pt[], closed = false) => {
     const wallHit = needed(tool) === "wall" && pts[0] ? wallAt(doc, view, pts[0], Math.max(tol, 300)) : null;
@@ -235,6 +254,7 @@ export default function BuildingCadPage() {
     (ev.target as Element).setPointerCapture?.(ev.pointerId);
     if (ev.button === 1 || ev.altKey) { drag.current = { kind: "pan", from: toWorld(cam, x, y), screen: [x, y] }; return; }
     if (ev.button !== 0) return;          // högerklick tas av onContextMenu, som avslutar eller avbryter
+    if (mod) { modClick(snapAt(x, y).p); return; }
     if (calib) {
       // två punkter i underlaget och ett känt avstånd: skalan följer, och underlaget är uppmätt
       const q = toWorld(cam, x, y);
@@ -323,6 +343,137 @@ export default function BuildingCadPage() {
     if (typeof n === "number" && pts.length >= n) finish(pts); else setDraft(pts);
   }, [draft, typed, typedAngle, hover, tool, finish]);
 
+  // ---------------------------------------------------------------- ändringskommandon
+
+  /** Avbildningen kommandot gör med pekaren vid `at`: det som förhandsvisas och det som sker vid klick. */
+  function modMap(m: { cmd: ModCmd; pts: Pt[] }, at: Pt | null): Map2 | null {
+    const b = m.pts[0];
+    if (!b || !at) return null;
+    if (m.cmd === "flytta" || m.cmd === "kopiera") return translation(at[0] - b[0], at[1] - b[1]);
+    if (m.cmd === "rotera") return rotation(b, Math.atan2(at[1] - b[1], at[0] - b[0]));
+    if (m.cmd === "spegla") return Math.hypot(at[0] - b[0], at[1] - b[1]) > 1e-6 ? mirroring(b, at) : null;
+    return null;
+  }
+
+  const endMod = useCallback(() => { setMod(null); setTyped(""); setErr(""); }, []);
+
+  const startCmd = useCallback((cmd: ModCmd) => {
+    const spec = COMMANDS.find((c) => c.id === cmd)!;
+    setDraft([]); setTool("valj"); setTyped(""); setErr("");
+    if (spec.needsSelection && !sel.length) { setErr(`${spec.label}: välj objekt först, sedan kommandot.`); return; }
+    if (cmd === "monster") {
+      const raw = window.prompt("Mönster: kolumner, rader, avstånd i x och avstånd i y (mm), t.ex. 4, 1, 1200, 0", "3, 1, 1000, 0");
+      const [c, r, dx, dy] = (raw ?? "").split(/[;, ]+/).map((v) => Number(v.replace(",", ".")));
+      if (!raw || ![c, r, dx, dy].every((v) => isFinite(v)) || c < 1 || r < 1 || c * r > 2000) return;
+      const made = arrayed(doc, sel, Math.round(c), Math.round(r), dx, dy);
+      const tx = new Tx(`Mönster ${Math.round(c)}×${Math.round(r)}`); for (const e of made) tx.add("entities", e); apply(tx);
+      return;
+    }
+    setMod({ cmd, ids: spec.needsSelection ? sel.slice() : [], pts: [] });
+  }, [sel, doc, apply]);
+
+  /** Ett tal skrivet under ett kommando: avstånd, vinkel, skalfaktor eller förskjutning. */
+  const modNumber = useCallback((n: number) => {
+    if (!mod || !isFinite(n)) return;
+    const b = mod.pts[0];
+    const run = (m: Map2, label: string, copy: boolean) => {
+      const tx = new Tx(label);
+      if (copy) { const made = copies(doc, mod.ids, m); for (const e of made) tx.add("entities", e); apply(tx); setSel(made.map((e) => e.id)); }
+      else { for (const e of doc.entities) if (mod.ids.includes(e.id)) tx.update("entities", e, transformed(e, m)); apply(tx); }
+    };
+    if (mod.cmd === "forskjut") { if (n > 0) { offsetDist.current = n; setErr(`Förskjut ${n} mm: klicka objektet.`); } return; }
+    if (!b) { setErr("Klicka baspunkten först."); return; }
+    if (mod.cmd === "rotera") { run(rotation(b, (n * Math.PI) / 180), `Rotera ${n}°`, false); endMod(); return; }
+    if (mod.cmd === "skala") { if (n > 0) run(scaling(b, n), `Skala ${n}`, false); endMod(); return; }
+    if (mod.cmd === "flytta" || mod.cmd === "kopiera") {
+      // ett avstånd längs pekarens riktning från baspunkten, som när en vägg ritas med ett skrivet mått
+      const at = hover?.p ?? [b[0] + 1, b[1]];
+      const a = Math.atan2(at[1] - b[1], at[0] - b[0]);
+      run(translation(n * Math.cos(a), n * Math.sin(a)), mod.cmd === "flytta" ? "Flytta" : "Kopiera", mod.cmd === "kopiera");
+      if (mod.cmd === "flytta") endMod();
+    }
+  }, [mod, doc, apply, hover, endMod]);
+
+  /** Ett klick under ett kommando. */
+  const modClick = useCallback((p: Pt) => {
+    if (!mod) return;
+    const pickAt = (q: Pt) => [...doc.entities].reverse().find((e) => doc.layers.find((l) => l.id === e.layer)?.locked !== true && visibleFor(doc, view, e) && hits(doc, e, q, tol));
+    const vis = (e: Entity) => visibleFor(doc, view, e);
+    switch (mod.cmd) {
+      case "mat": setMod({ ...mod, pts: [...mod.pts, p] }); return;
+      case "trimma": {
+        const e = pickAt(p); if (!e) return;
+        const out = trim(doc, e, p, vis);
+        if (!out) { setErr("Inget korsar objektet där: det finns inget att kapa mot."); return; }
+        const tx = new Tx("Trimma").remove("entities", e);
+        for (const o of out) tx.add("entities", o);
+        apply(tx); setErr(""); return;
+      }
+      case "forlang": {
+        const e = pickAt(p); if (!e) return;
+        const out = extend(doc, e, p, vis);
+        if (!out) { setErr("Ingen linje i änden riktning att förlänga till."); return; }
+        apply(new Tx("Förläng").update("entities", e, out)); setErr(""); return;
+      }
+      case "forskjut": {
+        if (!mod.target) { const e = pickAt(p); if (e) { setMod({ ...mod, target: e.id }); setErr("Klicka på den sida förskjutningen ska hamna."); } return; }
+        const e = doc.entities.find((q) => q.id === mod.target);
+        const o = e ? offsetEntity(e, offsetDist.current, p) : null;
+        if (!o) { setErr("Det objektet går inte att förskjuta."); setMod({ ...mod, target: undefined }); return; }
+        apply(new Tx(`Förskjut ${offsetDist.current} mm`).add("entities", o));
+        setMod({ ...mod, target: undefined }); setErr(""); return;
+      }
+      default: {
+        if (!mod.pts.length) { setMod({ ...mod, pts: [p] }); return; }
+        const m = modMap(mod, p); if (!m) return;
+        const tx = new Tx(COMMANDS.find((c) => c.id === mod.cmd)!.label);
+        if (mod.cmd === "kopiera" || mod.cmd === "spegla") {
+          const made = copies(doc, mod.ids, m); for (const e of made) tx.add("entities", e); apply(tx);
+          if (mod.cmd === "spegla") { setSel(made.map((e) => e.id)); endMod(); }
+          return;                         // kopiera: samma baspunkt, nästa kopia
+        }
+        if (mod.cmd === "skala") { setErr("Skriv skalfaktorn och Enter."); return; }
+        for (const e of doc.entities) if (mod.ids.includes(e.id)) tx.update("entities", e, transformed(e, m));
+        apply(tx); endMod();
+      }
+    }
+  }, [mod, doc, view, tol, apply, endMod]);
+
+  /** Klistra in det kopierade där pekaren står: urklippets nedre vänstra hörn hamnar vid pekaren. */
+  const paste = useCallback(() => {
+    if (!clip.current.length) return;
+    const bbs = clip.current.map((e) => bboxOf(doc, e));
+    const x0 = Math.min(...bbs.map((b) => b[0])), y0 = Math.min(...bbs.map((b) => b[1]));
+    const at = hover?.p ?? [x0 + (snaps.grid || 100), y0 + (snaps.grid || 100)];
+    const tmp = { ...doc, entities: [...doc.entities.filter((e) => !clip.current.some((c) => c.id === e.id)), ...clip.current] };
+    const made = copies(tmp, clip.current.map((e) => e.id), translation(at[0] - x0, at[1] - y0)).map((e) => ({ ...e, level } as Entity));
+    const tx = new Tx(`Klistra in ${made.length} objekt`); for (const e of made) tx.add("entities", e); apply(tx); setSel(made.map((e) => e.id));
+  }, [doc, hover, snaps.grid, apply, level]);
+
+  const runCmdline = () => {
+    const c = commandOf(cmdline);
+    if (c) { startCmd(c); setCmdline(""); return; }
+    const n = parseFloat(cmdline.replace(",", "."));
+    if (mod && isFinite(n)) { modNumber(n); setCmdline(""); return; }
+    setErr(`Okänt kommando: ${cmdline}`);
+  };
+  const measured = mod?.cmd === "mat" && mod.pts.length >= 2 ? measure([...mod.pts]) : null;
+  const modPrompt = (() => {
+    if (!mod) return "";
+    const n = mod.pts.length;
+    switch (mod.cmd) {
+      case "flytta": case "kopiera": return n ? "Klicka den nya platsen, eller skriv ett avstånd och Enter" : "Klicka baspunkten";
+      case "rotera": return n ? "Skriv vinkeln i grader och Enter, eller klicka riktningen" : "Klicka vridpunkten";
+      case "spegla": return n ? "Klicka den andra punkten på speglingslinjen" : "Klicka den första punkten på speglingslinjen";
+      case "skala": return n ? "Skriv skalfaktorn och Enter (t.ex. 2 eller 0.5)" : "Klicka baspunkten";
+      case "forskjut": return mod.target ? "Klicka på den sida förskjutningen ska hamna" : `Avstånd ${offsetDist.current} mm (skriv ett annat och Enter) – klicka objektet`;
+      case "trimma": return "Klicka den bit som ska bort";
+      case "forlang": return "Klicka nära änden som ska förlängas";
+      case "mat": return measured ? `Längd ${fmtMm(measured.length)}${measured.area ? ` · yta ${(measured.area / 1e6).toLocaleString(locale(), { maximumFractionDigits: 2 })} m² (om den sluts)` : ""}` : "Klicka punkterna som ska mätas";
+      default: return "";
+    }
+  })();
+
   useEffect(() => {
     const onKey = (ev: KeyboardEvent) => {
       const t = ev.target as HTMLElement;
@@ -330,6 +481,17 @@ export default function BuildingCadPage() {
       const k = ev.key;
       if ((ev.ctrlKey || ev.metaKey) && k.toLowerCase() === "z") { ev.preventDefault(); if (ev.shiftKey) redo(); else undo(); return; }
       if ((ev.ctrlKey || ev.metaKey) && k.toLowerCase() === "y") { ev.preventDefault(); redo(); return; }
+      if ((ev.ctrlKey || ev.metaKey) && k.toLowerCase() === "c") { if (sel.length) { ev.preventDefault(); clip.current = doc.entities.filter((e) => sel.includes(e.id)); } return; }
+      if ((ev.ctrlKey || ev.metaKey) && k.toLowerCase() === "v") { ev.preventDefault(); paste(); return; }
+      if ((ev.ctrlKey || ev.metaKey) && k.toLowerCase() === "a") { ev.preventDefault(); setSel(doc.entities.filter((e) => visibleFor(doc, view, e) && doc.layers.find((l) => l.id === e.layer)?.locked !== true).map((e) => e.id)); return; }
+      if ((ev.ctrlKey || ev.metaKey) && k.toLowerCase() === "d") { ev.preventDefault(); if (sel.length) { const made = copies(doc, sel, translation(snaps.grid || 100, -(snaps.grid || 100))); const tx = new Tx(`Duplicera ${sel.length} objekt`); for (const e of made) tx.add("entities", e); apply(tx); setSel(made.map((e) => e.id)); } return; }
+      if (mod) {
+        if (k === "Escape" || (k === "Enter" && !typed && (mod.cmd === "kopiera" || mod.cmd === "mat"))) { ev.preventDefault(); endMod(); return; }
+        if (k === "Enter" && typed) { ev.preventDefault(); modNumber(parseFloat(typed)); setTyped(""); return; }
+        if (/^[0-9.,-]$/.test(k)) { setTyped((v) => v + k.replace(",", ".")); return; }
+        if (k === "Backspace") { setTyped((v) => v.slice(0, -1)); return; }
+        return;
+      }
       if (k === "Escape") { setDraft([]); setTyped(""); setTypedAngle(null); setSel([]); setSectionLine(null); return; }
       if (k === "Delete") { if (sel.length) { ev.preventDefault(); const tx = new Tx(`Ta bort ${sel.length} objekt`); for (const e of doc.entities) if (sel.includes(e.id) || ("host" in e && sel.includes((e as any).host))) tx.remove("entities", e); apply(tx); setSel([]); } return; }
       if (k === "Enter") { if (typed && draft.length) { ev.preventDefault(); applyTyped(); return; } if (draft.length >= 2) { ev.preventDefault(); finish(draft, ["bjalklag", "platta", "tak", "undertak", "rum", "skraffering", "tomtgrans"].includes(tool)); } return; }
@@ -344,7 +506,7 @@ export default function BuildingCadPage() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [undo, redo, sel, doc, apply, draft, typed, typedAngle, tool, finish, applyTyped, tools, pickTool]);
+  }, [undo, redo, sel, doc, apply, draft, typed, typedAngle, tool, finish, applyTyped, tools, pickTool, mod, view, snaps.grid, paste, endMod, modNumber]);
 
   // ---------------------------------------------------------------- ändringar från panelerna
 
@@ -431,6 +593,8 @@ export default function BuildingCadPage() {
             {DISCIPLINES.map((d) => <option key={d.id} value={d.id}>{d.label}</option>)}
           </select>
           {tools.map((t) => <button key={t.id} className={`bcad-tool${tool === t.id ? " on" : ""}`} title={`${t.hint} (${t.key})`} onClick={() => pickTool(t.id)}>{t.label}<kbd>{t.key}</kbd></button>)}
+          <span className="bcad-sep" aria-hidden />
+          {COMMANDS.map((c) => <button key={c.id} className={`bcad-tool mod${mod?.cmd === c.id ? " on" : ""}`} title={`${c.hint} (${c.alias})`} onClick={() => (mod?.cmd === c.id ? endMod() : startCmd(c.id))}>{c.label}</button>)}
         </div>
         <div className="bcad-right">
           <FileMenu sheetId={sheetId} name={meta.name} doc={doc} viewId={view.id} scaleRatio={view.scale_ratio ?? 100} level={level} centre={() => { const r = wrap.current?.getBoundingClientRect(); return r ? toWorld(cam, r.width / 2, r.height / 2) : [0, 0]; }} apply={apply} onError={setErr} onUnderlayAdded={(uid_, cal) => { setSel([uid_]); if (cal) setCalib({ id: uid_, pts: [] }); }} />
@@ -475,8 +639,22 @@ export default function BuildingCadPage() {
           <div className="bcad-row"><button className="bcad-link" onClick={() => { setPanel("snitt"); setSectionLine(null); }}>Fasad</button><button className="bcad-link" onClick={() => { setPanel("snitt"); setTool("valj"); setSectionLine(sectionLine ?? [[0, 7500], [12000, 7500]]); }}>{tr("Sektion A-A")}</button></div>
         </div>
         <div className="bcad-sec">
-          <div className="bcad-h">Lager</div>
-          {doc.layers.map((l) => <div key={l.id} className="bcad-row"><label><input type="checkbox" checked={l.visible} onChange={() => apply(new Tx(`Lager ${l.name}`).update("layers", l, { ...l, visible: !l.visible }))} /> <span style={{ color: l.color }}>■</span> {l.name}</label></div>)}
+          <div className="bcad-h">Lager <button className="ghost small" title={tr("Nytt lager")} onClick={() => { const name = window.prompt("Det nya lagrets namn", "Nytt lager"); if (!name) return; const l = { id: `l_${uid()}`, name, color: "#495057", visible: true, locked: false, width: 0.25 }; apply(new Tx(`Nytt lager ${name}`).add("layers", l)); setCurLayer(l.id); }}>+</button></div>
+          {doc.layers.map((l) => {
+            const used = doc.entities.some((e) => e.layer === l.id);
+            const set = (patch: Partial<typeof l>, label: string) => apply(new Tx(`${label} ${l.name}`).update("layers", l, { ...l, ...patch }));
+            return (
+              <div key={l.id} className={`bcad-row bcad-layer${layerFor === l.id ? " on" : ""}`}>
+                <input type="radio" name="curlayer" checked={layerFor === l.id} title={tr("Rita på det här lagret")} onChange={() => setCurLayer(l.id)} />
+                <input type="checkbox" checked={l.visible} title={tr("Synligt")} onChange={() => set({ visible: !l.visible }, "Visa/dölj")} />
+                <input type="color" value={l.color} title={tr("Färg")} onChange={(e) => set({ color: e.target.value }, "Färg")} />
+                <button className="bcad-link" title={tr("Byt namn")} onDoubleClick={() => { const n = window.prompt("Lagrets namn", l.name); if (n && n !== l.name) set({ name: n }, "Byt namn"); }}>{l.name}</button>
+                <button className={`ghost small${l.locked ? " on" : ""}`} title={l.locked ? "Låst – klicka för att låsa upp" : "Lås lagret"} onClick={() => set({ locked: !l.locked }, l.locked ? "Lås upp" : "Lås")}>{l.locked ? "🔒" : "🔓"}</button>
+                <button className="ghost small" disabled={used || doc.layers.length <= 1} title={used ? "Lagret har objekt" : tr("Ta bort lagret")} onClick={() => { apply(new Tx(`Ta bort lager ${l.name}`).remove("layers", l)); if (curLayer === l.id) setCurLayer(null); }}>×</button>
+              </div>
+            );
+          })}
+          {sel.length > 0 && <div className="bcad-row"><label className="muted small">{tr("Flytta valda till")} <select value="" onChange={(e) => { const to = e.target.value; if (!to) return; const tx = new Tx("Byt lager"); for (const en of doc.entities) if (sel.includes(en.id) && en.layer !== to) tx.update("entities", en, { ...en, layer: to } as Entity); apply(tx); }}><option value="">…</option>{doc.layers.map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}</select></label></div>}
         </div>
         <div className="bcad-sec">
           <div className="bcad-h">Verktyg</div>
@@ -507,7 +685,13 @@ export default function BuildingCadPage() {
       <main className="bcad-stage">
         {mode !== "3d" && (
           <div ref={wrap} className={`bcad-plan${mode === "split" ? " half" : ""}`}>
-            <canvas ref={canvas} onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerLeave={() => setHover(null)} onWheel={onWheel} onDoubleClick={closeDraft} onContextMenu={(e) => { e.preventDefault(); if (draft.length) closeDraft(); else { setTool("valj"); setSel([]); } }} style={{ display: "block", cursor: tool === "valj" ? "default" : "crosshair", touchAction: "none" }} />
+            <canvas ref={canvas} onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerLeave={() => setHover(null)} onWheel={onWheel} onDoubleClick={closeDraft} onContextMenu={(e) => { e.preventDefault(); if (mod) endMod(); else if (draft.length) closeDraft(); else { setTool("valj"); setSel([]); } }} style={{ display: "block", cursor: tool === "valj" && !mod ? "default" : "crosshair", touchAction: "none" }} />
+            <form className="bcad-cmd" onSubmit={(e) => { e.preventDefault(); runCmdline(); }}>
+              <span className="bcad-cmd-p">{mod ? `${COMMANDS.find((c) => c.id === mod.cmd)!.label}: ${modPrompt}${typed ? ` · ${typed}` : ""}` : "Kommando"}</span>
+              <input value={cmdline} onChange={(e) => setCmdline(e.target.value)} placeholder={mod ? "tal och Enter, Esc avbryter" : "t.ex. KO, RO, SP, TR, FÖ, MÄT"} aria-label={tr("Kommandorad")}
+                onKeyDown={(e) => { if (e.key === "Escape") { endMod(); setCmdline(""); (e.target as HTMLInputElement).blur(); } }} />
+              {mod && <button type="button" className="ghost small" onClick={endMod}>{tr("Avsluta")}</button>}
+            </form>
             <div className="bcad-planbar"><span>{levelOf(doc, level)?.name}</span><button className="ghost small" onClick={fit}>Anpassa</button><span className="muted small">1 px = {(1 / cam.s).toFixed(0)} mm</span></div>
           </div>
         )}
