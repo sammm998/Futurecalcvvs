@@ -380,14 +380,22 @@ const PdfViewer = forwardRef<ViewerHandle, ViewerProps>(function PdfViewer(props
   // where the pointer was over the sheet when a zoom began, kept until the new size has been laid out
   const hold = useRef<{ px: number; py: number; cx: number; cy: number } | null>(null);
 
+  // the scale the sheet is laid out at right now - the one its on-screen rectangle was measured at
+  const laidOut = useRef(scale);
   const zoomAt = useCallback((factor: number, cx: number, cy: number) => {
     const el = container.current, pe = pageEl.current;
     if (!el || !pe) return;
     auto.current = false;
-    const r = pe.getBoundingClientRect();
+    // The point under the pointer, in sheet units. Several zoom steps can arrive before the sheet is laid out
+    // again (a fast wheel, a glide); the rectangle is still the old layout's, so it is divided by the scale it
+    // was laid out at, not by the newest pending one - dividing by that drifted the sheet sideways on every step.
+    // A point already held for this layout stays the anchor.
+    if (!hold.current) {
+      const r = pe.getBoundingClientRect();
+      hold.current = { px: (cx - r.left) / laidOut.current, py: (cy - r.top) / laidOut.current, cx, cy };
+    }
     setScale((s) => {
       const next = Math.min(12, Math.max(0.05, s * factor));
-      hold.current = { px: (cx - r.left) / s, py: (cy - r.top) / s, cx, cy };
       scaleRef.current = next;
       return next;
     });
@@ -428,6 +436,7 @@ const PdfViewer = forwardRef<ViewerHandle, ViewerProps>(function PdfViewer(props
 
   // after the sheet has been laid out at its new size, put the held point back under the pointer
   useLayoutEffect(() => {
+    laidOut.current = scale;
     const el = container.current, pe = pageEl.current, hcur = hold.current;
     if (!el || !pe || !hcur) return;
     hold.current = null;
