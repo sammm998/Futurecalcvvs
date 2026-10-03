@@ -59,6 +59,8 @@ export interface ViewerProps {
   legend?: { entries: any[] } | null;
   leaders: any[];
   anchors: any[];
+  /** The detector's own labels, which a pipe names native_label_<id>: box, text and leaders. */
+  nativeLabels?: { id: string; bbox: number[]; text?: string; leaders?: number[][][] }[];
   hatched?: any[];
   /** Ink that never became pipe: families weighed and set aside, and families no leader ever pointed at. */
   declined?: { family: string; kind: string; why_sv?: string; why?: string; layer?: string; style?: string; length_m?: number | null; leader_ends_touching?: number; label_votes?: number; segments: number[][] }[];
@@ -576,6 +578,28 @@ const PdfViewer = forwardRef<ViewerHandle, ViewerProps>(function PdfViewer(props
     return { byDesignation, byLeader, byAnchor };
   }, [props.anchors, props.pipes]);
   const dimmed = (identity?: string) => props.selectedIdentity !== null && identity !== props.selectedIdentity;
+  // A picked pipe lights only the labels that name it - the ones whose leader lands on it - not every label
+  // that happens to carry the same designation elsewhere on the sheet.
+  const picked = useMemo(() => {
+    if (props.selectedPipe === null) return null;
+    const run = new Set(props.selectedRun ?? [props.selectedPipe]);
+    const own = new Set<string>();
+    for (const p of props.pipes ?? []) if (run.has(p.physical_pipe_id)) for (const a of p.supporting_anchors ?? []) own.add(a);
+    const designations = new Set<string>(), leaders = new Set<string>(), anchors = new Set<string>();
+    for (const a of props.anchors ?? []) {
+      if (!own.has(a.id)) continue;
+      anchors.add(a.id);
+      if (a.designation_id) designations.add(a.designation_id);
+      if (a.leader_id) leaders.add(a.leader_id);
+      if (a.native_label) own.add(a.native_label);
+    }
+    const first = (props.pipes ?? []).find((p) => run.has(p.physical_pipe_id));
+    const color = first ? pipeColor(first) : identityColor("");
+    return { own, designations, leaders, anchors, color };
+  }, [props.selectedPipe, props.selectedRun, props.pipes, props.anchors]);
+  /** Faded: another designation while one is picked, or - with a pipe picked - a label that does not name it. */
+  const off = (identity: string | undefined, kind: "designations" | "leaders" | "anchors", id: string) =>
+    picked ? !picked[kind].has(id) : dimmed(identity);
   const mpp = props.meterPerPt ?? 0;
   const metres = (pts: number[][]) => pathLen(pts) * mpp;
   const fmt = (m: number) => `${num(m, 2)} m`;
@@ -953,7 +977,7 @@ const PdfViewer = forwardRef<ViewerHandle, ViewerProps>(function PdfViewer(props
                 <polyline key={l.id} points={l.points.map((q: number[]) => q.join(",")).join(" ")} fill="none"
                   stroke={link ? link.color : "#b000b0"} strokeWidth={sw(link ? 2.4 : 1.2)}
                   strokeLinecap="round" strokeLinejoin="round"
-                  strokeOpacity={link && dimmed(link.identity) ? 0.15 : faint ? 0.3 : 1} />
+                  strokeOpacity={link && off(link.identity, "leaders", l.id) ? 0.15 : faint ? 0.3 : 1} />
               );
             })}
             {(props.layers.designations || props.layers.pipes) && props.designations.map((d) => {
@@ -961,11 +985,11 @@ const PdfViewer = forwardRef<ViewerHandle, ViewerProps>(function PdfViewer(props
               if (!props.layers.designations && !link) return null;
               const faint = d.in_wall && !props.layers.inWall;
               if (link) {
-                const off = dimmed(link.identity);
+                const faded = off(link.identity, "designations", d.id);
                 return (
                   <rect key={d.id} x={d.bbox[0] - 2} y={d.bbox[1] - 2} width={d.bbox[2] - d.bbox[0] + 4} height={d.bbox[3] - d.bbox[1] + 4}
-                    rx={sw(2)} fill={link.color} fillOpacity={off ? 0.05 : 0.35} stroke={link.color}
-                    strokeOpacity={off ? 0.2 : faint ? 0.5 : 1} strokeWidth={sw(2.2)} />
+                    rx={sw(2)} fill={link.color} fillOpacity={faded ? 0.05 : 0.35} stroke={link.color}
+                    strokeOpacity={faded ? 0.2 : faint ? 0.5 : 1} strokeWidth={sw(2.2)} />
                 );
               }
               return (
@@ -1158,9 +1182,9 @@ const PdfViewer = forwardRef<ViewerHandle, ViewerProps>(function PdfViewer(props
                 : a.state === "VERIFIED_PIPE_ATTACHMENT" ? "#12a24b" : a.state === "AMBIGUOUS_PIPE_ATTACHMENT" ? "#ff9500" : "#b42318";
               return (
                 <circle key={a.id} cx={a.endpoint[0]} cy={a.endpoint[1]} r={sw(a.names_a_pipe === false ? 2.5 : link ? 5 : 4)}
-                  fill={link ? link.color : "none"} fillOpacity={link ? (dimmed(link.identity) ? 0.1 : 0.9) : 0}
+                  fill={link ? link.color : "none"} fillOpacity={link ? (off(link.identity, "anchors", a.id) ? 0.1 : 0.9) : 0}
                   stroke={link ? "#ffffff" : state}
-                  strokeOpacity={link && dimmed(link.identity) ? 0.2 : a.in_wall && !props.layers.inWall ? 0.35 : 1}
+                  strokeOpacity={link && off(link.identity, "anchors", a.id) ? 0.2 : a.in_wall && !props.layers.inWall ? 0.35 : 1}
                   strokeWidth={sw(a.names_a_pipe === false ? 1 : 1.5)}
                   strokeDasharray={a.names_a_pipe === false ? `${sw(2)} ${sw(2)}` : undefined}>
                   {/* the connection's state is still said, in the mark's tooltip */}
@@ -1168,6 +1192,16 @@ const PdfViewer = forwardRef<ViewerHandle, ViewerProps>(function PdfViewer(props
                 </circle>
               );
             })}
+            {picked && (props.nativeLabels ?? []).filter((n) => picked.own.has(n.id)).map((n) => (
+              <g key={n.id}>
+                {(n.leaders ?? []).map((pts, i) => (
+                  <polyline key={i} points={pts.map((q) => q.join(",")).join(" ")} fill="none" stroke={picked.color}
+                    strokeWidth={sw(2.4)} strokeLinecap="round" strokeLinejoin="round" />
+                ))}
+                <rect x={n.bbox[0] - 2} y={n.bbox[1] - 2} width={n.bbox[2] - n.bbox[0] + 4} height={n.bbox[3] - n.bbox[1] + 4}
+                  rx={sw(2)} fill={picked.color} fillOpacity={0.35} stroke={picked.color} strokeWidth={sw(2.2)} />
+              </g>
+            ))}
           </svg>
         )}
       </div>

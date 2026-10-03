@@ -1788,7 +1788,10 @@ def analyze_page(page: RawPage, progress: Callable[[str], None] | None = None, o
                 'timings': native['timings'], 'merge': native_merge,
                 'style_match': native.get('style_match'),
                 'stages': ['extract', 'profile', 'detect', 'ocr', 'bucket', 'assemble', 'associate'],
-                'annotations_used': False, 'expert_overrides_used': False}
+                'annotations_used': False, 'expert_overrides_used': False,
+                # where each label the detector read sits, and the leaders drawn from it: a pipe names its
+                # labels as native_label_<id>, and the viewer lights exactly those when the pipe is picked
+                'labels': _native_label_marks(native)}
     else:
         ownership = propagate(graphs, anchors, page.info.index, identities, spelled_out,
                               declared=declarations.connection_pipes, declared_max_pt=declared_max_pt, end_evidence=end_ev)
@@ -2184,6 +2187,17 @@ def _pipe_identities(designations, anchors, grammar, dn_rows_are_vertical_only: 
 # termostatventil. Se reference_sources/swedish-vvs-drawings-main/data/valves.json.
 APPARATUS_HEADS = ("AV", "SV", "RV", "BV", "SÄV", "TV", "TRV", "STV")
 
+
+
+def _native_label_marks(native) -> list[dict]:
+    """The detector's labels as the viewer draws them: box, text and the leader lines that leave each one."""
+    leaders = defaultdict(list)
+    for ld in (native.get('association') or {}).get('leaders') or []:
+        if ld.get('label') is not None and ld.get('points'):
+            leaders[ld['label']].append([[round(x, 2), round(y, 2)] for x, y in ld['points']])
+    return [{'id': f"native_label_{l['id']}", 'bbox': [round(v, 2) for v in l['rect']],
+             'text': l.get('text') or '', 'leaders': leaders.get(l['id'], [])}
+            for l in native.get('labels') or [] if l.get('rect') and l.get('designations')]
 
 def _is_an_apparatus_tag(d, legend) -> bool:
     """Om etiketten är en ventils märkning och inte ett rörs namn.

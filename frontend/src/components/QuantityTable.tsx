@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { identityColor, pipeColor } from "../palette";
 
 export const identityKey = (r: any) => `${r.base}|DN${r.dn ?? "?"}`;
@@ -37,13 +37,27 @@ export function withFloorHeight(rows: any[], floorHeight: number | null, include
 }
 
 export default function QuantityTable({ rows, selected, onSelect, floorHeight, includeHatched, onIncludeHatched, riserSource,
-  includeDeclared = true, onIncludeDeclared, pipes = [], onPipeClick, meterPerPt }: {
+  includeDeclared = true, onIncludeDeclared, pipes = [], onPipeClick, meterPerPt, selectedPipe = null }: {
     rows: any[]; selected: string | null; onSelect: (key: string | null) => void; floorHeight: number | null;
     includeHatched: boolean; onIncludeHatched: (v: boolean) => void; riserSource: string;
     includeDeclared?: boolean; onIncludeDeclared?: (v: boolean) => void;
-    pipes?: any[]; onPipeClick?: (p: any) => void; meterPerPt?: number | null }) {
+    pipes?: any[]; onPipeClick?: (p: any) => void; meterPerPt?: number | null;
+    /** The pipe picked on the sheet: its designation opens and its own run is marked and brought into view. */
+    selectedPipe?: string | null }) {
   const [q, setQ] = useState("");
   const [open, setOpen] = useState<string | null>(null);
+  const runs = useMemo(() => pipeRuns(pipes), [pipes]);
+  const pickedRun = useMemo(() => new Set(selectedPipe ? (runs.get(selectedPipe) ?? [selectedPipe]) : []), [selectedPipe, runs]);
+  const pickedRow = useRef<HTMLTableRowElement | null>(null);
+  useEffect(() => {
+    if (!selectedPipe) return;
+    const p = pipes.find((q: any) => q.physical_pipe_id === selectedPipe);
+    if (p?.identity) setOpen(p.identity);
+  }, [selectedPipe, pipes]);
+  useEffect(() => {
+    // after the run list has opened: the marked run is scrolled to, inside the table's own frame
+    if (selectedPipe) pickedRow.current?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  }, [selectedPipe, open]);
   const [status, setStatus] = useState("");
   const [sort, setSort] = useState<{ k: string; dir: 1 | -1 }>({ k: "designation", dir: 1 });
   const list = useMemo(() => {
@@ -138,14 +152,15 @@ export default function QuantityTable({ rows, selected, onSelect, floorHeight, i
               <td><span className={`badge ${r.state === "CONFIRMED" ? "ok" : r.state === "AMBIGUOUS" || r.state === "RISER_LABELS_ONLY" || r.state === "IN_HATCHED_AREA" ? "warn" : "bad"}`}>{STATE_LABELS[r.state] ?? r.state}</span></td>
             </tr>,
             ...(open === identityKey(r)
-              ? runRows(pipes.filter((p: any) => p.identity === identityKey(r)), pipeRuns(pipes))
+              ? runRows(pipes.filter((p: any) => p.identity === identityKey(r)), runs)
                   .sort((a: any, b: any) => (b.horizontal_m ?? 0) - (a.horizontal_m ?? 0))
                   .map((p: any, i: number) => {
                     const labels = p.supporting_anchors?.length ?? 0;
                     const bridged = (p.bridged_gap_pt ?? 0) * (meterPerPt ?? 0);
+                    const mine = (p.run_ids ?? [p.physical_pipe_id]).some((id: string) => pickedRun.has(id));
                     return (
-                      <tr key={`${identityKey(r)}-run-${p.physical_pipe_id}`} className="run"
-                        onClick={() => onPipeClick?.(p)}>
+                      <tr key={`${identityKey(r)}-run-${p.physical_pipe_id}`} className={`run ${mine ? "selected" : ""}`}
+                        ref={mine ? pickedRow : undefined} onClick={() => onPipeClick?.(p)}>
                         <td><span style={{ display: "inline-block", width: 12, height: 12, borderRadius: 2, background: pipeColor(p), marginRight: 6 }} />{String(i + 1).padStart(2, "0")} · rör{p.parts > 1 ? ` (${p.parts} delar)` : ""}</td>
                         <td colSpan={2} className="muted">
                           sida {(p.page ?? 0) + 1} · {labels} etikett{labels === 1 ? "" : "er"}

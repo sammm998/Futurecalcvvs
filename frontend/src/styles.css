@@ -855,6 +855,9 @@ pre { white-space: pre-wrap; word-break: break-word; background: var(--bg-2); bo
 tr.run td { background: var(--bg-2); font-size: 12.5px; cursor: pointer; }
 tr.run:hover td { background: #f2f2f2; }
 tr.run td:first-child { color: var(--muted); font-family: var(--mono); font-size: 11px; letter-spacing: 0.06em; }
+/* the run picked on the sheet: plainly marked, so the reader sees which stretch the click was */
+tr.run.selected td { background: #fff4d6; color: var(--ink); font-weight: 600; }
+tr.run.selected td:first-child { box-shadow: inset 4px 0 0 #f59e0b; color: var(--ink); }
 button.drill { padding: 3px 8px; font-size: 10px; letter-spacing: 0.06em; color: var(--ink); }
 button.drill:hover { background: var(--chip); opacity: 1; }
 

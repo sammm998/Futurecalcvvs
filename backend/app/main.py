@@ -994,10 +994,14 @@ def job_result(job_id: str, page: int | None = Query(default=None, ge=0), user: 
         "designations": [{"id": d["did"], "text": d["text"], "dn": d["dn"], "bbox": d["bbox"], "source": d["source"],
                           "in_wall": d.get("in_wall", False), "names_a_pipe": d.get("names_a_pipe", True)} for d in des],
         "leaders": [{"id": l["lid"], "points": l["points"], "family": l["family"], "in_wall": l.get("in_wall", False)} for l in leaders],
+        # the detector's own labels (a pipe names them native_label_<id>): where each sits and its leaders
+        "native_labels": ((_load_optional(rd, "source-assignment.json") or {}).get("native_detection") or {}).get("labels") or [],
         "anchors": [{"id": a["anchor_id"], "designation": a["designation"], "dn": a["dn"], "state": a["state"], "reason": a["reason"],
                      # which label box and which leader line this connection is: the viewer paints both in the
                      # colour of the pipe the label names, so a reader can follow label -> leader -> pipe by eye
                      "designation_id": a.get("designation_id"), "leader_id": a.get("leader_id"),
+                     # a connection the detector made: the label it came from, as a pipe names it
+                     "native_label": a["block_id"] if str(a.get("block_id") or "").startswith("native_label_") else None,
                      "display": a.get("designation_display"),
                      "endpoint": a["leader_endpoint"], "in_wall": a.get("in_wall", False),
                      "names_a_pipe": a.get("names_a_pipe", True)} for a in anchors],

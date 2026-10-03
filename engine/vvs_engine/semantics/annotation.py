@@ -820,11 +820,22 @@ def _find_dn(word: str, toks: list[str], fam, b: AnnotationBlock, ri: int, word_
     # Several side-by-side codes may have three or more separate DN rows
     # on the same printed baseline. A two-row list limit lost later columns.
     limit = len(b.rows) if word_bbox is not None else min(ri + 3, len(b.rows))
+    own = b.rows[ri].line.bbox
+    upright = abs(math.sin(math.radians(getattr(b.rows[ri].line, "angle", 0.0) or 0.0))) < 0.5
+
+    def beside(r):
+        # a row printed next to this code's own row, not under it: `S3-R8  5xVV1-X31` over `75  16`
+        lo, hi = (0, 2) if upright else (1, 3)
+        return min(own[hi], r[hi]) - max(own[lo], r[lo]) <= 0
     for rj in range(ri + 1, limit):
         nxt = b.rows[rj]
         if nxt.role == "designation":
+            if word_bbox is None and beside(nxt.line.bbox):
+                continue
             break
         if nxt.role != "dn":
+            continue
+        if word_bbox is None and beside(nxt.line.bbox):
             continue
         if word_bbox is not None:
             origin = b.rows[ri].line.bbox
