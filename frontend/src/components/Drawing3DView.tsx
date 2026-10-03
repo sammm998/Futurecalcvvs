@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { t as tr } from "../i18n";
 import * as THREE from "three";
+import { api as server } from "../api";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import { buildModel, type BuildingModel, type ModelPipe, type ModelWall } from "../three/model";
 import {
@@ -41,6 +42,9 @@ import Drawing3DControls, { type ViewName } from "./Drawing3DControls";
 type Props = {
   controlRef?: { current: { motion: (dx: number, dy: number, factor: number) => void; fit: () => void; snapshot: () => string } | null };
   result: any;
+  /** The drawing and the page shown: laid on the floor under the pipes. */
+  drawingId?: string | null;
+  page?: number;
   title?: string;
   onClose: () => void;
 };
@@ -108,7 +112,7 @@ function labelSprite(text: string, color: string): THREE.Sprite {
   return sprite;
 }
 
-export default function Drawing3DView({ result, title, onClose, controlRef }: Props) {
+export default function Drawing3DView({ result, title, onClose, controlRef, drawingId = null, page = 0 }: Props) {
   const host = useRef<HTMLDivElement>(null);
   const [model] = useState<BuildingModel>(() => buildModel(result));
   // Det man pekat på: ett rör med sin mängdrad, eller en vägg med sina mått. Ingenting annat är byggt, så
@@ -223,6 +227,53 @@ export default function Drawing3DView({ result, title, onClose, controlRef }: Pr
     slab.position.y = -0.07;
     slab.receiveShadow = true;
     scene.add(slab);
+
+    // The drawing is the floor. Every pipe stands over the line it was read from, so the model is checked
+    // against the sheet by looking down - from above, and from inside when walking through it. Only the
+    // building is drawn - not the title block and legend around it - so the lettering under the pipes is as
+    // sharp as one texture allows. The server draws it (a heavy sheet held the browser still for minutes),
+    // quick first and sharp after, in the same coordinates as the pipes.
+    let floorTex: THREE.Texture | null = null;
+    let dead = false;
+    if (drawingId) {
+      (async () => {
+        try {
+          const { cx, cy, k, w, h } = model.sheet;
+          const m = Math.max(w, h) * 0.08;
+          const x0 = cx - w / 2 - m, y0 = cy - h / 2 - m, x1 = cx + w / 2 + m, y1 = cy + h / 2 + m;
+          const cap = renderer.capabilities.maxTextureSize || 4096;
+          const fetchAt = async (px: number) => {
+            const q = `page=${page}&x0=${x0.toFixed(2)}&y0=${y0.toFixed(2)}&x1=${x1.toFixed(2)}&y1=${y1.toFixed(2)}&px=${px}`;
+            const bmp = await createImageBitmap(await server.fetchBlob(`/api/drawings/${drawingId}/page-image?${q}`));
+            // Thin plotted lines on white paper wash out under the room's light: the lines are drawn darker
+            // and the paper a shade off white, so the sheet reads as a sheet and the white walls stand off it.
+            const c = document.createElement("canvas");
+            c.width = bmp.width; c.height = bmp.height;
+            const g = c.getContext("2d")!;
+            g.filter = "contrast(1.9) brightness(0.93)";
+            g.drawImage(bmp, 0, 0);
+            bmp.close();
+            const t = new THREE.CanvasTexture(c);
+            t.colorSpace = THREE.SRGBColorSpace;
+            t.anisotropy = renderer.capabilities.getMaxAnisotropy();
+            return t;
+          };
+          floorTex = await fetchAt(Math.min(1536, cap));
+          if (dead) { floorTex.dispose(); return; }
+          const sheetMat = new THREE.MeshStandardMaterial({ map: floorTex, color: "#e4e0d8", roughness: 1.0, metalness: 0.0 });
+          const sheet = new THREE.Mesh(new THREE.PlaneGeometry((x1 - x0) * k, (y1 - y0) * k), sheetMat);
+          sheet.rotation.x = -Math.PI / 2;
+          // the region's centre, in the world: the same mapping the pipes went through
+          sheet.position.set(((x0 + x1) / 2 - cx) * k, 0.006, ((y0 + y1) / 2 - cy) * k);
+          sheet.receiveShadow = true;
+          sheet.name = "drawing-floor";
+          scene.add(sheet);
+          const sharp = await fetchAt(Math.min(4096, cap));
+          if (dead) { sharp.dispose(); return; }
+          floorTex.dispose(); floorTex = sharp; sheetMat.map = sharp; sheetMat.needsUpdate = true;
+        } catch { /* no drawing on the floor: the model stands on its slab as before */ }
+      })();
+    }
 
     // ---- väggar ----------------------------------------------------------------------------------------
     // Väggen är puts och inte plast: helt matt, utan metall, med en aning sken som en målad yta har. Den
@@ -760,6 +811,8 @@ export default function Drawing3DView({ result, title, onClose, controlRef }: Pr
       window.removeEventListener("pointerup", up);
       dom.removeEventListener("wheel", wheel);
       dom.removeEventListener("click", click as any);
+      dead = true;
+      floorTex?.dispose();
       renderer.dispose();
       sky.dispose();
       env.texture.dispose();

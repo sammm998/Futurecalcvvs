@@ -276,6 +276,7 @@ const PdfViewer = forwardRef<ViewerHandle, ViewerProps>(function PdfViewer(props
   const fit = useCallback((mode: "page" | "width") => {
     if (!vp || !container.current) return;
     const cw = container.current.clientWidth - 30, ch = container.current.clientHeight - 30;
+    if (pageEl.current) pageEl.current.style.margin = "";      // a fitted sheet needs no room round it
     setScale(mode === "width" ? cw / vp.w : Math.min(cw / vp.w, ch / vp.h));
   }, [vp]);
 
@@ -348,20 +349,14 @@ const PdfViewer = forwardRef<ViewerHandle, ViewerProps>(function PdfViewer(props
       // then the thing they asked to see is a few pixels of a whole sheet. A run too big for the frame is
       // pulled back until it fits, however close the reader was.
       const s = !fits ? want : (want > scale ? want : scale);
-      const centre = () => {
-        const pe = pageEl.current;
-        if (!pe) return;
-        const r = pe.getBoundingClientRect();
-        const vr = el.getBoundingClientRect();
-        // the run's middle, in the frame's own coordinates, brought to the middle of the frame
-        el.scrollTo({ left: el.scrollLeft + (r.left + (bbox[0] + bbox[2]) / 2 * s) - (vr.left + cw / 2),
-                      top: el.scrollTop + (r.top + (bbox[1] + bbox[3]) / 2 * s) - (vr.top + ch / 2),
-                      behavior: "smooth" });
-      };
-      setFlash({ x: (bbox[0] + bbox[2]) / 2, y: (bbox[1] + bbox[3]) / 2, r: Math.max(bw, bh) / 2 + 6, at: Date.now() });
-      if (s === scale) { centre(); return; }
+      const mid = { x: (bbox[0] + bbox[2]) / 2, y: (bbox[1] + bbox[3]) / 2 };
+      setFlash({ x: mid.x, y: mid.y, r: Math.max(bw, bh) / 2 + 6, at: Date.now() });
+      hold.current = null;
+      if (s === scale) { centreOn(mid, scale, true); return; }
+      // centred the moment the new size is laid out - measured then, not guessed two frames later
+      centreAfter.current = mid;
+      scaleRef.current = s;
       setScale(s);
-      requestAnimationFrame(() => requestAnimationFrame(centre));
     },
   }), [vp, fit, scale]);
 
@@ -384,6 +379,26 @@ const PdfViewer = forwardRef<ViewerHandle, ViewerProps>(function PdfViewer(props
 
   // the scale the sheet is laid out at right now - the one its on-screen rectangle was measured at
   const laidOut = useRef(scale);
+  // a point of the sheet to bring to the middle of the frame once the size it was asked at is laid out
+  const centreAfter = useRef<{ x: number; y: number } | null>(null);
+  /** Bring the sheet point (x, y) to the middle of the frame, at the scale the sheet is laid out at. */
+  const centreOn = useCallback((mid: { x: number; y: number }, at: number, smooth: boolean) => {
+    const el = container.current, pe = pageEl.current;
+    if (!el || !pe) return;
+    const target = () => {
+      const r = pe.getBoundingClientRect(), vr = el.getBoundingClientRect();
+      return { left: el.scrollLeft + (r.left + mid.x * at) - (vr.left + el.clientWidth / 2),
+               top: el.scrollTop + (r.top + mid.y * at) - (vr.top + el.clientHeight / 2) };
+    };
+    let t = target();
+    // A run by the edge of the sheet cannot come to the middle of a frame that stops at the sheet's edge. Like
+    // a CAD drawing area, the sheet then gets room round it - half a frame each way - until the next fit.
+    if (t.left < 0 || t.top < 0 || t.left > el.scrollWidth - el.clientWidth || t.top > el.scrollHeight - el.clientHeight) {
+      pe.style.margin = `${Math.round(el.clientHeight / 2)}px ${Math.round(el.clientWidth / 2)}px`;
+      t = target();
+    }
+    el.scrollTo({ ...t, behavior: smooth ? "smooth" : "auto" });
+  }, []);
   const zoomAt = useCallback((factor: number, cx: number, cy: number) => {
     const el = container.current, pe = pageEl.current;
     if (!el || !pe) return;
@@ -439,6 +454,12 @@ const PdfViewer = forwardRef<ViewerHandle, ViewerProps>(function PdfViewer(props
   // after the sheet has been laid out at its new size, put the held point back under the pointer
   useLayoutEffect(() => {
     laidOut.current = scale;
+    if (centreAfter.current) {
+      const mid = centreAfter.current;
+      centreAfter.current = null;
+      centreOn(mid, scale, false);
+      return;
+    }
     const el = container.current, pe = pageEl.current, hcur = hold.current;
     if (!el || !pe || !hcur) return;
     hold.current = null;

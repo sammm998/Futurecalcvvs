@@ -18,6 +18,8 @@ export default function LiveDrawingAgent({ jobId, onClose, execute, onMotion }: 
   const generation = useRef(0), abort = useRef<AbortController | null>(null), sender = useRef<RTCRtpSender | null>(null);
   const run = useRef(execute); run.current = execute;
   const called = useRef(new Set<string>()), timer = useRef(0);
+  // what was typed before the conversation was open: sent as the first message once it is
+  const pending = useRef('');
   const add = (id: string, who: string, text: string, delta = false) => setMessages(old => {
     const found = old.find(m => m.id === id);
     return found ? old.map(m => m.id === id ? { ...m, text: delta ? m.text + text : text } : m) : [...old, { id, who, text }].slice(-80);
@@ -35,7 +37,8 @@ export default function LiveDrawingAgent({ jobId, onClose, execute, onMotion }: 
   };
   useEffect(() => () => stop(), [jobId]);
   const start = async () => {
-    stop(); setMessages([]); const gen = generation.current; called.current.clear(); setErr(''); setBusy(true); setStatus(tr("Ansluter…"));
+    const waiting = pending.current;
+    stop(); setMessages(waiting ? [{ id: crypto.randomUUID(), who: tr("Du"), text: waiting }] : []); pending.current = waiting; const gen = generation.current; called.current.clear(); setErr(''); setBusy(true); setStatus(tr("Ansluter…"));
     const controller = new AbortController(); abort.current = controller;
     timer.current = window.setTimeout(() => { if (gen === generation.current) { stop(); setErr(tr("Anslutningen tog för lång tid. Försök igen.")); } }, 40000);
     try {
@@ -52,6 +55,8 @@ export default function LiveDrawingAgent({ jobId, onClose, execute, onMotion }: 
       };
       const dc = peer.createDataChannel('oai-events'); channel.current = dc;
       dc.onopen = () => { if (gen !== generation.current) return; window.clearTimeout(timer.current); setConnected(true); setBusy(false); setStatus(tr("Samtal öppet · mikrofon av"));
+        const first = pending.current; pending.current = '';
+        if (first) { send({ type: 'conversation.item.create', item: { type: 'message', role: 'user', content: [{ type: 'input_text', text: first }] } }); send({ type: 'response.create' }); return; }
         send({ type: 'response.create', response: { instructions: lang === 'en' ? 'Greet briefly in English. Say the conversation is open and the user can type or press Talk to the agent to enable the microphone. Ask how you can help with the drawing.' : 'Hälsa kort på svenska. Säg att samtalet är öppet och att användaren kan skriva eller trycka Prata med agenten för att slå på mikrofonen. Fråga vad du ska hjälpa till med på ritningen.' } });
       };
       dc.onmessage = async e => {
@@ -91,7 +96,7 @@ export default function LiveDrawingAgent({ jobId, onClose, execute, onMotion }: 
       if (!answer.ok) throw new Error(trf("Röstanslutningen nekades ({0}).", answer.status));
       if (gen !== generation.current) return;
       await peer.setRemoteDescription({ type: 'answer', sdp: await answer.text() });
-    } catch (error) { if (gen !== generation.current) return; stop(); setErr(error instanceof Error ? error.message : tr("Samtalet kunde inte starta.")); }
+    } catch (error) { if (gen !== generation.current) return; pending.current = ''; stop(); setErr(error instanceof Error ? error.message : tr("Samtalet kunde inte starta.")); }
   };
   const toggleMic = async () => {
     if (mic) { media.current?.getTracks().forEach(t => t.stop()); media.current = null; await sender.current?.replaceTrack(null); setMic(false); setStatus(tr("Samtal öppet · mikrofon av")); return; }
@@ -106,6 +111,12 @@ export default function LiveDrawingAgent({ jobId, onClose, execute, onMotion }: 
   };
   const submit = () => {
     const text = input.trim(); if (!text) return;
+    // Typing is a way to start: the conversation opens and the message goes as soon as it can.
+    if (!connected) {
+      if (busy) return;
+      pending.current = text; setInput(''); void start();
+      return;
+    }
     try { send({ type: 'conversation.item.create', item: { type: 'message', role: 'user', content: [{ type: 'input_text', text }] } }); send({ type: 'response.create' }); add(crypto.randomUUID(), tr("Du"), text); setInput(''); }
     catch (e) { setErr((e as Error).message); }
   };
@@ -113,13 +124,13 @@ export default function LiveDrawingAgent({ jobId, onClose, execute, onMotion }: 
     <header><strong>{tr("Samtalsagent")}</strong><button className="secondary small" onClick={onClose} aria-label={tr("Stäng samtalsagent")}>{tr("Stäng ×")}</button></header>
     <p className="muted small">{status}</p>
     <div className="live-controls">
-      <button className="small" onClick={connected || busy ? stop : start}>{busy ? tr("Avbryt anslutning") : connected ? tr("Avsluta samtal") : tr("Starta samtal")}</button>
+      <button className="small" onClick={connected || busy ? () => { pending.current = ''; stop(); } : start}>{busy ? tr("Avbryt anslutning") : connected ? tr("Avsluta samtal") : tr("Starta samtal")}</button>
       <button className="secondary small" disabled={!connected || micBusy} onClick={toggleMic}>{mic ? tr("Stäng mikrofon") : tr("Prata med agenten")}</button>
     </div>
     <small>{tr("Skriv nedan eller slå på mikrofonen med Prata med agenten. Röst och delade bilder skickas till OpenAI.")}</small>
     <audio ref={audio} hidden={!connected} autoPlay controls className="live-audio" />
     <div ref={log} className="live-messages" role="log" aria-live="polite">{messages.map(m => <p key={m.id}><b>{m.who}</b><br />{m.text}</p>)}</div>
-    <form onSubmit={e => { e.preventDefault(); submit(); }}><input aria-label={tr("Meddelande till samtalsagent")} placeholder={tr("T.ex. visa i 3D eller zooma in")} value={input} onChange={e => setInput(e.target.value)} maxLength={4000} /><button className="small" disabled={!connected || !input.trim()}>{tr("Skicka")}</button></form>
+    <form onSubmit={e => { e.preventDefault(); submit(); }}><input aria-label={tr("Meddelande till samtalsagent")} placeholder={tr("T.ex. visa i 3D eller zooma in")} value={input} onChange={e => setInput(e.target.value)} maxLength={4000} /><button className="small" disabled={busy || !input.trim()}>{tr("Skicka")}</button></form>
     {err && <p className="error" role="alert">{err}</p>}
     <HandCamera onMotion={onMotion} onImage={image => {
       try { send({ type: 'conversation.item.create', item: { type: 'message', role: 'user', content: [{ type: 'input_text', text: tr("Jag delar denna kamerabild med dig. Vad ser du?") }, { type: 'input_image', image_url: image }] } }); send({ type: 'response.create' }); add(crypto.randomUUID(), tr("Du"), tr("Kamerabild delad")); }

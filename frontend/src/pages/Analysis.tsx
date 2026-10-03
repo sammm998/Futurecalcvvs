@@ -445,7 +445,7 @@ export default function AnalysisPage() {
     {show3d && (
       <DrawingTo3DTransition onDone={() => setRising(false)}>
         <Suspense fallback={<div className="d3-wrap"><div className="d3-loading"><span /></div></div>}>
-          <Drawing3DView controlRef={live3d} result={withPipeExtensions(result, corrections)} title={drawing?.filename?.replace(/\.pdf$/i, "") ?? undefined}
+          <Drawing3DView controlRef={live3d} result={withPipeExtensions(result, corrections)} drawingId={job?.drawing_id ?? null} page={displayedPage} title={drawing?.filename?.replace(/\.pdf$/i, "") ?? undefined}
             onClose={() => { setShow3d(false); setRising(false); }} />
         </Suspense>
       </DrawingTo3DTransition>

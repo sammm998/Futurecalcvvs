@@ -360,6 +360,37 @@ def drawing_file(drawing_id: str, user: User = Depends(current_user), db: Sessio
     return FileResponse(storage.path(d.storage_key), media_type="application/pdf", filename=d.filename)
 
 
+@app.get("/api/drawings/{drawing_id}/page-image")
+def drawing_page_image(drawing_id: str, page: int = 0, x0: float = 0, y0: float = 0, x1: float = 0, y1: float = 0,
+                       px: int = 4096, user: User = Depends(current_user), db: Session = Depends(get_db)):
+    """A part of one page as a picture, in the sheet's own points: the floor the 3D model stands on.
+
+    Drawn here, where it takes a second, rather than in the browser, where a heavy sheet held the page still
+    for minutes while the model waited. The region is in the coordinates the reading works in (the page as
+    shown); the longer side gets `px` pixels."""
+    import pymupdf
+    from fastapi.responses import Response
+    d = _drawing(db, user, drawing_id)
+    with pymupdf.open(storage.path(d.storage_key)) as doc:
+        if not 0 <= page < doc.page_count:
+            raise HTTPException(404, "Sidan finns inte")
+        pg = doc[page]
+        shown = pg.rect * pg.rotation_matrix
+        want = pymupdf.Rect(x0, y0, x1, y1) if x1 > x0 and y1 > y0 else shown.normalize()
+        z = max(64, min(int(px), 8192)) / max(want.width, want.height)
+        # the picture covers exactly the region asked for; what lies off the page is paper-white
+        out = pymupdf.Pixmap(pymupdf.csRGB, pymupdf.IRect(0, 0, round(want.width * z), round(want.height * z)), False)
+        out.clear_with(255)
+        part = want & shown.normalize()
+        if not part.is_empty:
+            pix = pg.get_pixmap(matrix=pymupdf.Matrix(z, z).prerotate(pg.rotation),
+                                clip=(part * pg.derotation_matrix).normalize(), alpha=False)
+            pix.set_origin(round((part.x0 - want.x0) * z), round((part.y0 - want.y0) * z))
+            out.copy(pix, pix.irect)
+        return Response(out.tobytes("jpg", jpg_quality=88), media_type="image/jpeg",
+                        headers={"Cache-Control": "private, max-age=86400"})
+
+
 @app.delete("/api/drawings/{drawing_id}")
 def delete_drawing(drawing_id: str, user: User = Depends(current_user), db: Session = Depends(get_db)):
     d = _drawing(db, user, drawing_id)
