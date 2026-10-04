@@ -738,7 +738,10 @@ def materials(q: str = "", group: str = "", unit: str = "", limit: int = 60, off
             "groups": sorted({(r.get("gr") or "") for r in book["rows"] if r.get("gr")})[:60]}
 
 
-ASSUMPTION_DEFAULTS = {"floor_height_m": None, "riser_source": "labels", "include_hatched": False,
+# A riser is one storey, 2.8 m, until the service or the reader says otherwise: every reference takeoff measured
+# (W-50-1-A-0033, -0111, -0114 and the rest) counts each riser at 2.80 m, and a vertical column left UNKNOWN
+# dropped the risers the reading had found - ten of ten on -0033 - out of the total.
+ASSUMPTION_DEFAULTS = {"floor_height_m": 2.8, "riser_source": "labels", "include_hatched": False,
                        "include_declared": True}
 
 # Vad läsningen kör, till skillnad från vad den antar. De två OCR-passen kostar tid och är mätta: se
@@ -1363,6 +1366,11 @@ def export(job_id: str, fmt: str, floor_height: float | None = None, include_hat
     rd = _result_dir(j)
     base = os.path.splitext(j.drawing.filename)[0]
     fh = floor_height if floor_height and floor_height > 0 else None
+    if floor_height is None:
+        # no height in the request: the service's assumption, which is a storey of 2.8 m unless changed
+        row = db.get(ServiceSetting, "assume:floor_height_m")
+        stored = (row.value or {}).get("v") if row is not None and isinstance(row.value, dict) else ASSUMPTION_DEFAULTS["floor_height_m"]
+        fh = float(stored) if stored else None
     # An export carries the reading as it stands, corrections included. Leaving them out would hand back the
     # figure the reader already rejected on screen, in the file they price from.
     quantities = _load(rd, "quantities.json")

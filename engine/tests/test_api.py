@@ -236,6 +236,12 @@ def test_an_export_carries_the_corrected_reading_and_the_riser_source_on_screen(
         else:
             assert "ANTAGET" not in got["Vertikalt ursprung"]
 
+    # no height asked for: a riser is a storey of 2.8 m, said to be an assumption, never left UNKNOWN
+    n = q["riser_count_from_labels"]
+    got = row_of(client.get(f"/api/jobs/{j['id']}/export/csv", headers=H).content.decode("utf-8-sig"))
+    if n:
+        assert f"{n} stigare x 2.8 m" in got["Vertikalt ursprung"], got["Vertikalt ursprung"]
+
 
 def test_an_agent_proposal_is_only_written_when_a_person_accepts_it(client, source_api_pdf):
     """The agent proposes; accepting writes. And what is written is what the server recomputes, not what it is sent."""
