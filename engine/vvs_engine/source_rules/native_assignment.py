@@ -130,7 +130,7 @@ def project(graphs, native, result, page, elevations, host_reading=None):
     continued=_settle_unowned(graphs,states,set_aside,host if host_reading is not None else None)
     landed=_landed_labels(graphs,A,R,labels)
     continued['same_line_larger_on_both_sides']=_undo_a_smaller_size_between_larger(graphs,states,landed)
-    continued['connection_piece_is_only_the_end']=_a_connection_piece_is_only_the_end(graphs,states)
+    continued['connection_piece_is_only_the_end']=_a_connection_piece_is_only_the_end(graphs,states,landed)
     # Native joining points and VG/CL landings delimit measurement sections.
     native_points={(round(n['x'],2),round(n['y'],2)) for n in A['nodes']}
     local_levels=defaultdict(list)
@@ -360,23 +360,41 @@ def _undo_a_smaller_size_between_larger(graphs,states,landed=None):
     return moved
 
 
-def _a_connection_piece_is_only_the_end(graphs,states):
+LONG_CONNECTION_PT=80.0   # a connection longer than this (about 1.5 m at 1:50) is a tube read as its connection
+CONNECTION_MATERIALS=('K5','R1')   # chromed copper connections at a fixture
+
+
+def _a_connection_piece_is_only_the_end(graphs,states,landed=None):
     """A chromed connection (K5) is the last straight piece at the tap; the PEX tube it is joined to runs up to it.
 
     A tap's connection is labelled at the fixture - `KV1-K5 / 15` - and the PEX tube from the manifold (X31) is
     labelled at the manifold. Read from the leaders, the connection's name ran back along the tube to the first
     junction: on W-50-1-A-0111 15.6 m were named K5 where the reference has 1.4 m, the rest of it the X31 tube.
 
-    So where a run named by a connection material (K5) is joined, in its own pen, to a run of the same system
+    So where a run named by a connection material (K5, R1) is joined, in its own pen, to a run of the same system
     named X31, it takes the tube's name - all but the straight piece that ends free at the fixture, which stays
     the connection. A connection run with no free end, or joined to more than one tube, is left as it is.
+
+    A tube can also reach the fixture from a riser stack with no tube label on it at all, and then the host reading
+    names the whole tube after the connection at its end: on W-50-1-A-0111 a 306 pt PEX tube read VV1-R1-18. A
+    connection run far longer than any connection (LONG_CONNECTION_PT) joined to no tube gives all but its end
+    piece to the sheet's PEX designation for the system - only where the sheet writes exactly one. Replayed over
+    the eleven reference sheets: A0111 coverage 79.5 -> 83.9 %, overshoot 18.2 -> 13.8 %, no sheet worse.
     """
     import math
     moved=0
+    landed=landed or {}
+    mats=CONNECTION_MATERIALS
     def is_conn(i):
-        return i is not None and '-K5' in (i.base or '')
+        return i is not None and any(f'-{m}' in (i.base or '') for m in mats)
     def tube_of(i,c):
         return i is not None and 'X31' in (i.base or '') and (i.system or '')==(c.system or '')
+    # the sheet's own PEX designation per system, where it writes exactly one
+    pex=defaultdict(set)
+    for fam in states.values():
+        for st_ in fam.values():
+            if st_.state=='CONFIRMED' and st_.identity is not None and 'X31' in (st_.identity.base or ''):
+                pex[st_.identity.system].add(st_.identity)
     for fk,g in graphs.items():
         family=states[fk];seen=set()
         for start,st in list(family.items()):
@@ -394,16 +412,23 @@ def _a_connection_piece_is_only_the_end(graphs,states):
                             if q not in seen:seen.add(q);comp.append(q)
                         elif tube_of(o.identity,ident):
                             tubes.add(o.identity)
-            if len(tubes)!=1:
+            if len(tubes)>1:
                 continue
+            tubes_given=bool(tubes)
+            if not tubes:
+                # joined to no tube: only a run far longer than a connection is one, and only where the sheet
+                # writes a single PEX designation for the system to give it back to
+                length=sum(g.prims[p].seg.length for p in comp)
+                if length<=LONG_CONNECTION_PT or len(pex.get(ident.system,()))!=1:
+                    continue
+                tubes={next(iter(pex[ident.system]))}
             tube=next(iter(tubes));members=set(comp)
             free=[n for p in comp for n in g.prim_nodes[p] if len(g.nodes[n].prims)==1]
             if not free:
                 continue
-            keep=set()
-            for n0 in free:
-                prim=next(p for p in g.nodes[n0].prims if p in members);at=n0;dirn=None
-                while prim is not None and prim in members and prim not in keep:
+            def end_piece(n0):
+                piece=[];prim=next(p for p in g.nodes[n0].prims if p in members);at=n0;dirn=None
+                while prim is not None and prim in members and prim not in piece:
                     a,b=g.prim_nodes[prim];far=b if a==at else a
                     sg=g.prims[prim].seg;x0,y0=(sg.x0,sg.y0) if a==at else (sg.x1,sg.y1);x1,y1=(sg.x1,sg.y1) if a==at else (sg.x0,sg.y0)
                     L=math.hypot(x1-x0,y1-y0)
@@ -412,9 +437,22 @@ def _a_connection_piece_is_only_the_end(graphs,states):
                         if dirn is not None and u[0]*dirn[0]+u[1]*dirn[1]<0.995:
                             break
                         dirn=dirn or u
-                    keep.add(prim)
+                    piece.append(prim)
                     nxt=[q for q in g.nodes[far].prims if q!=prim and q in members]
                     prim=nxt[0] if len(g.nodes[far].prims)==2 and len(nxt)==1 else None;at=far
+                return piece
+            pieces={n0:end_piece(n0) for n0 in free}
+            # the fixture end is where the connection's own label lands; failing that, the shorter straight end -
+            # the other free end of a tube is its riser, and stays the tube's
+            here=landed.get(fk,{})
+            at_label=[n0 for n0 in free if any(identity(d)==ident for lb in here.get(n0,()) for d in (lb.get('designations') or []) if d.get('dimension'))]
+            if tubes_given:
+                ends=free
+            elif at_label:
+                ends=at_label
+            else:
+                ends=[min(free,key=lambda n0:sum(g.prims[p].seg.length for p in pieces[n0]))]
+            keep={p for n0 in ends for p in pieces[n0]}
             for pid in comp:
                 if pid in keep:continue
                 s_=family[pid];s_.identity=tube;s_.reason='connection_piece_is_only_the_end'
