@@ -45,5 +45,8 @@ export const live: Record<string, string> = {
   "Kameran behandlas lokalt. Endast knappen nedan skickar en stillbild till samtalet.": "Camera processing is local. Only the button below sends a still image to the conversation.",
   "Dela kamerabild i samtalet": "Share camera image in conversation",
   "händer upptäckta": "hands detected",
-  "Röstanslutningen nekades ({0}).": "Voice connection rejected ({0})."
+  "Röstanslutningen nekades ({0}).": "Voice connection rejected ({0}).",
+  "Agenten tänker…": "The agent is thinking…",
+  "Textläge · röstanslutningen gick inte att öppna": "Text mode · the voice connection could not be opened",
+  "Agenten kunde inte svara.": "The agent could not answer.",
 };

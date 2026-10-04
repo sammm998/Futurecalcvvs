@@ -10,7 +10,7 @@ const VIEWS: [ViewName, string][] = [
 ];
 
 export default function Drawing3DControls({
-  onView, onReset, onSpin, exploded, onExploded, labels, onLabels, xray, onXray, walking, onWalk,
+  onView, onReset, onSpin, exploded, onExploded, labels, onLabels, xray, onXray, fullWalls, onFullWalls, walking, onWalk,
 }: {
   onView: (v: ViewName) => void;
   onReset: () => void;
@@ -21,6 +21,8 @@ export default function Drawing3DControls({
   onLabels: (v: boolean) => void;
   xray: boolean;
   onXray: (v: boolean) => void;
+  fullWalls: boolean;
+  onFullWalls: (v: boolean) => void;
   walking: boolean;
   onWalk: (v: boolean) => void;
 }) {
@@ -47,6 +49,10 @@ export default function Drawing3DControls({
       <label className="small check">
         <input type="checkbox" checked={xray} onChange={(e) => onXray(e.target.checked)} />
         {" "}Genomskinliga väggar
+      </label>
+      <label className="small check" title={tr("Annars kapas väggarna i brösthöjd så att rören under taket syns ovanifrån")}>
+        <input type="checkbox" checked={fullWalls} onChange={(e) => onFullWalls(e.target.checked)} disabled={walking} />
+        {" "}Väggar i full höjd
       </label>
       <label className="small check">
         <input type="checkbox" checked={exploded} onChange={(e) => onExploded(e.target.checked)} disabled={walking} />

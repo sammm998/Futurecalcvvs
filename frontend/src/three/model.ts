@@ -156,6 +156,38 @@ function polylinesOf(p: any): number[][][] {
   return raw as number[][][];
 }
 
+const JOIN_GAP_M = 0.4;     // luckan i ett streckat rör, i meter: streckens mellanrum är några centimeter
+const JOIN_GAP_PT = 12;     // ...och i bladets punkter när skalan saknas
+
+/**
+ * Ett streckat rör är ritat som ett streck i taget, och läsningen lämnar varje streck som en egen bit. Byggd bit
+ * för bit blev ledningen en rad lösa stumpar i 3D. Bitarna i ett och samma fysiska rör hör ihop - läsningen har
+ * redan avgjort att de är en ledning - så de fogas till sammanhängande linjer där ena bitens ände möter nästas.
+ */
+export function joinedRuns(polys: number[][][], gap: number): number[][][] {
+  const left = polys.filter((q) => Array.isArray(q) && q.length >= 2).map((q) => q.slice());
+  const out: number[][][] = [];
+  const d = (a: number[], b: number[]) => Math.hypot(a[0] - b[0], a[1] - b[1]);
+  while (left.length) {
+    let run = left.shift()!;
+    for (let grew = true; grew;) {
+      grew = false;
+      for (let i = 0; i < left.length; i++) {
+        const q = left[i], head = run[0], tail = run[run.length - 1];
+        if (d(tail, q[0]) <= gap) run = [...run, ...q];
+        else if (d(tail, q[q.length - 1]) <= gap) run = [...run, ...q.slice().reverse()];
+        else if (d(head, q[q.length - 1]) <= gap) run = [...q, ...run];
+        else if (d(head, q[0]) <= gap) run = [...q.slice().reverse(), ...run];
+        else continue;
+        left.splice(i, 1); grew = true; break;
+      }
+    }
+    // två punkter på samma ställe ger en böj utan riktning; en av dem räcker
+    out.push(run.filter((pt, i) => i === 0 || d(pt, run[i - 1]) > 1e-9));
+  }
+  return out;
+}
+
 /**
  * Bygg modellen ur läsningens svar.
  *
@@ -259,7 +291,7 @@ export function buildModel(result: Result, opts: { floorHeight?: number; wallLim
     const dn: number | null = p.dn ?? (typeof p.identity === "object" ? p.identity?.dn : null) ?? null;
     const key = pipeColorKey({ ...p, identity: typeof p.identity === "string" ? p.identity : undefined, designation: des, dn });
     let n = 0;
-    for (const poly of polylinesOf(p)) push(`${p.physical_pipe_id ?? p.id ?? pipes.length}-${n++}`, des, dn, poly, false, key);
+    for (const poly of joinedRuns(polylinesOf(p), scaled ? JOIN_GAP_M / k : JOIN_GAP_PT)) push(`${p.physical_pipe_id ?? p.id ?? pipes.length}-${n++}`, des, dn, poly, false, key);
   }
   // Bitarna som går genom en vägg är ritade rör som mängden räknar för sig; utan dem har varje rör hål där
   // väggarna står, och byggnaden ser ut att sakna installation just där den behöver den.

@@ -68,14 +68,17 @@ def _child(connection, args, kwargs, rule_values):
         with rules.using(rule_values):
             result=analyze_pdf(*args,**kwargs)
         # Annotations were removed before inference; this report is never fed back.
+        # a sheet the reading turned upright was read from the turned copy, and that copy is what is checked
+        import os as _os
+        read = _os.path.join(args[1], result['upright_file']) if result.get('upright_file') else args[0]
         from .reference_audit import write_report
-        write_report(args[0], args[1])
+        write_report(read, args[1])
         if label_audit:
             import json
             from pathlib import Path
             try:
                 from vvs_engine.label_detector import audit
-                reports = audit(args[0], args[1], Path(__file__).resolve().parents[2]/'models/pipestudio-labels.onnx')
+                reports = audit(read, args[1], Path(__file__).resolve().parents[2]/'models/pipestudio-labels.onnx')
                 audit_status = {'state':'COMPLETED','pages':len(reports),
                                 'unmatched_proposals':sum(r['unmatched_proposals'] for r in reports)}
             except Exception as e:

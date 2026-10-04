@@ -415,6 +415,25 @@ def live_session(job_id: str, language: Literal["sv", "en"] = "sv", user: User =
     return JSONResponse(result, headers={"Cache-Control": "no-store"})
 
 
+@app.post("/api/jobs/{job_id}/live/text")
+def live_text(job_id: str, body: dict, language: Literal["sv", "en"] = "sv", user: User = Depends(current_user),
+              db: Session = Depends(get_db)):
+    """Samtalsagenten i text, när webbläsarens röstanslutning inte går att öppna (brandvägg, ingen WebRTC)."""
+    j = _job(db, user, job_id)
+    if j.status != "COMPLETED":
+        raise HTTPException(409, "Analysen är inte klar")
+    from .live_agent import text_turn
+    prev = body.get("previous_response_id")
+    try:
+        result = text_turn(body.get("input") or [], prev if isinstance(prev, str) else None, language=language)
+    except ValueError:
+        raise HTTPException(503, "OpenAI-anslutning saknas") from None
+    except Exception:
+        import logging; logging.getLogger("vvs.live").exception("Samtalsagentens textsvar misslyckades")
+        raise HTTPException(502, "Agenten kunde inte svara. Försök igen.") from None
+    return JSONResponse(result, headers={"Cache-Control": "no-store"})
+
+
 @app.get("/api/analysis-options")
 def analysis_options(user: User = Depends(current_user)):
     from vvs_engine.source_rules.styles import profiles

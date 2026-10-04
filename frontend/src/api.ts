@@ -94,6 +94,8 @@ export const api = {
   agent: (jobId: string, body: any) =>
     req(`/api/jobs/${jobId}/agent`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }),
   liveSession: (jobId: string, language: "sv" | "en" = "sv") => req(`/api/jobs/${jobId}/live/session?language=${language}`, { method: "POST" }),
+  liveText: (jobId: string, input: any[], previous: string | null, language: "sv" | "en" = "sv") =>
+    req(`/api/jobs/${jobId}/live/text?language=${language}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ input, previous_response_id: previous }) }),
   agentTools: () => req(`/api/agent/tools`),
   // Agenten som egen plats: filerna ligger på användaren, inte på ett projekt, och frågan går till dess egna
   // verktyg. Skild från `agent(jobId, …)`, som svarar om en bestämd läsning.

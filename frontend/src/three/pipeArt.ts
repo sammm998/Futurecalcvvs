@@ -120,10 +120,12 @@ export function pipeMaterial(color: string, medium: Medium, inWall = false): THR
 
 /** Isoleringens mantel: matt och ljus, med systemets färg kvar som en svag ton. */
 export function jacketMaterial(color: string): THREE.MeshPhysicalMaterial {
-  const c = new THREE.Color(color).lerp(new THREE.Color("#efe9df"), 0.8);
+  // Manteln bär rörets färg i en ljus ton. Nästan vit försvann systemet under isoleringen: på avstånd syntes
+  // bara färgade band vid skarvarna, och ledningen såg ut som lösa stumpar.
+  const c = new THREE.Color(color).lerp(new THREE.Color("#efe9df"), 0.45);
   return new THREE.MeshPhysicalMaterial({
     color: c, metalness: 0.0, roughness: 0.9,
-    sheen: 0.5, sheenColor: new THREE.Color("#ffffff"), sheenRoughness: 0.8,
+    sheen: 0.35, sheenColor: new THREE.Color("#ffffff"), sheenRoughness: 0.8,
   });
 }
 
