@@ -38,3 +38,29 @@ def test_a_connection_joined_to_no_tube_is_left():
     graphs, states = run(tube_end=other)
     assert _a_connection_piece_is_only_the_end(graphs, states) == 0
     assert states['f'][1].identity == K5
+
+
+def long_run(tube_elsewhere=True, length=300):
+    # one connection run, no tube joined to it: a long leg (0) and the straight end piece at the tap (1)
+    pts = [(0, 0), (length, 0), (length, 10)]
+    prims = {0: Prim(0, 'a', 0, Seg(*pts[0], *pts[1]), 'f', 'pipe', 1), 1: Prim(1, 'b', 0, Seg(*pts[1], *pts[2]), 'f', 'pipe', 1)}
+    nodes = {0: Node(0, *pts[0], [0]), 1: Node(1, *pts[1], [0, 1]), 2: Node(2, *pts[2], [1])}
+    g = PipeGraph('f', prims, nodes, {0: (0, 1), 1: (1, 2)}, [], None)
+    st = {0: PrimState('CONFIRMED', K5), 1: PrimState('CONFIRMED', K5)}
+    graphs = {'f': g, 'g': PipeGraph('g', {9: Prim(9, 'z', 0, Seg(0, 500, 50, 500), 'g', 'pipe', 1)},
+                                     {7: Node(7, 0, 500, [9]), 8: Node(8, 50, 500, [9])}, {9: (7, 8)}, [], None)}
+    states = {'f': st, 'g': {9: PrimState('CONFIRMED', X31 if tube_elsewhere else K5)}}
+    return graphs, states
+
+
+def test_a_long_connection_joined_to_no_tube_gives_its_length_to_the_sheets_pex():
+    graphs, states = long_run()
+    assert _a_connection_piece_is_only_the_end(graphs, states) == 1
+    assert states['f'][0].identity == X31 and states['f'][1].identity == K5
+
+
+def test_a_short_connection_or_a_sheet_without_pex_is_left():
+    graphs, states = long_run(length=40)
+    assert _a_connection_piece_is_only_the_end(graphs, states) == 0
+    graphs, states = long_run(tube_elsewhere=False)
+    assert _a_connection_piece_is_only_the_end(graphs, states) == 0
