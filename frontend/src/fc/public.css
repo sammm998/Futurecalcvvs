@@ -135,31 +135,43 @@
   border-bottom: 0;
 }
 .fcpub .pub-light { padding-bottom: clamp(30px, 6vh, 80px); }
-.fcpub .pub-light .pub-sec { border-bottom-color: var(--fc-line-2); }
+.fcpub .pub-lit .pub-sec { border-bottom-color: var(--fc-line-2); }
 
 /* Den gamla ramens delar (landing.css) skrev ljus text med fasta värden för en mörk sida. På papperet byter
    de till samma bläck som resten: variablerna först, sedan de rader som skrev en färg rakt ut. */
-.fcpub .pub-light {
+.fcpub .pub-lit {
   --lp-bg: var(--fc-black); --lp-ink: var(--fc-ink); --lp-dim: var(--fc-ink-60); --lp-faint: var(--fc-ink-40);
   --lp-line: var(--fc-line-2); --lp-line-2: var(--fc-line); --lp-card: var(--fc-bg-2);
   --lp-accent: var(--fc-accent); --lp-accent-dim: var(--fc-accent-dim);
 }
-.fcpub .pub-light :is(h1, h2, h3, h4, summary, b, strong),
-.fcpub .pub-light :is(.pub-big, .pub-price, .pub-table td, .lp-row, .lp-row.sum, .lp-tally-row, .lp-tally-row .mq,
+.fcpub .pub-lit :is(h1, h2, h3, h4, summary, b, strong),
+.fcpub .pub-lit :is(.pub-big, .pub-price, .pub-table td, .lp-row, .lp-row.sum, .lp-tally-row, .lp-tally-row .mq,
   .lp-chip, .lp-chip b, .lp-arrow, .lp-pill, .docs-sec b, .docs-metrics td, .docs-metrics tr.sum td,
   .lp-agent-msg p, .lp-agent-prop .ph, .lp-agent-prop ul, .lp-screens figcaption b, .lp-beats li.on, .docs-nav a.on) {
   color: var(--fc-ink);
 }
-.fcpub .pub-light .pub-lessons li { color: var(--fc-ink-60); border-bottom-color: var(--fc-line-2); }
-.fcpub .pub-light .docs-metrics td { border-bottom-color: var(--fc-line-2); }
-.fcpub .pub-light .pub-err { color: #b42318; }
-.fcpub .pub-light :is(.pub-form input, .pub-form select, .pub-form textarea) {
+.fcpub .pub-lit .pub-lessons li { color: var(--fc-ink-60); border-bottom-color: var(--fc-line-2); }
+.fcpub .pub-lit .docs-metrics td { border-bottom-color: var(--fc-line-2); }
+.fcpub .pub-lit .pub-err { color: #b42318; }
+.fcpub .pub-lit :is(.pub-form input, .pub-form select, .pub-form textarea) {
   color: var(--fc-ink); background: var(--fc-bg-2); border-color: var(--fc-line);
 }
-.fcpub .pub-light :is(.pub-card, .lp-card, .lp-ev, .lp-step, .lp-acad-card) {
+.fcpub .pub-lit :is(.pub-card, .lp-card, .lp-ev, .lp-step, .lp-acad-card) {
   background: var(--fc-bg-2); border-color: var(--fc-line-2); box-shadow: var(--fc-shadow);
 }
-.fcpub .pub-light .pub-faq details { background: var(--fc-bg-2); border-color: var(--fc-line-2); }
-.fcpub .pub-light .lp-btn.ghost:hover, .fcpub .pub-light .lp-pill:hover { background: var(--fc-bg-3); border-color: var(--fc-line-3); }
-.fcpub .pub-light .lp-btn.primary { background: var(--fc-ink); color: #fff; }
-.fcpub .pub-light .lp-btn.primary:hover { background: var(--fc-accent); color: #fff; }
+.fcpub .pub-lit .pub-faq details { background: var(--fc-bg-2); border-color: var(--fc-line-2); }
+.fcpub .pub-lit .lp-btn.ghost:hover, .fcpub .pub-lit .lp-pill:hover { background: var(--fc-bg-3); border-color: var(--fc-line-3); }
+.fcpub .pub-lit .lp-btn.primary { background: var(--fc-ink); color: #fff; }
+.fcpub .pub-lit .lp-btn.primary:hover { background: var(--fc-accent); color: #fff; }
+
+/* Den breda layouten stod kant i kant: text som börjar mot skärmens vänsterkant och rader på 2000 px. Den
+   får samma centrerade spalt och marginal som resten; det breda är spalten, inte frånvaron av en. */
+.fcpub .pub-body.wide { max-width: calc(var(--fc-col) + 2 * var(--fc-gut)); margin: 0 auto; padding: 0 var(--fc-gut); }
+.fcpub .pub-body :is(p, li) { max-width: 72ch; }
+.fcpub .pub-body :is(.pub-grid, .pub-cards, table, .lp-cards, .lp-steps) p { max-width: none; }
+
+/* På papperet är all löptext mörk, vad den gamla ramen än skrev för färg. */
+.fcpub .pub-lit :is(p, li, dd, td, small, label, figcaption) { color: var(--fc-ink-60); }
+.fcpub .pub-lit :is(h1, h2, h3, h4, b, strong, summary, dt, th) { color: var(--fc-ink); }
+.fcpub .pub-lit :is(.lp-kicker, .fc-label-on) { color: var(--fc-accent); }
+.fcpub .pub-lit { border-bottom: 0; }

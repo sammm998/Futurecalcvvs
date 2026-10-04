@@ -4,6 +4,12 @@ import { api } from '../api';
 import HandCamera from './HandCamera';
 import type { Motion } from './gestures';
 
+/** **fet** i agentens svar som fet stil, inte som stjärnor - modellen skriver markdown, rutan visar text */
+function inline(text: string) {
+  return text.split(/(\*\*[^*]+\*\*)/g).map((part, i) =>
+    part.startsWith('**') && part.endsWith('**') ? <b key={i}>{part.slice(2, -2)}</b> : part);
+}
+
 export type DrawingAction = { action: string; designation?: string; factor?: number; dx?: number; dy?: number; meters?: number; direction?: string; pipe_id?: string };
 export default function LiveDrawingAgent({ jobId, onClose, execute, onMotion, onSaid }: {
   jobId: string; onClose: () => void; execute: (args: DrawingAction) => Promise<any>; onMotion: (m: Motion) => void;
@@ -198,7 +204,7 @@ export default function LiveDrawingAgent({ jobId, onClose, execute, onMotion, on
     </div>
     <small>{tr("Skriv nedan eller slå på mikrofonen med Prata med agenten. Röst och delade bilder skickas till OpenAI.")}</small>
     <audio ref={audio} hidden={!connected} autoPlay controls className="live-audio" />
-    <div ref={log} className="live-messages" role="log" aria-live="polite">{messages.map(m => <p key={m.id}><b>{m.who}</b><br />{m.text}</p>)}</div>
+    <div ref={log} className="live-messages" role="log" aria-live="polite">{messages.map(m => <p key={m.id}><b>{m.who}</b><br />{inline(m.text)}</p>)}</div>
     <form onSubmit={e => { e.preventDefault(); submit(); }}><input aria-label={tr("Meddelande till samtalsagent")} placeholder={tr("T.ex. visa i 3D eller zooma in")} value={input} onChange={e => setInput(e.target.value)} maxLength={4000} /><button className="small" disabled={busy || !input.trim()}>{tr("Skicka")}</button></form>
     {err && <p className="error" role="alert">{err}</p>}
     <HandCamera onMotion={onMotion} onImage={image => {
