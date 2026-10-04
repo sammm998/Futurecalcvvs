@@ -5,7 +5,8 @@ the bars sometimes read as a digit: "75" comes back as "715" or "15", the size i
 the label no longer names a pipe - every stretch it lands on goes unmeasured. The host engine reads the same
 lettering from the drawing's own strokes and states the size.
 
-Only the missing size is filled in, and only where it is unambiguous: every designation in the box that lacks a
+Only the missing size is filled in - with the service suffix the same lettering writes after it, `/W`, which a
+box cut short lost with the size (W-50-1-A-0114 measured 2 m of `VS1-S13-54/W` as `VS1-S13-54`) - and only where it is unambiguous: every designation in the box that lacks a
 size must have exactly one host reading inside the same box with the same system, number and middle, and that
 reading must carry a plausible size of its own. Nothing else in the label changes, and nothing is guessed.
 """
@@ -29,7 +30,7 @@ def repair(labels, designations):
         if parsed is None or not parsed.recognised:
             continue
         b = h.bbox
-        readings.append(((b[0] + b[2]) / 2.0, (b[1] + b[3]) / 2.0, parsed, int(h.dn), h.did))
+        readings.append(((b[0] + b[2]) / 2.0, (b[1] + b[3]) / 2.0, parsed, int(h.dn), h.did, parsed.suffix))
     repairs = []
     for label in labels:
         des = label.get('designations') or []
@@ -51,13 +52,16 @@ def repair(labels, designations):
             size = next(iter(sizes))
             if not vvs.plausible_dimension(d.get('system'), size):
                 break
-            filled[i] = (size, same[0][4])
+            filled[i] = (size, same[0][4], same[0][5])
         if len(filled) != len(missing):
             continue
         before = [dict(d) for d in des]
-        for i, (size, did) in filled.items():
+        for i, (size, did, suffix) in filled.items():
             des[i]['dimension'] = size
             des[i]['partial'] = False
+            # the same lettering states the service suffix too: a box cut after the middle lost `/W` with the size
+            if suffix and not des[i].get('suffix'):
+                des[i]['suffix'] = suffix
         label['usable'] = True
         label['size_from_drawing_lettering'] = True
         repairs.append({'label': label['id'], 'text': label.get('text'), 'before': before,
