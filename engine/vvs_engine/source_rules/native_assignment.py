@@ -187,11 +187,29 @@ def project(graphs, native, result, page, elevations, host_reading=None):
 
 def analyze(graphs,native,page,ask,elevations,raw_page,host_reading=None):
     if ask is not None and hasattr(ask,'for_page'):ask=ask.for_page(raw_page)
-    result=run(native['graph'],native['labels'],native['association'],native['style'],mode='combined',ask=ask)
+    result=run(pen_layers(native['graph']),native['labels'],native['association'],native['style'],mode='combined',ask=ask)
     if result['combined']['status']!='COMPLETED':
         why=(result['combined'].get('result') or {}).get('failure_reason') or result['combined'].get('reason')
         raise RuntimeError('Native combined assignment failed: '+result['combined']['status']+(f' ({why})' if why else ''))
     return project(graphs,native,result,page,elevations,host_reading)
+
+
+PEN_LAYER='(no CAD layer) pen '
+
+
+def pen_layers(A):
+    """The graph the reading is asked about, with a pen named where a stretch has no CAD layer.
+
+    A sheet draws each system in its own pen as well as on its own layer. In a file exported without layers the
+    pen is what is left to tell the waste from the water, and a reading shown neither put the waste's labels on
+    the water's PEX tubes (W-50-1-A-0213 without layers). Stretches with a layer are passed as they are."""
+    if all(s.get('layer') for s in A['stretches']):
+        return A
+    def named(s):
+        if s.get('layer') or not s.get('width'):
+            return s
+        return dict(s,layer=f"{PEN_LAYER}{float(s['width']):.2f} pt")
+    return dict(A,stretches=[named(s) for s in A['stretches']])
 
 
 def _direction_away(seg,x,y):

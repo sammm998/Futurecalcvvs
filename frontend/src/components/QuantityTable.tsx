@@ -28,7 +28,9 @@ export function withFloorHeight(rows: any[], floorHeight: number | null, include
   return rows.map((r) => {
     const risers = riserCount(r, riserSource);
     const known = r.vertical_m !== "UNKNOWN" ? Number(r.vertical_m) : 0;
-    const v = floorHeight && risers > 0 ? known + risers * floorHeight : (r.vertical_m === "UNKNOWN" ? null : known);
+    // a radiator connection rises through the slab, about a metre: the engine marks such rows with their own height
+    const each = floorHeight ? Number(r.riser_height_m ?? floorHeight) : null;
+    const v = each && risers > 0 ? known + risers * each : (r.vertical_m === "UNKNOWN" ? null : known);
     const declared = Number(r.declared_m ?? 0);
     const h = Math.max(0, r.confirmed_horizontal_m - (includeDeclared ? 0 : declared))
       + (includeHatched ? Number(r.in_hatched_area_m ?? 0) : 0);
@@ -137,7 +139,9 @@ export default function QuantityTable({ rows, selected, onSelect, floorHeight, i
                     {/* a height the reader typed is an assumption about the building, not something the sheet
                         says: the metre is shown, and marked for what it is */}
                     {floorHeight && r.risers_calc > 0 && (
-                      <span className="assumed" title={`Antaget: ${r.risers_calc} stigare × ${String(floorHeight).replace(".", ",")} m våningshöjd. Ritningen anger ingen höjd.`}> ant.</span>
+                      <span className="assumed" title={r.riser_height_m != null
+                      ? `Antaget: ${r.risers_calc} radiatoranslutningar upp genom bjälklag × ${String(r.riser_height_m).replace(".", ",")} m. Ritningen anger ingen höjd.`
+                      : `Antaget: ${r.risers_calc} stigare × ${String(floorHeight).replace(".", ",")} m våningshöjd. Ritningen anger ingen höjd.`}> ant.</span>
                     )}
                   </>}</td>
               <td className="num strong">{M(r.total_calc, noScale)}

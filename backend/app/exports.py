@@ -52,12 +52,14 @@ def _rows(result_dir: str, floor_height: float | None = None, include_hatched: b
             # below - and the export has to count the same ones or it states a different quantity than they saw.
             risers = int((r.get("riser_count_from_labels") if riser_source == "labels"
                           else r.get("riser_count")) or 0)
+            # a radiator connection through the slab is a metre, not a storey: the engine says so on the row
+            each = float(r.get("riser_height_m") or floor_height)
             if risers > 0:
                 known = 0.0 if r["vertical_m"] == "UNKNOWN" else float(r["vertical_m"])
-                r["vertical_m"] = round(known + risers * floor_height, 3)
+                r["vertical_m"] = round(known + risers * each, 3)
                 r["confirmed_total_m"] = round(r["confirmed_horizontal_m"] + r["vertical_m"], 3)
-                r["vertical_source"] = (f"ANTAGET ({risers} stigare x {floor_height:g} m)" if known == 0.0
-                                        else f"MÄTT + ANTAGET ({risers} stigare x {floor_height:g} m)")
+                r["vertical_source"] = (f"ANTAGET ({risers} stigare x {each:g} m)" if known == 0.0
+                                        else f"MÄTT + ANTAGET ({risers} stigare x {each:g} m)")
     return rows
 
 

@@ -638,7 +638,7 @@ export default function AnalysisPage() {
                             {/* the stacks the sheets state, and the metres they become once a floor height is given */}
                             <td className="num">{docRisers(r) || <span className="muted">–</span>}</td>
                             <td className="num">{(() => {
-                              const v = r.confirmed_vertical_m + (floorH ? docRisers(r) * floorH : 0);
+                              const v = r.confirmed_vertical_m + (floorH ? docRisers(r) * Number(r.riser_height_m ?? floorH) : 0);
                               return v ? v.toFixed(2) : <span className="muted">–</span>;
                             })()}</td>
                             <td className="num">{r.physical_pipe_count}</td>

@@ -227,6 +227,19 @@ def account_rules(db, drawing) -> dict:
     return out
 
 
+def _keep_upright(summary: dict, out_dir: str, pdf_path: str) -> None:
+    """Replace the stored drawing with the copy the reading turned upright, when it turned any page."""
+    name = (summary or {}).get("upright_file")
+    if not name or not (summary or {}).get("turned_pages"):
+        return
+    turned = os.path.join(out_dir, name)
+    if os.path.isfile(turned):
+        import shutil
+        tmp = pdf_path + ".upright"
+        shutil.copyfile(turned, tmp)
+        os.replace(tmp, pdf_path)
+
+
 def run_job(job_id: str) -> None:
     from vvs_engine import rules as engine_rules
     from .analysis_worker import analyze_isolated
@@ -270,6 +283,9 @@ def run_job(job_id: str) -> None:
                                 given_scale=by_hand, source_mode="combined", native_detection=True,
                                 native_cache_dir=storage.path(f"cache/native/{drawing.project_id}"),
                                 source_style="auto")
+            # Ett blad som låg på sidan lästes vridet upprätt, och dess koordinater gäller det vridna bladet. Ritningen
+            # som visas byts mot den vridna - samma innehåll, bara /Rotate ändrad - så att markeringarna hamnar rätt.
+            _keep_upright(summary, out_dir, pdf_path)
             from .diagnostic_storage import compress_native_diagnostics
             compress_native_diagnostics(out_dir)
             from .disk_space import link_sheet_copies
