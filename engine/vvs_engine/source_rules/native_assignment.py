@@ -130,6 +130,7 @@ def project(graphs, native, result, page, elevations, host_reading=None):
     continued=_settle_unowned(graphs,states,set_aside,host if host_reading is not None else None)
     landed=_landed_labels(graphs,A,R,labels)
     continued['same_line_larger_on_both_sides']=_undo_a_smaller_size_between_larger(graphs,states,landed)
+    continued['connection_piece_is_only_the_end']=_a_connection_piece_is_only_the_end(graphs,states)
     # Native joining points and VG/CL landings delimit measurement sections.
     native_points={(round(n['x'],2),round(n['y'],2)) for n in A['nodes']}
     local_levels=defaultdict(list)
@@ -356,6 +357,69 @@ def _undo_a_smaller_size_between_larger(graphs,states,landed=None):
                     s.evidence=list(s.evidence or [])+['size:the_line_on_both_ends']
                     moved+=1
                 changed=True
+    return moved
+
+
+def _a_connection_piece_is_only_the_end(graphs,states):
+    """A chromed connection (K5) is the last straight piece at the tap; the PEX tube it is joined to runs up to it.
+
+    A tap's connection is labelled at the fixture - `KV1-K5 / 15` - and the PEX tube from the manifold (X31) is
+    labelled at the manifold. Read from the leaders, the connection's name ran back along the tube to the first
+    junction: on W-50-1-A-0111 15.6 m were named K5 where the reference has 1.4 m, the rest of it the X31 tube.
+
+    So where a run named by a connection material (K5) is joined, in its own pen, to a run of the same system
+    named X31, it takes the tube's name - all but the straight piece that ends free at the fixture, which stays
+    the connection. A connection run with no free end, or joined to more than one tube, is left as it is.
+    """
+    import math
+    moved=0
+    def is_conn(i):
+        return i is not None and '-K5' in (i.base or '')
+    def tube_of(i,c):
+        return i is not None and 'X31' in (i.base or '') and (i.system or '')==(c.system or '')
+    for fk,g in graphs.items():
+        family=states[fk];seen=set()
+        for start,st in list(family.items()):
+            if start in seen or st.state!='CONFIRMED' or not is_conn(st.identity):
+                continue
+            ident=st.identity;comp=[start];seen.add(start);k=0;tubes=set()
+            while k<len(comp):
+                pid=comp[k];k+=1
+                for node in g.prim_nodes.get(pid,()):
+                    for q in g.nodes[node].prims:
+                        if q==pid:continue
+                        o=family.get(q)
+                        if o is None or o.state!='CONFIRMED' or o.identity is None:continue
+                        if o.identity==ident:
+                            if q not in seen:seen.add(q);comp.append(q)
+                        elif tube_of(o.identity,ident):
+                            tubes.add(o.identity)
+            if len(tubes)!=1:
+                continue
+            tube=next(iter(tubes));members=set(comp)
+            free=[n for p in comp for n in g.prim_nodes[p] if len(g.nodes[n].prims)==1]
+            if not free:
+                continue
+            keep=set()
+            for n0 in free:
+                prim=next(p for p in g.nodes[n0].prims if p in members);at=n0;dirn=None
+                while prim is not None and prim in members and prim not in keep:
+                    a,b=g.prim_nodes[prim];far=b if a==at else a
+                    sg=g.prims[prim].seg;x0,y0=(sg.x0,sg.y0) if a==at else (sg.x1,sg.y1);x1,y1=(sg.x1,sg.y1) if a==at else (sg.x0,sg.y0)
+                    L=math.hypot(x1-x0,y1-y0)
+                    if L>1e-6:
+                        u=((x1-x0)/L,(y1-y0)/L)
+                        if dirn is not None and u[0]*dirn[0]+u[1]*dirn[1]<0.995:
+                            break
+                        dirn=dirn or u
+                    keep.add(prim)
+                    nxt=[q for q in g.nodes[far].prims if q!=prim and q in members]
+                    prim=nxt[0] if len(g.nodes[far].prims)==2 and len(nxt)==1 else None;at=far
+            for pid in comp:
+                if pid in keep:continue
+                s_=family[pid];s_.identity=tube;s_.reason='connection_piece_is_only_the_end'
+                s_.evidence=list(s_.evidence or [])+['name:the_tube_runs_up_to_the_connection']
+                moved+=1
     return moved
 
 
