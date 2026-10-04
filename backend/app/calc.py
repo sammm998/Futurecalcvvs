@@ -48,7 +48,7 @@ DEFAULTS = {
     "paslag_material_pct": 12.0,
     "paslag_arbete_pct": 10.0,
     "moms_pct": 25.0,
-    "floor_height_m": 3.0,       # en stigare räknas som en våningshöjd när ritningen inte säger höjden
+    "floor_height_m": 2.8,       # en stigare räknas som en våningshöjd när ritningen inte säger höjden (facit räknar 2,80 m)
     "supplements": ["pressfog"],  # normtidens tillägg: skarvmetod, höjd, ombyggnad
     "factors": {},               # avvikelseanalysen: faktor-id -> -4..+4
     "valid_days": 30,

@@ -127,7 +127,7 @@ export default function AnalysisPage() {
   useEffect(() => {
     api.settings().then((s) => {
       try {
-        if (localStorage.getItem("vvs.floorHeight") == null && s.floor_height_m != null) setFloorHeight(String(s.floor_height_m).replace(".", ","));
+        if (!localStorage.getItem("vvs.floorHeight") && s.floor_height_m != null) setFloorHeight(String(s.floor_height_m).replace(".", ","));
         if (localStorage.getItem("vvs.riserSource") == null && s.riser_source) setRiserSource(s.riser_source);
         if (localStorage.getItem("vvs.includeHatched") == null && s.include_hatched) setIncludeHatched(true);
         if (localStorage.getItem("vvs.includeDeclared") == null && s.include_declared === false) setIncludeDeclared(false);
