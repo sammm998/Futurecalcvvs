@@ -1,6 +1,8 @@
 import { Link } from "react-router-dom";
 import { t as tr } from "../i18n";
 import PublicFrame from "../components/PublicFrame";
+import Demos from "../fc/Demos";
+import "../fc/home.css";
 import EvidenceSection from "../components/EvidenceSection";
 
 /* Hur det funkar: läsningens kedja, steg för steg, i den ordning motorn faktiskt går - och var den stannar.
@@ -42,6 +44,14 @@ export default function HowItWorksPage() {
           <div className="pub-key"><div className="n">0</div><div className="l">{tr("meter utan belägg")}</div></div>
         </div>
       } wide>
+      <section className="pub-sec" id="demo">
+        <div className="pub-sec-head">
+          <div className="lp-kicker">{tr("Se hur det funkar")}</div>
+          <h2>{tr("Fem minuter i FutureCalc")}</h2>
+          <p className="pub-sec-lede">{tr("Inspelat i appen på en riktig ritning – inga skisser, inga redigerade siffror.")}</p>
+        </div>
+        <Demos compact />
+      </section>
       <section className="pub-sec">
         <ol className="pub-steps">
           {STEPS.map((s) => (

@@ -1166,6 +1166,7 @@ def job_judge(job_id: str, user: User = Depends(current_user), db: Session = Dep
 
 class AgentAsk(BaseModel):
     question: str
+    language: str | None = None     # "en": svaret skrivs på engelska, som resten av vyn
     page: int | None = None
     pipe_ids: list[str] | None = None
     bbox: list[float] | None = None
@@ -1291,7 +1292,10 @@ def agent_ask(job_id: str, body: AgentAsk, user: User = Depends(current_user), d
     model = DrawingModel(_result_dir(j))
     sel = {"pipe_ids": body.pipe_ids or [], "bbox": body.bbox, "page": body.page}
     try:
-        out = run_turn(model, agent_transport(), body.question, selection=sel, history=body.history or [])
+        # the reader works in English: the answer is written in English, whatever language the instructions use
+        question = (("[Reply in English only - every sentence of the answer.]\n\n" + body.question)
+                    if body.language == "en" else body.question)
+        out = run_turn(model, agent_transport(), question, selection=sel, history=body.history or [])
     except Exception as e:                                      # noqa: BLE001
         raise HTTPException(502, f"Agenten nådde inte modellen: {type(e).__name__}: {str(e)[:200]}. "
                                  f"Knapparna svarar ändå — de går rakt in i läsningen och behöver ingen modell.")

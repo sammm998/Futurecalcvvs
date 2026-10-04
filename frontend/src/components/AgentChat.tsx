@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { t as tr, locale } from "../i18n";
+import { lang, t as tr, locale } from "../i18n";
 import { api } from "../api";
 
 /* The agent, working against the reading rather than against a picture of it.
@@ -137,7 +137,7 @@ export default function AgentChat({ jobId, page, selection, onHighlight, onChang
       const r = quick
         ? await api.agentTool(jobId, quick.tool, quick.args ?? {})
         : await api.agent(jobId, {
-          question, page,
+          question, page, language: lang,
           pipe_ids: selection.pipeIds.length ? selection.pipeIds : undefined,
           bbox: selection.bbox ?? undefined,
         });

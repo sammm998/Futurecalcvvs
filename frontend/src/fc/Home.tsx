@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import gsap from "gsap";
 import Nav, { Logo } from "./Nav";
 import Preloader from "./Preloader";
+import Demos from "./Demos";
 import Blueprint, { RUNS, SYS } from "./Blueprint";
 import {
   AppLink, ChapterIndicator, CountUp, CustomCursor, HorizontalGallery, LineReveal, MagneticButton,
@@ -468,6 +469,7 @@ export default function Home() {
       <ChapterOpener n="I" title={tr("The future of calculation")}
         sub="FutureCalc läser en VVS-ritning som en mängdare gör det: via beteckningarna och deras hänvisningslinjer, aldrig via närmaste streck. Det som inte går att avgöra får heta tvetydigt." />
       <SystemScreens />
+      <Demos />
       <StickyStatement />
 
       <ChapterOpener n="II" id="kap-2" title={tr("From drawing to quantity")}
