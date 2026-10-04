@@ -4,9 +4,11 @@ import { api } from '../api';
 import HandCamera from './HandCamera';
 import type { Motion } from './gestures';
 
-export type DrawingAction = { action: string; factor?: number; dx?: number; dy?: number; meters?: number; direction?: string; pipe_id?: string };
-export default function LiveDrawingAgent({ jobId, onClose, execute, onMotion }: {
+export type DrawingAction = { action: string; designation?: string; factor?: number; dx?: number; dy?: number; meters?: number; direction?: string; pipe_id?: string };
+export default function LiveDrawingAgent({ jobId, onClose, execute, onMotion, onSaid }: {
   jobId: string; onClose: () => void; execute: (args: DrawingAction) => Promise<any>; onMotion: (m: Motion) => void;
+  /** what the agent just said, whole: the drawing marks the pipe it is talking about */
+  onSaid?: (text: string) => void;
 }) {
   const [status, setStatus] = useState(tr("Avstängd")), [err, setErr] = useState(''), [input, setInput] = useState('');
   const [connected, setConnected] = useState(false), [busy, setBusy] = useState(false), [mic, setMic] = useState(false), [micBusy, setMicBusy] = useState(false);
@@ -17,6 +19,8 @@ export default function LiveDrawingAgent({ jobId, onClose, execute, onMotion }: 
   const media = useRef<MediaStream | null>(null), audio = useRef<HTMLAudioElement>(null);
   const generation = useRef(0), abort = useRef<AbortController | null>(null), sender = useRef<RTCRtpSender | null>(null);
   const run = useRef(execute); run.current = execute;
+  const said = useRef(onSaid); said.current = onSaid;
+  const spoken = useRef(new Map<string, string>());
   const called = useRef(new Set<string>()), timer = useRef(0);
   // what was typed before the conversation was open: sent as the first message once it is
   const pending = useRef('');
@@ -49,7 +53,7 @@ export default function LiveDrawingAgent({ jobId, onClose, execute, onMotion }: 
       previous.current = r.id;
       const next: any[] = [];
       for (const item of r.output ?? []) {
-        if (item.type === 'message') add(crypto.randomUUID(), 'Agent', item.text);
+        if (item.type === 'message') { add(crypto.randomUUID(), 'Agent', item.text); said.current?.(item.text); }
         if (item.type !== 'function_call') continue;
         let result: any;
         try {
@@ -110,7 +114,16 @@ export default function LiveDrawingAgent({ jobId, onClose, execute, onMotion }: 
           const event = JSON.parse(e.data);
           if (event.type === 'error') { setErr(event.error?.message || tr("Samtalsfel")); return; }
           if (event.type === 'conversation.item.input_audio_transcription.completed') add(event.item_id, tr("Du"), event.transcript);
-          if (event.type === 'response.output_audio_transcript.delta' || event.type === 'response.output_text.delta') add(event.item_id, 'Agent', event.delta, true);
+          if (event.type === 'response.output_audio_transcript.delta' || event.type === 'response.output_text.delta') {
+            add(event.item_id, 'Agent', event.delta, true);
+            const t = (spoken.current.get(event.item_id) ?? '') + event.delta;
+            spoken.current.set(event.item_id, t);
+            // a sentence is finished: mark what it named while it is being said, not after the whole answer
+            if (/[.!?:\n]\s*$/.test(event.delta)) said.current?.(t);
+          }
+          if (event.type === 'response.output_audio_transcript.done' || event.type === 'response.output_text.done') {
+            const t = spoken.current.get(event.item_id); if (t) said.current?.(t); spoken.current.delete(event.item_id);
+          }
           if (event.type !== 'response.done') return;
           if (event.response?.status === 'failed' || event.response?.status === 'incomplete') {
             setErr(event.response?.status_details?.error?.message || tr("Agentens svar kunde inte slutföras. Försök skicka igen."));

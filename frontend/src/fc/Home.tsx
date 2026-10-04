@@ -116,7 +116,7 @@ function Hero() {
  * varandra i stället för under - och scenen börjar direkt efter. */
 function ChapterOpener({ n, title, sub, id }: { n: string; title: string; sub: string; id?: string }) {
   return (
-    <section className="fc-chap" id={id}>
+    <section className="fc-chap fc-light fc-bleed" id={id}>
       <div className="fc-chap-rule" />
       <p className="fc-label">Chapter {n}</p>
       <div className="fc-chap-in">
@@ -162,7 +162,7 @@ function StickyStatement() {
   return (
     <PinnedSection
       height={300}
-      className="fc-state"
+      className="fc-state fc-light"
       onProgress={(p) => {
         const el = ref.current;
         if (!el) return;
@@ -199,7 +199,7 @@ function TakeoffScene() {
     <PinnedSection
       height={420}
       id="kap-2-scen"
-      className="fc-take"
+      className="fc-take fc-light"
       onProgress={(p) => {
         const el = ref.current;
         if (!el) return;
@@ -334,7 +334,7 @@ function ProductShowcase() {
 
 function AcademyChapter() {
   return (
-    <section className="fc-ac" id="kap-4">
+    <section className="fc-ac fc-light fc-bleed" id="kap-4">
       <div className="fc-ac-l">
         <p className="fc-label">{tr("Chapter IV — FutureCalc Academy")}</p>
         <LineReveal as="h2" className="fc-display fc-display-lg" text="KNOWLEDGE BECOMES PRECISION." />

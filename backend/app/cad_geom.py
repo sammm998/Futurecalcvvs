@@ -115,7 +115,8 @@ def wall_joins(doc: dict) -> dict[str, tuple[float, float]]:
     """Hur långt varje ände av varje vägg går förbi sin punkt för att sluta hörnet mot en vägg som slutar där.
 
     Spegel av solids.ts wallJoins: två väggar ritade hörn till hörn slutar på hörnets mittpunkt, och utan detta
-    saknas en kvadrat ytterst i varje yttre hörn. Varje vägg går vidare halva den andras tjocklek."""
+    saknas en kvadrat ytterst i varje yttre hörn. Den ena väggen går vidare halva den andras tjocklek, den
+    andra slutar lika mycket tidigare mot dess insida."""
     walls = [e for e in doc.get("entities") or [] if e.get("type") in ("wall", "curtain_wall")]
     cell = 50.0
     grid: dict[tuple[int, int], list[tuple[dict, int]]] = {}
@@ -151,7 +152,10 @@ def wall_joins(doc: dict) -> dict[str, tuple[float, float]]:
                         od = ((o["p"][1][0] - o["p"][0][0]) / Lo, (o["p"][1][1] - o["p"][0][1]) / Lo)
                         if abs(d[0] * od[0] + d[1] * od[1]) >= JOIN_COS:
                             continue
-                        ext[end] = max(ext[end], to if o.get("alignment") in ("left", "right") else to / 2)
+                        # en går in i hörnet, den andra slutar mot dess insida: två kroppar delar aldrig ett plan
+                        half = to if o.get("alignment") in ("left", "right") else to / 2
+                        if not ext[end]:
+                            ext[end] = half if str(w["id"]) < str(o["id"]) else -half
         if ext[0] or ext[1]:
             out[w["id"]] = (ext[0], ext[1])
     return out

@@ -421,6 +421,7 @@ export default function Docs() {
         </div>
       </header>
 
+      <div className="docs-light">
       <div className="docs-body">
         <nav className="docs-nav">
           {nav.map((n) => (
@@ -439,6 +440,7 @@ export default function Docs() {
             flervägsanalysen och körningarna över hela stilbiblioteket, med siffror.
           </p>
         </main>
+      </div>
       </div>
     </div>
   );

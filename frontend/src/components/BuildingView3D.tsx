@@ -8,6 +8,7 @@ import { colourOf } from "../cad/plan";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { OBJLoader } from "three/examples/jsm/loaders/OBJLoader.js";
 import { STLLoader } from "three/examples/jsm/loaders/STLLoader.js";
+import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import { api } from "../api";
 
 /** Referensnäten laddas en gång per fil och delas mellan scenerna; ett nät som inte laddats än är en tom plats, inte ett fel. */
@@ -101,16 +102,29 @@ function tubeGeometry(t: ReturnType<typeof pathTube>, o: [number, number]): THRE
  * och matt, och skuggan mjuk nog att säga vad som står ovanpå vad. Färgerna är dämpade med flit - det som ska
  * synas är rummen och installationen, och ett rör i sitt systems färg syns bara mot en grund som håller tyst.
  */
+/* Ytorna som material och inte bara som färg: puts är matt, trä har en svag lyster, glas speglar rummet och
+ * släpper igenom ljus, koppar och stål är metall. Värdena är medvetet dämpade - ett hus i 3D ska se byggt ut,
+ * inte blankt. */
+const KIND_SURFACE: Record<string, { roughness: number; metalness?: number; glass?: boolean }> = {
+  wall: { roughness: 0.9 }, column: { roughness: 0.85 }, beam: { roughness: 0.8 }, foundation: { roughness: 0.95 },
+  floor: { roughness: 0.62 }, ceiling: { roughness: 0.95 }, roof: { roughness: 0.75 }, stair: { roughness: 0.6 },
+  door: { roughness: 0.48 }, window: { roughness: 0.04, glass: true }, curtain_wall: { roughness: 0.04, glass: true },
+  pipe: { roughness: 0.32, metalness: 0.75 }, duct: { roughness: 0.4, metalness: 0.65 }, equipment: { roughness: 0.5, metalness: 0.3 },
+};
+/* Kanterna ritas som tunna linjer: det är så en arkitektmodell läses, och det skiljer två vita ytor åt. */
+const EDGE_KINDS = new Set(["wall", "curtain_wall", "floor", "roof", "column", "beam", "foundation", "stair", "door", "window", "ceiling"]);
+const edgeMaterial = new THREE.LineBasicMaterial({ color: "#5e574d", transparent: true, opacity: 0.32 });
+
 const KIND_COLOUR: Record<string, string> = {
-  wall: "#f4f1ec", curtain_wall: "#cfe0e6", door: "#b98f5e", window: "#d6e6ec", opening: "#efece7",
-  floor: "#e6e0d7", ceiling: "#f7f5f1", roof: "#8d6a57", column: "#e2ddd5", beam: "#d8d2c8",
+  wall: "#f3efe8", curtain_wall: "#bcd6e0", door: "#9a6b45", window: "#c8dee8", opening: "#efece7",
+  floor: "#cdb79a", ceiling: "#f7f5f1", roof: "#7d5443", column: "#e2ddd5", beam: "#d8d2c8",
   foundation: "#cdc6ba", stair: "#ddd5c7", equipment: "#a9b3b8",
 };
 
 export default function BuildingView3D({ doc, view, selected, onSelect, onMove, transparency, sectionBox, standardView, ortho, wire }: Props) {
   const [, setLoaded] = useState(0);        // räknas upp när ett referensnät laddats, så att scenen byggs om
   const host = useRef<HTMLDivElement>(null);
-  const state = useRef<{ scene: THREE.Scene; renderer: THREE.WebGLRenderer; persp: THREE.PerspectiveCamera; orthoCam: THREE.OrthographicCamera; controls: OrbitControls; gizmo: TransformControls; group: THREE.Group; raf: number; span: number; origin: [number, number]; picks: Map<THREE.Object3D, string>; dispose: () => void } | null>(null);
+  const state = useRef<{ scene: THREE.Scene; renderer: THREE.WebGLRenderer; persp: THREE.PerspectiveCamera; orthoCam: THREE.OrthographicCamera; controls: OrbitControls; gizmo: TransformControls; group: THREE.Group; key: THREE.DirectionalLight; raf: number; span: number; origin: [number, number]; picks: Map<THREE.Object3D, string>; dispose: () => void } | null>(null);
   const cbs = useRef({ onSelect, onMove });
   cbs.current = { onSelect, onMove };
 
@@ -119,22 +133,34 @@ export default function BuildingView3D({ doc, view, selected, onSelect, onMove, 
     const el = host.current; if (!el) return;
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(GROUND);
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    const renderer = new THREE.WebGLRenderer({ antialias: true, logarithmicDepthBuffer: true });
     renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
     renderer.shadowMap.enabled = true;
+    // Mjuka skuggor och filmisk tonkurva: ljuset faller som dagsljus och vitt brinner inte ut. Det logaritmiska
+    // djupet håller två ytor som ligger nära varandra isär även när kameran står långt bort - utan det
+    // flimrade väggarnas ytor mot varandra när man drog i modellen.
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 0.92;
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.localClippingEnabled = true;
     el.appendChild(renderer.domElement);
-    const persp = new THREE.PerspectiveCamera(45, 1, 0.05, 2000);
+    // ett rum att spegla sig i: glaset och metallen får något att visa, och puts får mjuk indirekt belysning
+    const pmrem = new THREE.PMREMGenerator(renderer);
+    scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+    scene.environmentIntensity = 0.3;
+    const persp = new THREE.PerspectiveCamera(45, 1, 0.1, 2000);
     const orthoCam = new THREE.OrthographicCamera(-10, 10, 10, -10, -500, 500);
     const controls = new OrbitControls(persp, renderer.domElement);
     controls.enableDamping = true; controls.dampingFactor = 0.1;
     // Ljuset är dagsljus i ett rum: en mjuk himmel överallt, en sol som kastar skuggan, och en svag fyllnad
     // från motsatt håll så att den skuggade sidan av en vägg inte blir svart. Skuggan är det som gör snittet
     // läsbart - utan den ligger allt platt i samma vita.
-    const hemi = new THREE.HemisphereLight("#ffffff", "#d9d2c6", 2.1); scene.add(hemi);
-    const key = new THREE.DirectionalLight("#fffaf2", 2.4);
+    const hemi = new THREE.HemisphereLight("#ffffff", "#cfc6b6", 0.9); scene.add(hemi);
+    const key = new THREE.DirectionalLight("#fff3e0", 3.1);
     key.position.set(34, 62, 26); key.castShadow = true;
-    key.shadow.mapSize.set(2048, 2048); key.shadow.bias = -0.0004; key.shadow.normalBias = 0.03;
+    // skuggkameran följer modellen (se bygget nedan); en fast ruta på 240 m gav grova, flimrande skuggor
+    key.shadow.mapSize.set(4096, 4096); key.shadow.bias = -0.00025; key.shadow.normalBias = 0.02; key.shadow.radius = 3;
     key.shadow.camera.near = 1; key.shadow.camera.far = 400;
     key.shadow.camera.left = -120; key.shadow.camera.right = 120;
     key.shadow.camera.top = 120; key.shadow.camera.bottom = -120;
@@ -143,11 +169,13 @@ export default function BuildingView3D({ doc, view, selected, onSelect, onMove, 
     // Golvet under huset tar emot skuggan. Ingen ruta: ett rutnät säger "modell", en yta säger "hus".
     const shadowFloor = new THREE.Mesh(
       new THREE.PlaneGeometry(600, 600),
-      new THREE.ShadowMaterial({ opacity: 0.17 }));
+      new THREE.ShadowMaterial({ opacity: 0.24 }));
     shadowFloor.rotation.x = -Math.PI / 2; shadowFloor.position.y = -0.02; shadowFloor.receiveShadow = true;
     scene.add(shadowFloor);
     const grid = new THREE.GridHelper(200, 40, "#cfc7ba", "#e0dace");
     (grid.material as THREE.Material).transparent = true; (grid.material as THREE.Material).opacity = 0.32;
+    (grid.material as THREE.Material).depthWrite = false;
+    grid.position.y = -0.012;          // under golvets översida: i samma plan flimrade linjerna genom bjälklaget
     scene.add(grid);
     const group = new THREE.Group(); scene.add(group);
     const gizmo = new TransformControls(persp, renderer.domElement);
@@ -162,7 +190,7 @@ export default function BuildingView3D({ doc, view, selected, onSelect, onMove, 
       if (id && cbs.current.onMove && d.length() > 1e-6) cbs.current.onMove(id, d.x / MM, -d.z / MM, d.y / MM);
       dragStart = null;
     });
-    const st = { scene, renderer, persp, orthoCam, controls, gizmo, group, raf: 0, span: 20, origin: [0, 0] as [number, number], picks: new Map<THREE.Object3D, string>(), dispose: () => {} };
+    const st = { scene, renderer, persp, orthoCam, controls, gizmo, group, key, raf: 0, span: 20, origin: [0, 0] as [number, number], picks: new Map<THREE.Object3D, string>(), dispose: () => {} };
     state.current = st;
     const resize = () => { const r = el.getBoundingClientRect(); renderer.setSize(r.width, r.height, false); persp.aspect = r.width / Math.max(1, r.height); persp.updateProjectionMatrix(); const a = r.width / Math.max(1, r.height); orthoCam.left = -st.span * a; orthoCam.right = st.span * a; orthoCam.top = st.span; orthoCam.bottom = -st.span; orthoCam.updateProjectionMatrix(); };
     const ro = new ResizeObserver(resize); ro.observe(el); resize();
@@ -191,7 +219,7 @@ export default function BuildingView3D({ doc, view, selected, onSelect, onMove, 
   useEffect(() => {
     const st = state.current; if (!st) return;
     const { group, picks } = st;
-    while (group.children.length) { const c = group.children.pop()!; c.traverse((o: any) => { o.geometry?.dispose?.(); o.material?.dispose?.(); }); }
+    while (group.children.length) { const c = group.children.pop()!; c.traverse((o: any) => { o.geometry?.dispose?.(); if (o.material !== edgeMaterial) o.material?.dispose?.(); }); }
     picks.clear();
     const ents = doc.entities.filter((e) => visibleIn(doc, { ...view, level: null }, e));
     // lokal origo: modellens mitt i planen
@@ -205,6 +233,14 @@ export default function BuildingView3D({ doc, view, selected, onSelect, onMove, 
     const fitted: number | undefined = group.userData.fitSpan;
     const refit = fitted === undefined || Math.abs(span - fitted) / fitted > 0.5;
     st.origin = o; st.span = span;
+    // skuggkameran omsluter modellen och inte mer: samma karta över ett mindre fält ger skarpa, stilla skuggor
+    {
+      const r = Math.max(8, Math.max(x1 - x0, y1 - y0) * MM * 0.75 + 4);
+      const sc = st.key.shadow.camera;
+      sc.left = -r; sc.right = r; sc.top = r; sc.bottom = -r; sc.near = 1; sc.far = 200;
+      st.key.position.set(r * 0.9, r * 1.35, r * 0.6);
+      sc.updateProjectionMatrix();
+    }
     const planes = sectionBox ? [
       new THREE.Plane(new THREE.Vector3(1, 0, 0), -(sectionBox.min[0] - o[0]) * MM), new THREE.Plane(new THREE.Vector3(-1, 0, 0), (sectionBox.max[0] - o[0]) * MM),
       new THREE.Plane(new THREE.Vector3(0, 1, 0), -sectionBox.min[2] * MM), new THREE.Plane(new THREE.Vector3(0, -1, 0), sectionBox.max[2] * MM),
@@ -214,7 +250,18 @@ export default function BuildingView3D({ doc, view, selected, onSelect, onMove, 
     const matFor = (e: Entity, kind: string) => {
       const base = e.type === "pipe" || e.type === "duct" || e.type === "cable_tray" || e.type === "conduit" ? colourOf(doc, e) : KIND_COLOUR[kind] || colourOf(doc, e);
       const alpha = transparency?.[e.discipline];
-      const m = new THREE.MeshStandardMaterial({ color: sel.has(e.id) ? "#1f6feb" : base, roughness: 0.92, metalness: 0.0, transparent: alpha != null && alpha < 1 || kind === "window" || kind === "curtain_wall", opacity: alpha != null ? alpha : kind === "window" || kind === "curtain_wall" ? 0.45 : 1, side: THREE.DoubleSide, wireframe: !!wire, clippingPlanes: planes });
+      const surf = KIND_SURFACE[kind] ?? KIND_SURFACE[e.type] ?? { roughness: 0.88 };
+      const glass = !!surf.glass;
+      const m = new THREE.MeshPhysicalMaterial({
+        color: base, roughness: surf.roughness, metalness: surf.metalness ?? 0,
+        transparent: alpha != null && alpha < 1 || glass, opacity: alpha != null ? alpha : glass ? 0.32 : 1,
+        clearcoat: glass ? 0.6 : 0, side: THREE.DoubleSide, depthWrite: !glass,
+        wireframe: !!wire, clippingPlanes: planes,
+        // ytan skjuts en aning bakåt i djupet så att kantlinjerna ligger ovanpå i stället för att slåss med den
+        polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1,
+      });
+      // vald: tonad i blått och lysande, inte ett platt blått block som tappar formen
+      if (sel.has(e.id)) { m.color.lerp(new THREE.Color("#1f6feb"), 0.55); m.emissive = new THREE.Color("#1f6feb"); m.emissiveIntensity = 0.28; }
       if (e.phase === "DEMOLISH") { m.color.set("#c0392b"); m.opacity = Math.min(m.opacity, 0.5); m.transparent = true; }
       if (e.phase === "EXISTING") { m.color.multiplyScalar(0.7); }
       return m;
@@ -238,7 +285,16 @@ export default function BuildingView3D({ doc, view, selected, onSelect, onMove, 
       } else if (e.type === "pipe" || e.type === "duct" || e.type === "cable_tray" || e.type === "conduit") {
         for (const g of tubeGeometry(pathTube(doc, e), o)) { const m = new THREE.Mesh(g, matFor(e, e.type)); m.castShadow = true; picks.set(m, e.id); holder.add(m); }
       } else {
-        for (const s of solidsOf(doc, e)) { const m = new THREE.Mesh(prismGeometry(s, o), matFor(e, s.kind)); m.castShadow = true; m.receiveShadow = true; picks.set(m, e.id); holder.add(m); }
+        for (const s of solidsOf(doc, e)) {
+          const geo = prismGeometry(s, o);
+          const m = new THREE.Mesh(geo, matFor(e, s.kind));
+          // en öppning är ett hål: den syns bara när den är vald, men går fortfarande att klicka på
+          if (e.type === "opening") { m.visible = sel.has(e.id); (m.material as THREE.MeshPhysicalMaterial).opacity = 0.35; (m.material as THREE.MeshPhysicalMaterial).transparent = true; }
+          const glassy = s.kind === "window" || s.kind === "curtain_wall";
+          m.castShadow = !glassy && e.type !== "opening"; m.receiveShadow = !glassy;
+          picks.set(m, e.id); holder.add(m);
+          if (!wire && EDGE_KINDS.has(s.kind) && e.type !== "opening") holder.add(new THREE.LineSegments(new THREE.EdgesGeometry(geo, 25), edgeMaterial));
+        }
         if (e.type === "device" || e.type === "fitting") { const g = new THREE.SphereGeometry(0.08, 12, 8); g.translate((e.p[0][0] - o[0]) * MM, e.p[0][2] * MM, -(e.p[0][1] - o[1]) * MM); const m = new THREE.Mesh(g, matFor(e, e.type)); picks.set(m, e.id); holder.add(m); }
         if (e.type === "terrain" && e.points.length >= 3) { const g = new THREE.BufferGeometry(); const v: number[] = []; for (let i = 1; i + 1 < e.points.length; i++) for (const q of [e.points[0], e.points[i], e.points[i + 1]]) v.push((q[0] - o[0]) * MM, q[2] * MM, -(q[1] - o[1]) * MM); g.setAttribute("position", new THREE.Float32BufferAttribute(v, 3)); g.computeVertexNormals(); const m = new THREE.Mesh(g, new THREE.MeshStandardMaterial({ color: "#2f9e44", side: THREE.DoubleSide, roughness: 1 })); picks.set(m, e.id); holder.add(m); }
       }

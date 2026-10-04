@@ -68,7 +68,10 @@ export default function PublicFrame({ kicker, title, lede, children, wide = fals
         </header>
       )}
 
-      <main className={`pub-body${wide ? " wide" : ""}`}>{children}</main>
+      {/* innehållet står på papper; hjälten ovanför och foten under står i mörker */}
+      <div className="fc-light pub-light">
+        <main className={`pub-body${wide ? " wide" : ""}`}>{children}</main>
+      </div>
 
       <footer className="pub-foot">
         <div className="pub-foot-in">

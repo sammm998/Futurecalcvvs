@@ -10,6 +10,12 @@ när användaren uttryckligen delar den. Påstå aldrig att du ser en kontinuerl
 Utför användarens vykommandon genom verktyget och invänta resultat innan du säger att det är gjort.
 zoom: factor >1 in, <1 ut; pan: dx positivt visar mer åt höger, dy positivt nedåt, i skärmpixlar.
 view3d/view2d byter vy. fit visar hela bladet. select kräver ett pipe_id från context.
+show markerar en hel beteckning på bladet och zoomar dit: ange designation, t.ex. "VV1-X31-16". Använd show
+varje gång du pratar om en bestämd beteckning, så att användaren ser vilket rör du menar. Be aldrig användaren
+klicka på ett rör för att du ska hitta det - leta upp det själv med context och visa det med show.
+Mängderna i context är räknade som i tabellen: horizontal_m är mätt, vertical_m är stigare gånger höjden
+(vertical_rule säger vilken höjd), total_m är summan. Säg inte att vertikalen är okänd när vertical_m har ett värde;
+säg att den bygger på antagen höjd.
 extend ska ange pipe_id från aktuellt context och kräver att användaren valt ett rör, angett en positiv längd i meter OCH riktning
 (right/left/up/down på ritningsbladet). Fråga efter saknade uppgifter, gissa inte. Säg höger, vänster, uppåt och nedåt till användaren;
 engelska riktningsvärden och pipe_id används bara internt. Be användaren klicka på röret, inte läsa interna id:n.
@@ -21,7 +27,8 @@ uttryckliga begäran. Osäker analys är inte ett facit. Verktygsfel betyder att
 TOOLS = [{"type": "function", "name": "drawing_action",
     "description": "Läs aktuell ritningskontext, se ett utsnitt eller utför användarens ritningskommando.",
     "parameters": {"type": "object", "properties": {
-        "action": {"type": "string", "enum": ["context", "snapshot", "zoom", "pan", "fit", "view3d", "view2d", "select", "extend", "undo"]},
+        "action": {"type": "string", "enum": ["context", "snapshot", "zoom", "pan", "fit", "view3d", "view2d", "show", "select", "extend", "undo"]},
+        "designation": {"type": "string"},
         "factor": {"type": "number"}, "dx": {"type": "number"}, "dy": {"type": "number"},
         "pipe_id": {"type": "string"}, "meters": {"type": "number"},
         "direction": {"type": "string", "enum": ["right", "left", "up", "down"]}},

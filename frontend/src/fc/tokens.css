@@ -40,11 +40,13 @@
 }
 
 :root {
-  /* ---- grund ---- */
-  --fc-black: #080808;
-  --fc-bg: #0a0a0a;
-  --fc-bg-2: #101010;
-  --fc-bg-3: #151515;
+  /* ---- grund ----
+     Mörkret är blåsvart och inte kolsvart: en ton med djup i, som en ritning i skymning. Kolsvart med vit
+     text blev hårt för ögat över en hel sida, och det ljusa temat nedan står bättre mot en mjukare mörk. */
+  --fc-black: #0d1117;
+  --fc-bg: #10151c;
+  --fc-bg-2: #161c25;
+  --fc-bg-3: #1d2430;
   --fc-paper: #f2f1ed;
 
   /* ---- text ---- */
@@ -54,9 +56,10 @@
   --fc-ink-24: rgba(242, 241, 237, 0.24);
 
   /* ---- linjer ---- */
-  --fc-line: rgba(255, 255, 255, 0.10);
-  --fc-line-2: rgba(255, 255, 255, 0.055);
-  --fc-line-3: rgba(255, 255, 255, 0.18);
+  --fc-line: rgba(255, 255, 255, 0.11);
+  --fc-line-2: rgba(255, 255, 255, 0.06);
+  --fc-line-3: rgba(255, 255, 255, 0.2);
+  --fc-shadow: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 24px 60px -30px rgba(0, 0, 0, 0.7);
 
   /* ---- accent: verifierat, mätt, aktivt. Aldrig dekoration. ---- */
   --fc-accent: #6ee7a5;
@@ -76,6 +79,34 @@
   --fc-r: 10px;
   --fc-r-lg: 20px;
   --fc-r-pill: 999px;
+}
+
+/* ---------------------------------------------------------------- det ljusa rummet
+ *
+ * De publika sidorna växlar mellan mörkt och ljust: scenen (hjälten, 3D-huset, slutet, foten) står i mörker,
+ * innehållet som ska läsas - kapitel, priser, kort, text - står på varmt papper. Samma tokens byter värde
+ * inom .fc-light, så varje del som redan är byggd på dem byter tema utan att röras. Accenten mörknar på
+ * ljust: den ljusgröna försvann mot papperet.
+ */
+.fc-light {
+  --fc-black: #f6f4ef;
+  --fc-bg: #f6f4ef;
+  --fc-bg-2: #ffffff;
+  --fc-bg-3: #eeebe4;
+  --fc-paper: #ffffff;
+  --fc-ink: #12161c;
+  --fc-ink-60: rgba(18, 22, 28, 0.66);
+  --fc-ink-40: rgba(18, 22, 28, 0.48);
+  --fc-ink-24: rgba(18, 22, 28, 0.26);
+  --fc-line: rgba(18, 22, 28, 0.12);
+  --fc-line-2: rgba(18, 22, 28, 0.07);
+  --fc-line-3: rgba(18, 22, 28, 0.22);
+  --fc-accent: #0f8a52;
+  --fc-accent-dim: rgba(15, 138, 82, 0.1);
+  --fc-accent-ink: #ffffff;
+  --fc-shadow: 0 1px 2px rgba(18, 22, 28, 0.04), 0 18px 48px -24px rgba(18, 22, 28, 0.22);
+  background: var(--fc-black);
+  color: var(--fc-ink);
 }
 
 /* ---------------------------------------------------------------- typografiska klasser */
