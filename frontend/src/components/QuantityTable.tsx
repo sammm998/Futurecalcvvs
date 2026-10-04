@@ -30,7 +30,9 @@ export function withFloorHeight(rows: any[], floorHeight: number | null, include
     const known = r.vertical_m !== "UNKNOWN" ? Number(r.vertical_m) : 0;
     // a radiator connection rises through the slab, about a metre: the engine marks such rows with their own height
     const each = floorHeight ? Number(r.riser_height_m ?? floorHeight) : null;
-    const v = each && risers > 0 ? known + risers * each : (r.vertical_m === "UNKNOWN" ? null : known);
+    // Med en höjd satt är en rad utan stigare en rad utan vertikal: 0 m, inte "okänt". Okänt är den bara när
+    // ingen höjd är satt, och då vet läsningen verkligen inte hur högt bladets stigare går.
+    const v = each && risers > 0 ? known + risers * each : (r.vertical_m === "UNKNOWN" ? (each ? 0 : null) : known);
     const declared = Number(r.declared_m ?? 0);
     const h = Math.max(0, r.confirmed_horizontal_m - (includeDeclared ? 0 : declared))
       + (includeHatched ? Number(r.in_hatched_area_m ?? 0) : 0);
@@ -63,7 +65,9 @@ export default function QuantityTable({ rows, selected, onSelect, floorHeight, i
   const [status, setStatus] = useState("");
   const [sort, setSort] = useState<{ k: string; dir: 1 | -1 }>({ k: "designation", dir: 1 });
   const list = useMemo(() => {
-    let l = withFloorHeight(rows, floorHeight, includeHatched, riserSource, includeDeclared).filter((r) => (!q || r.designation.toLowerCase().includes(q.toLowerCase()) || String(r.dn).includes(q)) && (!status || r.state === status));
+    // en rad som varken har meter, stigare eller tvetydigt är en etikett utan rör - den säger ingenting i en mängd
+    let l = withFloorHeight(rows, floorHeight, includeHatched, riserSource, includeDeclared).filter((r) =>
+      r.total_calc > 0.005 || r.risers_calc > 0 || Number(r.ambiguous_m ?? 0) > 0.005 || Number(r.in_hatched_area_m ?? 0) > 0.005).filter((r) => (!q || r.designation.toLowerCase().includes(q.toLowerCase()) || String(r.dn).includes(q)) && (!status || r.state === status));
     l = [...l].sort((a, b) => { const va = a[sort.k], vb = b[sort.k]; return (va > vb ? 1 : va < vb ? -1 : 0) * sort.dir; });
     return l;
   }, [rows, q, status, sort, floorHeight, includeHatched, riserSource, includeDeclared]);

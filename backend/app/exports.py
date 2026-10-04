@@ -24,7 +24,11 @@ def _rows(result_dir: str, floor_height: float | None = None, include_hatched: b
     if rows is None:
         with open(os.path.join(result_dir, "quantities.json"), "r", encoding="utf-8") as fh:
             rows = json.load(fh)["rows"]
-    rows = [dict(r) for r in rows]
+    # en etikett utan rör, stigare eller tvetydigt är ingen mängd och står inte som en rad med nollor
+    rows = [dict(r) for r in rows
+            if any(float(r.get(k) or 0) > 0.005 for k in ("confirmed_horizontal_m", "ambiguous_m", "in_hatched_area_m", "declared_m"))
+            or (r.get("vertical_m") not in (None, "UNKNOWN") and float(r["vertical_m"]) > 0)
+            or int(r.get("riser_count") or 0) or int(r.get("riser_count_from_labels") or 0)]
     for r in rows:
         # Förklarade kopplingsledningar: rör ingen etikett pekar ut, men som bladet namnger i ord. De räknas med
         # som förval - ritningen säger att de är där - och räknas bort för den förteckning som prissätter dem per
@@ -54,6 +58,10 @@ def _rows(result_dir: str, floor_height: float | None = None, include_hatched: b
                           else r.get("riser_count")) or 0)
             # a radiator connection through the slab is a metre, not a storey: the engine says so on the row
             each = float(r.get("riser_height_m") or floor_height)
+            if risers == 0 and r["vertical_m"] == "UNKNOWN":
+                # med en höjd satt är en rad utan stigare en rad utan vertikal, inte en med okänd
+                r["vertical_m"] = 0.0
+                r["vertical_source"] = "INGA STIGARE"
             if risers > 0:
                 known = 0.0 if r["vertical_m"] == "UNKNOWN" else float(r["vertical_m"])
                 r["vertical_m"] = round(known + risers * each, 3)
