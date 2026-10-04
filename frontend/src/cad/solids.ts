@@ -79,8 +79,9 @@ const joinCache = new WeakMap<object, Map<string, [number, number]>>();
 /** Hur långt varje ände av varje vägg går förbi sin punkt för att sluta hörnet mot en vägg som slutar där.
  *
  * Två väggar som ritas från hörn till hörn slutar båda på hörnets mittpunkt, och då saknas en kvadrat ytterst i
- * hörnet - ett hack i varje yttre hörn, i planen och i 3D. Ett CAD-program fogar ihop dem: varje vägg går vidare
- * halva den andras tjocklek, så att hörnet blir helt. Väggar i linje med varandra är en skarv och förlängs inte. */
+ * hörnet - ett hack i varje yttre hörn, i planen och i 3D. Ett CAD-program fogar ihop dem: den ena väggen går
+ * vidare halva den andras tjocklek, den andra slutar lika mycket tidigare mot dess insida, så att hörnet blir helt
+ * utan att två kroppar delar samma plan. Väggar i linje med varandra är en skarv och rörs inte. */
 export function wallJoins(doc: CadDocument): Map<string, [number, number]> {
   const hit = joinCache.get(doc.entities);
   if (hit) return hit;
@@ -108,7 +109,10 @@ export function wallJoins(doc: CadDocument): Map<string, [number, number]> {
           const Lo = wallLength(o.w); if (Lo <= 0) continue;
           const od: Pt = [(o.w.p[1][0] - o.w.p[0][0]) / Lo, (o.w.p[1][1] - o.w.p[0][1]) / Lo];
           if (Math.abs(dir[0] * od[0] + dir[1] * od[1]) >= JOIN_COS) continue;
-          ext[end] = Math.max(ext[end], o.w.alignment === "left" || o.w.alignment === "right" ? o.w.thickness : o.w.thickness / 2);
+          // En av de två går in i hörnet, den andra slutar mot dess insida. Gick båda in låg deras ytor i samma
+          // plan där de korsade varandra, och det planet flimrade i 3D när kameran rörde sig.
+          const half = o.w.alignment === "left" || o.w.alignment === "right" ? o.w.thickness : o.w.thickness / 2;
+          if (!ext[end]) ext[end] = w.id < o.w.id ? half : -half;
         }
       }
     });

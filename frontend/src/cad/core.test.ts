@@ -41,9 +41,9 @@ check("fyra väggar, revision 2", doc.entities.length === 4 && doc.revision === 
 {
   // hörnen sluts: varje vägg går halva den andras tjocklek förbi hörnpunkten, så att inget hack blir kvar
   const joins = wallJoins(doc);
-  check("varje ytterhörn sluts från båda väggarna", ["w_s", "w_e", "w_n", "w_w"].every((id) => near(joins.get(id)![0], 150) && near(joins.get(id)![1], 150)), [...joins]);
+  check("varje hörn sluts av en vägg som går in och en som slutar mot dess insida", ["w_s", "w_e", "w_n", "w_w"].every((id) => joins.get(id)!.every((x) => near(Math.abs(x), 150))) && [...joins.values()].flat().reduce((a, b) => a + b, 0) === 0, [...joins]);
   const s = joinedWall(doc, doc.entities.find((e) => e.id === "w_s") as Wall).wall;
-  check("sydväggen går från -150 till 10150", near(s.p[0][0], -150) && near(s.p[1][0], 10150), s.p);
+  check("sydväggen går in i hörnet mot väster och slutar mot östväggens insida", near(s.p[0][0], -150) && near(s.p[1][0], 9850), s.p);
 }
 check("väggens höjd följer nivåerna: 3200", heightOf(doc, doc.entities[0] as Wall) === 3200);
 

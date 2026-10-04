@@ -8,7 +8,9 @@ export const mangd: Record<string, string> = {
   "Textkontrollen kunde inte slutföras för hela ritningen.": "The text check could not be completed for the entire drawing.",
   "tvetydig anslutning": "ambiguous connection",
   "ingen rörkontakt": "no pipe contact",
-  "Motorns programkod har ändrats sedan den här analysen gjordes. Resultatet räknas inte om automatiskt. Läs om bladet för att använda den aktuella motorn.": "The engine code has changed since this analysis was made. Results are not recalculated automatically. Read the sheet again to use the current engine.",
+  "En förbättrad läsning finns för det här bladet.": "An improved reading is available for this sheet.",
+  "Läser om…": "Reading again…",
+  "Läs om": "Read again",
 
   "Systemkoder utlästa ur ritningens beteckningar": "System codes established by the drawing's labels",
   "Dessa numrerade system saknas i förklaringslistan men återkommer med dimension och listat material i ritningens rörbeteckningar. Varje beteckning måste fortfarande kunna kopplas till sitt eget rör.": "These numbered systems are absent from the legend but recur with a size and a listed material in the drawing's pipe labels. Each label must still connect to its own pipe.",

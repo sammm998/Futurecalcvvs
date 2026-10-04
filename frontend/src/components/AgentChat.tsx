@@ -25,28 +25,15 @@ function proposalsIn(tools: any[]): Proposal[] {
 /* Each button is one call into the reading, so it needs no model and cannot invent a number. Free text needs a
    model to choose the tool - that is the only difference between the two. */
 type Quick = { text: string; tool: string; args?: any };
-const QUICK: { grupp: string; fragor: Quick[] }[] = [
-  { grupp: "Mängd", fragor: [
-    { text: "Mängda per system", tool: "mangda", args: { gruppera_pa: "system" } },
-    { text: "Mängda per dimension", tool: "mangda", args: { gruppera_pa: "dimension" } },
-    { text: "Mängda per beteckning", tool: "mangda", args: { gruppera_pa: "beteckning" } },
-  ] },
-  { grupp: "Kontroll", fragor: [
-    { text: "Hitta olösta", tool: "hitta_olosta" },
-    { text: "Var byter rören dimension?", tool: "hitta_dimensionsbyten" },
-    { text: "Vilka rörändar är fria?", tool: "hitta_fria_rorandar" },
-    { text: "Samma linje ritad två gånger?", tool: "hitta_dubbelritad_geometri" },
-    { text: "Vad togs inte som rör?", tool: "hitta_omatt_geometri" },
-    { text: "Granskarnas utlåtande", tool: "kontrollera_lasningen" },
-  ] },
-  { grupp: "Rätta", fragor: [
-    { text: "Vad kan ritas in?", tool: "hitta_omatt_geometri_att_rita" },
-  ] },
-  { grupp: "Ritningen", fragor: [
-    { text: "Vad är det här för blad?", tool: "hamta_ritning" },
-    { text: "Förklara beteckningarna", tool: "hamta_forklaringslista" },
-    { text: "Hur lästes skalan?", tool: "kontrollera_skala" },
-  ] },
+/* Sex frågor, lika stora, i två jämna spalter. Fjorton knappar i fyra grupper av olika bredd blev en vägg att läsa
+   igenom; resten nås med en skriven fråga, och agenten väljer då verktyget själv. */
+const QUICK: Quick[] = [
+  { text: "Mängd per system", tool: "mangda", args: { gruppera_pa: "system" } },
+  { text: "Mängd per beteckning", tool: "mangda", args: { gruppera_pa: "beteckning" } },
+  { text: "Hitta olösta", tool: "hitta_olosta" },
+  { text: "Granska läsningen", tool: "kontrollera_lasningen" },
+  { text: "Vad kan ritas in?", tool: "hitta_omatt_geometri_att_rita" },
+  { text: "Hur lästes skalan?", tool: "kontrollera_skala" },
 ];
 
 /* Stegen agenten tog, i klartext.
@@ -271,14 +258,9 @@ export default function AgentChat({ jobId, page, selection, onHighlight, onChang
         <div ref={end} />
       </div>
 
-      <div className="agentquick">
-        {QUICK.map((g) => (
-          <div key={g.grupp} className="qgroup">
-            <span className="qlabel">{g.grupp}</span>
-            {g.fragor.map((q) => (
-              <button key={q.text} className="chipbtn" onClick={() => send(q.text, q)} disabled={busy}>{q.text}</button>
-            ))}
-          </div>
+      <div className="agentquick grid">
+        {QUICK.map((q) => (
+          <button key={q.text} className="quickbtn" onClick={() => send(q.text, q)} disabled={busy}>{tr(q.text)}</button>
         ))}
       </div>
 

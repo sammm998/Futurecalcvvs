@@ -68,7 +68,7 @@ export function Leader(
       <circle cx={x} cy={y} r={3.4} fill={color} />
       <path d={`M${x} ${y} L${tx} ${ty}`} stroke={color} strokeWidth={1} fill="none" opacity={0.7} />
       <rect x={tx - 4} y={ty - 15} width={label.length * 7.6 + 16} height={21} rx={4}
-        fill="rgba(8,8,8,0.82)" stroke={color} strokeOpacity={0.45} strokeWidth={0.8} />
+        style={{ fill: "var(--fc-bg-2)" }} stroke={color} strokeOpacity={0.45} strokeWidth={0.8} />
       <text x={tx + 5} y={ty} className="bp-leader-t" fill={color}>{label}</text>
     </g>
   );

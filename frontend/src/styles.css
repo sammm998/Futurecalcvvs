@@ -3285,3 +3285,20 @@ button.d3-open:hover { box-shadow: 0 6px 20px rgba(18, 158, 176, 0.45), inset 0 
 .bcad-layer input[type="color"] { width: 18px; height: 18px; padding: 0; border: 1px solid var(--line-2); border-radius: 3px; background: none; }
 .bcad-layer .bcad-link { flex: 1; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .bcad-layer.on .bcad-link { font-weight: 600; }
+
+/* ---------- agentens snabbfrågor: sex lika knappar i två jämna spalter, och en jämn rad under fältet ---------- */
+.agentquick.grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.quickbtn {
+  min-height: 40px; padding: 8px 12px;
+  border: 1px solid var(--line); border-radius: 10px; background: #fff;
+  font: inherit; font-size: 12.5px; letter-spacing: 0.01em; text-transform: none; color: var(--ink);
+  text-align: center; cursor: pointer; line-height: 1.25;
+  transition: border-color 0.15s, background 0.15s, transform 0.15s;
+}
+.quickbtn:hover:not(:disabled) { border-color: var(--ink); background: var(--bg-2); transform: translateY(-1px); }
+.quickbtn:disabled { opacity: 0.5; cursor: default; }
+.agentbar { flex-direction: column; align-items: stretch; }
+.agentbar textarea { min-height: 44px; }
+.agentbtns { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.agentbtns > button { height: 36px; padding: 0 10px; border-radius: 999px; justify-content: center; }
+.agentbar .ask { padding: 0 10px; }

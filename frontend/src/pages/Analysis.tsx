@@ -10,7 +10,7 @@ import DiskFullHelp from "../components/DiskFullHelp";
 import AnalysisCompletionReveal from "../components/AnalysisCompletionReveal";
 import DrawingTo3DTransition from "../components/DrawingTo3DTransition";
 import PdfViewer, { Drawn, EditKind, InkVerdict, Layer, ViewerHandle } from "../components/PdfViewer";
-import QuantityTable, { withFloorHeight } from "../components/QuantityTable";
+import QuantityTable, { withFloorHeight, identityKey } from "../components/QuantityTable";
 import AnalysisFilm from "../components/AnalysisFilm";
 import LearnWizard from "../components/LearnWizard";
 import Boundary from "../components/Boundary";
@@ -83,6 +83,7 @@ export default function AnalysisPage() {
   // side panel before; each is a view of its own now.
   const [view, setView] = useState<"forklaring" | "analys" | "resonemang">("analys");
   const [selIdent, setSelIdent] = useState<string | null>(null);
+  const lastSaid = useRef<string | null>(null);   // det agenten senast visade, så samma rad inte zoomas om och om
   const [selPipe, setSelPipe] = useState<any>(null);
   // Frågan som ska ligga i agentens ruta när man går dit från ett utpekat rör.
   const [agentAsk, setAgentAsk] = useState("");
@@ -277,6 +278,10 @@ export default function AnalysisPage() {
       viewer.current?.fitPage();
       return;
     }
+    showIdentity(key);
+  };
+  /** Markera en hel beteckning och lägg bladet över den - utan att växla av, som ett klick på samma rad gör. */
+  const showIdentity = (key: string | null) => {
     setSelIdent(key); setSelPipe(null); setWhy(null);
     if (!key || !result) return;
     const mine = result.pipes.filter((p: any) => p.identity === key);
@@ -390,6 +395,27 @@ export default function AnalysisPage() {
     <div className={`workspace${rising ? " rising" : ""}`}>
     {liveAgent && <Suspense fallback={<div className="live-agent">Laddar samtalsagent…</div>}>
       <LiveDrawingAgent key={id} jobId={id!} onClose={() => setLiveAgent(false)}
+        onSaid={(text) => {
+          // Röret agenten talar om markeras medan den säger det: den beteckning som nämndes sist i det sagda.
+          // Längsta namnet först, så att VV1-X7-20/W inte läses som VV1-X7-20.
+          const up = text.toUpperCase();
+          let best: { at: number; row: any } | null = null;
+          const rows = [...(result.quantities as any[])].sort((a, b) => String(b.designation).length - String(a.designation).length);
+          const taken: [number, number][] = [];
+          for (const r of rows) {
+            const name = String(r.designation ?? '').toUpperCase(); if (name.length < 4) continue;
+            let at = up.lastIndexOf(name);
+            while (at >= 0 && taken.some(([a0, a1]) => at >= a0 && at < a1)) at = up.lastIndexOf(name, at - 1);
+            if (at < 0) continue;
+            taken.push([at, at + name.length]);
+            if (!best || at > best.at) best = { at, row: r };
+          }
+          if (!best) return;
+          const key = identityKey(best.row);
+          if (key === lastSaid.current) return;
+          lastSaid.current = key;
+          if (!show3d) showIdentity(key);
+        }}
         onMotion={m => {
           if (show3d) live3d.current?.motion(m.dx, m.dy, m.factor);
           else { viewer.current?.panBy(m.dx, m.dy); if (m.factor !== 1) viewer.current?.zoomBy(m.factor); }
@@ -398,8 +424,20 @@ export default function AnalysisPage() {
           const a = args?.action;
           if (show3d && ['zoom', 'pan', 'fit', 'snapshot'].includes(a) && !live3d.current) throw new Error('3D-vyn laddas fortfarande. Försök igen strax.');
           const finite = (v: unknown, min: number, max: number) => typeof v === 'number' && Number.isFinite(v) && v >= min && v <= max;
+          // Mängderna som tabellen visar dem: horisontellt mätt, vertikalt ur stigarna gånger höjden (våningshöjd,
+          // radiatoranslutning 1,0 m), och totalen av båda. Råraden säger "UNKNOWN" om vertikalen, och agenten
+          // sade då att höjderna saknades fast tabellen bredvid räknade dem.
           if (a === 'context') return { page, view: show3d ? '3D' : '2D', selected: selPipe,
-            quantities: result.quantities, corrections: corrections.filter(c => !c.undone),
+            selected_designation: selIdent,
+            quantities: withFloorHeight(result.quantities, floorH, includeHatched, riserSource, includeDeclared).map((r: any) => ({
+              designation: r.designation, dn: r.dn, state: r.state, labels: r.label_count, runs: r.physical_pipe_count,
+              horizontal_m: Math.round(r.horizontal_calc * 100) / 100,
+              risers: r.risers_calc, metres_per_riser: r.riser_height_m ?? floorH,
+              vertical_m: r.vertical_calc == null ? null : Math.round(r.vertical_calc * 100) / 100,
+              total_m: Math.round(r.total_calc * 100) / 100,
+              review_m: r.review_m, ambiguous_m: r.ambiguous_m })),
+            vertical_rule: floorH ? `Vertikalt = stigare × ${floorH} m våningshöjd (radiatoranslutningar 1,0 m). Antaget, ritningen anger inte höjden.` : 'Ingen våningshöjd satt: vertikalen räknas inte.',
+            corrections: corrections.filter(c => !c.undone),
             pipes: result.pipes.map((p: any) => ({ pipe_id: p.physical_pipe_id, designation: p.designation, page: p.page })),
             caution: 'Automatisk analys, inte verifierat facit. Korrigeringar är separata från originalgeometrin.' };
           if (a === 'snapshot') return { image: show3d ? live3d.current?.snapshot() : viewer.current?.snapshot(), page, view: show3d ? '3D' : '2D' };
@@ -413,6 +451,19 @@ export default function AnalysisPage() {
           if (a === 'pan' && finite(args.dx ?? 0, -2000, 2000) && finite(args.dy ?? 0, -2000, 2000)) {
             if (show3d) live3d.current?.motion(args.dx ?? 0, args.dy ?? 0, 1); else viewer.current?.panBy(args.dx ?? 0, args.dy ?? 0);
             return { ok: true };
+          }
+          if (a === 'show') {
+            // agenten visar en beteckning själv: hela beteckningen markeras och bladet zoomar dit
+            const want = String(args.designation ?? '').toUpperCase().replace(/\s+/g, '');
+            const rows = result.quantities as any[];
+            const norm = (t: string) => String(t ?? '').toUpperCase().replace(/\s+/g, '');
+            const row = rows.find(r => norm(r.designation) === want) ?? rows.find(r => norm(r.designation).replace('/W', '') === want.replace('/W', ''))
+              ?? rows.filter(r => norm(r.designation).startsWith(want)).sort((x, y) => (y.total_calc ?? y.confirmed_horizontal_m) - (x.total_calc ?? x.confirmed_horizontal_m))[0];
+            if (!row) throw new Error(`Beteckningen ${args.designation} finns inte i mängderna.`);
+            if (show3d) { setShow3d(false); setRising(false); }
+            setView('analys');
+            showIdentity(identityKey(row));
+            return { ok: true, shown: row.designation, runs: row.physical_pipe_count };
           }
           if (a === 'select') {
             const p = result.pipes.find((p: any) => p.physical_pipe_id === args.pipe_id && (p.page ?? 0) === page);
@@ -552,8 +603,8 @@ export default function AnalysisPage() {
             <AnalysisQuality quality={result.quality} />
             {actionErr && <p className="error" role="alert">{actionErr}</p>}
             {job?.motor?.foraldrad && (
-              <p className="badge warn">
-                {tr("Motorns programkod har ändrats sedan den här analysen gjordes. Resultatet räknas inte om automatiskt. Läs om bladet för att använda den aktuella motorn.")}
+              <p className="badge">
+                {tr("En förbättrad läsning finns för det här bladet.")}
                 <button className="small" style={{ marginLeft: 10 }} disabled={rescaling}
                   onClick={async () => {
                     setRescaling(true); setActionErr("");
@@ -561,7 +612,7 @@ export default function AnalysisPage() {
                       const nj = await api.analyze(job.drawing_id, undefined, page, "combined", "auto");
                       navigate(`/jobs/${nj.id}`);
                     } catch (e: any) { setActionErr(e.message); } finally { setRescaling(false); }
-                  }}>{rescaling ? "Läser om…" : "Läs om"}</button>
+                  }}>{rescaling ? tr("Läser om…") : tr("Läs om")}</button>
               </p>
             )}
             {markup && (

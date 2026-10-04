@@ -2159,3 +2159,14 @@ body.lp-dark { background: #100e0c; }
 .sh-lang button.on { color: #0b0f14; background: #6ee7a5; }
 @media (max-width: 720px) { .sh-lang { display: none; } }
 .sh-menu .sh-lang { display: inline-flex; margin-top: 10px; }
+
+/* Dokumentationen läses på papper: hjälten står i mörker, den långa texten på ljust. */
+.docs .docs-light { background: #f6f4ef; color: #12161c; padding: 56px 0 90px; margin-bottom: -100px; }
+.docs .docs-light .docs-nav a { color: rgba(18, 22, 28, 0.48); }
+.docs .docs-light .docs-nav a:hover { color: rgba(18, 22, 28, 0.8); }
+.docs .docs-light .docs-nav a.on { color: #12161c; border-left-color: #0f8a52; }
+.docs .docs-light :is(.docs-sec h2, .docs-sec h3, .docs-sec b, .docs-metrics td:first-child, .docs-metrics tr.sum td) { color: #12161c; }
+.docs .docs-light :is(.docs-sec p, .docs-sec li, .docs-metrics td, .docs-end) { color: rgba(18, 22, 28, 0.7); }
+.docs .docs-light .docs-sec code { color: #0f8a52; background: rgba(15, 138, 82, 0.09); }
+.docs .docs-light .docs-metrics td, .docs .docs-light .docs-end { border-color: rgba(18, 22, 28, 0.1); }
+.docs .docs-light :is(blockquote, .docs-note, aside) { color: #12161c; background: #fff; border-color: rgba(18, 22, 28, 0.1); }
