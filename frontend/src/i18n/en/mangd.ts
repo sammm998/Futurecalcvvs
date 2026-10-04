@@ -243,4 +243,10 @@ export const mangd: Record<string, string> = {
     "Cost the quantities: materials, standard time, price and tender",
   "Kalkylera →": "Cost →",
   "Lär mig om VVS": "Teach me HVAC",
+  "Mängd per system": "Quantity per system",
+  "Mängd per beteckning": "Quantity per designation",
+  "Hitta olösta": "Find unresolved",
+  "Granska läsningen": "Review the reading",
+  "Vad kan ritas in?": "What can be drawn in?",
+  "Hur lästes skalan?": "How was the scale read?",
 };

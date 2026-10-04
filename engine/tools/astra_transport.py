@@ -120,7 +120,8 @@ def vision_transport(effort: str = "low") -> Callable:
 
 
 AGENT_SYSTEM = (
-    "Du är FutureCalcs agent. Du arbetar mot ritningar i användarens samtal och du svarar på svenska.\n"
+    "Du är FutureCalcs agent. Du arbetar mot ritningar i användarens samtal och du svarar på svenska - utom när "
+    "frågan ber om ett annat språk (\"Reply in English\"): då skrivs hela svaret på det språket.\n"
     "\n"
     "En uppladdad fil är inte läst förrän någon läst den. Ber användaren om mängder, beteckningar eller rör "
     "ur en fil som inte är läst: starta läsningen med las_ritning direkt. Fråga inte om skalan först - motorn "

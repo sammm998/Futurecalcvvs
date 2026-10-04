@@ -366,3 +366,36 @@
 .fc-scr-frame img.on { opacity: 1; transform: none; }
 .fc-scr-cap { margin: 0; max-width: 62ch; }
 @media (max-width: 700px) { .fc-scr-frame { aspect-ratio: 4 / 3; } .fc-scr-tabs button { padding: 8px 13px; font-size: 13px; } }
+
+/* ---------------------------------------------------------------- demofilmerna */
+.fc-demo { padding: clamp(60px, 11vh, 130px) var(--fc-gut); background: var(--fc-bg); border-top: 1px solid var(--fc-line-2); }
+.fc-demo.compact { padding: 0; background: transparent; border: 0; }
+.fc-demo-in { max-width: 1240px; margin: 0 auto; display: grid; gap: clamp(22px, 4vh, 40px); }
+.fc-demo-head { display: grid; gap: 12px; justify-items: center; text-align: center; }
+.fc-demo-head h2 { margin: 0; }
+.fc-demo-head .fc-body { margin: 0; max-width: 56ch; }
+.fc-demo-grid { display: grid; grid-template-columns: minmax(0, 2.1fr) minmax(0, 1fr); gap: clamp(16px, 2.4vw, 32px); align-items: start; }
+.fc-demo-player {
+  border-radius: 14px; overflow: hidden; background: #000; aspect-ratio: 16 / 10;
+  border: 1px solid var(--fc-line); box-shadow: 0 40px 100px -40px rgba(0, 0, 0, 0.8);
+}
+.fc-demo-player video { width: 100%; height: 100%; display: block; object-fit: contain; background: #000; }
+.fc-demo-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.fc-demo-list button {
+  width: 100%; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 14px; align-items: start; text-align: left;
+  padding: 14px 16px; border-radius: 12px; border: 1px solid var(--fc-line-2); background: var(--fc-bg-2);
+  color: var(--fc-ink-60); cursor: pointer; font: inherit;
+  transition: border-color var(--fc-d-fast), background var(--fc-d-fast), color var(--fc-d-fast);
+}
+.fc-demo-list button:hover { border-color: var(--fc-line-3); color: var(--fc-ink); }
+.fc-demo-list button.on { border-color: rgba(110, 231, 165, 0.45); background: var(--fc-bg-3); color: var(--fc-ink); }
+.fc-demo-list .fc-num { font-size: 12px; color: var(--fc-accent); padding-top: 3px; }
+.fc-demo-txt { display: grid; gap: 4px; }
+.fc-demo-txt b { font-weight: 600; font-size: 15.5px; color: var(--fc-ink); letter-spacing: -0.01em; }
+.fc-demo-txt span { font-size: 13.5px; line-height: 1.45; }
+@media (max-width: 900px) { .fc-demo-grid { grid-template-columns: minmax(0, 1fr); } }
+.fc-demo-list button, .fc-demo-list button * , .fc-scr-tabs button {
+  text-transform: none; letter-spacing: normal; white-space: normal; font-family: var(--fc-sans);
+}
+.fc-demo-list .fc-num, .fc-scr-tabs .fc-num { font-family: var(--fc-mono); letter-spacing: 0.08em; }
+.fc-demo-list button { height: auto; min-height: 0; overflow: hidden; }
