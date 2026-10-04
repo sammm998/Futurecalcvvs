@@ -45,3 +45,57 @@ def create_session(language="sv"):
                                      "turn_detection": {"type": "server_vad", "create_response": True, "interrupt_response": True}},
                            "output": {"voice": "marin"}}})
     return {"value": secret.value, "expires_at": secret.expires_at, "model": model}
+
+
+TEXT_MODEL_ENV = "VVS_LIVE_TEXT_MODEL"
+MAX_INPUT_ITEMS = 40
+
+
+def _clean_items(items):
+    """Only the item kinds a text turn sends: a user message (text, a drawing snapshot) or a tool result."""
+    out = []
+    for it in (items or [])[-MAX_INPUT_ITEMS:]:
+        if not isinstance(it, dict):
+            continue
+        if it.get("type") == "function_call_output" and isinstance(it.get("call_id"), str):
+            out.append({"type": "function_call_output", "call_id": it["call_id"], "output": str(it.get("output", ""))[:20000]})
+        elif it.get("role") == "user" and isinstance(it.get("content"), list):
+            parts = []
+            for c in it["content"]:
+                if c.get("type") == "input_text":
+                    parts.append({"type": "input_text", "text": str(c.get("text", ""))[:4000]})
+                elif c.get("type") == "input_image" and str(c.get("image_url", "")).startswith("data:image/"):
+                    parts.append({"type": "input_image", "image_url": c["image_url"]})
+            if parts:
+                out.append({"role": "user", "content": parts})
+    return out
+
+
+def text_turn(items, previous_response_id=None, language="sv"):
+    """One turn of the conversation agent in text, for when the browser's voice connection cannot be opened.
+
+    The same instructions and the same drawing tool as the voice session; the browser runs the tool calls and
+    sends their results back as the next turn."""
+    if language not in ("sv", "en"):
+        raise ValueError("Unsupported conversation language")
+    from .source_model import connection_settings
+    from openai import OpenAI
+    key, model = connection_settings()
+    if not key:
+        raise ValueError("OpenAI-anslutning saknas")
+    model = os.environ.get(TEXT_MODEL_ENV) or model
+    instructions = INSTRUCTIONS.replace("Tala naturlig, kort svenska", "Write natural, concise English" if language == "en" else "Skriv naturlig, kort svenska")
+    kwargs = {"model": model, "instructions": instructions, "input": _clean_items(items), "tools": TOOLS,
+              "tool_choice": "auto", "max_output_tokens": 2048}
+    if previous_response_id:
+        kwargs["previous_response_id"] = previous_response_id
+    r = OpenAI(api_key=key, timeout=60, max_retries=1).responses.create(**kwargs)
+    out = []
+    for item in r.output or []:
+        if item.type == "function_call":
+            out.append({"type": "function_call", "call_id": item.call_id, "name": item.name, "arguments": item.arguments})
+        elif item.type == "message":
+            text = "".join(getattr(c, "text", "") or "" for c in (item.content or []))
+            if text:
+                out.append({"type": "message", "text": text})
+    return {"id": r.id, "output": out}

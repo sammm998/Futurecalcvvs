@@ -8,7 +8,7 @@ import {
   type CadDocument, type Entity, type Pt, type View, type Wall, type Door, type Window, type Opening, type GridLine, type Underlay, type MeshRef,
   alongWall, dist, entity, visibleIn, wallLength,
 } from "./building";
-import { wallFootprint, profilePolygon } from "./solids";
+import { wallFootprint, profilePolygon, joinedWall } from "./solids";
 
 import { locale } from "../i18n";
 export type Seg = [Pt, Pt];
@@ -364,8 +364,10 @@ function drawEntity(g: CanvasRenderingContext2D, doc: CadDocument, e: Entity, st
   const poly = (pts: Pt[], close: boolean) => { g.beginPath(); pts.forEach((p, i) => { const P = S(p); if (i) g.lineTo(P[0], P[1]); else g.moveTo(P[0], P[1]); }); if (close) g.closePath(); };
   switch (e.type) {
     case "wall": case "curtain_wall": {
-      const fp = wallFootprint(e); poly(fp, true);
-      g.fillStyle = ghost ? "rgba(31,111,235,0.15)" : e.type === "curtain_wall" ? "rgba(159,211,232,0.5)" : e.phase === "DEMOLISH" ? "rgba(200,60,60,0.18)" : e.phase === "EXISTING" ? "rgba(120,120,120,0.25)" : "rgba(40,40,40,0.85)";
+      // hörnen sluts: väggen går vidare in i hörnet mot en vägg som slutar där (solids.wallJoins)
+      const fp = wallFootprint(ghost ? e : joinedWall(doc, e).wall); poly(fp, true);
+      // en ny vägg målas täckande, så att två väggar som möts i ett hörn inte blir mörkare där de ligger på varandra
+      g.fillStyle = ghost ? "rgba(31,111,235,0.15)" : e.type === "curtain_wall" ? "rgba(159,211,232,0.5)" : e.phase === "DEMOLISH" ? "rgba(200,60,60,0.18)" : e.phase === "EXISTING" ? "rgba(120,120,120,0.25)" : "rgb(72,72,72)";
       g.fill(); g.lineWidth = 1; g.stroke();
       break;
     }

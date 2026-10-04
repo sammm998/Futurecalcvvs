@@ -108,6 +108,67 @@ def wall_footprint(w: dict) -> list:
             [b[0] - n[0] * r, b[1] - n[1] * r], [a[0] - n[0] * r, a[1] - n[1] * r]]
 
 
+JOIN_COS = 0.985      # väggar nästan i linje skarvas, de möts inte i ett hörn
+
+
+def wall_joins(doc: dict) -> dict[str, tuple[float, float]]:
+    """Hur långt varje ände av varje vägg går förbi sin punkt för att sluta hörnet mot en vägg som slutar där.
+
+    Spegel av solids.ts wallJoins: två väggar ritade hörn till hörn slutar på hörnets mittpunkt, och utan detta
+    saknas en kvadrat ytterst i varje yttre hörn. Varje vägg går vidare halva den andras tjocklek."""
+    walls = [e for e in doc.get("entities") or [] if e.get("type") in ("wall", "curtain_wall")]
+    cell = 50.0
+    grid: dict[tuple[int, int], list[tuple[dict, int]]] = {}
+    for w in walls:
+        for end in (0, 1):
+            P = w["p"][end]
+            grid.setdefault((round(P[0] / cell), round(P[1] / cell)), []).append((w, end))
+
+    def level(w):
+        return w.get("base_level") if w.get("base_level") is not None else w.get("level")
+    out: dict[str, tuple[float, float]] = {}
+    for w in walls:
+        L = wall_length(w)
+        if L <= 0:
+            continue
+        d = ((w["p"][1][0] - w["p"][0][0]) / L, (w["p"][1][1] - w["p"][0][1]) / L)
+        ext = [0.0, 0.0]
+        for end in (0, 1):
+            P = w["p"][end]
+            cx, cy = round(P[0] / cell), round(P[1] / cell)
+            for dx in (-1, 0, 1):
+                for dy in (-1, 0, 1):
+                    for o, oend in grid.get((cx + dx, cy + dy), []):
+                        if o["id"] == w["id"] or level(o) != level(w):
+                            continue
+                        Q = o["p"][oend]
+                        tw, to = float(w.get("thickness") or 0), float(o.get("thickness") or 0)
+                        if math.hypot(Q[0] - P[0], Q[1] - P[1]) > max(5.0, min(tw, to) / 2):
+                            continue
+                        Lo = wall_length(o)
+                        if Lo <= 0:
+                            continue
+                        od = ((o["p"][1][0] - o["p"][0][0]) / Lo, (o["p"][1][1] - o["p"][0][1]) / Lo)
+                        if abs(d[0] * od[0] + d[1] * od[1]) >= JOIN_COS:
+                            continue
+                        ext[end] = max(ext[end], to if o.get("alignment") in ("left", "right") else to / 2)
+        if ext[0] or ext[1]:
+            out[w["id"]] = (ext[0], ext[1])
+    return out
+
+
+def joined_wall(doc: dict, w: dict, joins: dict | None = None) -> tuple[dict, float, float]:
+    """Väggen med ändarna förlängda in i de hörn den sluter, och hur mycket som lades till i varje ände."""
+    e0, e1 = (joins if joins is not None else wall_joins(doc)).get(w["id"], (0.0, 0.0))
+    if not (e0 or e1):
+        return w, 0.0, 0.0
+    L = wall_length(w) or 1.0
+    d = ((w["p"][1][0] - w["p"][0][0]) / L, (w["p"][1][1] - w["p"][0][1]) / L)
+    a = [w["p"][0][0] - d[0] * e0, w["p"][0][1] - d[1] * e0]
+    b = [w["p"][1][0] + d[0] * e1, w["p"][1][1] + d[1] * e1]
+    return dict(w, p=[a, b]), e0, e1
+
+
 def _wall_slab(w: dict, t0: float, t1: float, z0: float, z1: float, role: str) -> dict | None:
     if t1 - t0 <= 1e-9 or z1 - z0 <= 1e-9:
         return None
@@ -135,9 +196,16 @@ def wall_solids(doc: dict, w: dict) -> list[dict]:
     L = wall_length(w)
     if L <= 0 or z1 <= z0:
         return []
+    holes = wall_holes(doc, w)
+    # hörnen: väggen går vidare in i de hörn den sluter, och öppningarna står kvar där de stod
+    wj, e0, e1 = joined_wall(doc, w)
+    if e0 or e1:
+        Lj = L + e0 + e1
+        holes = [dict(h, t0=(h["t0"] * L + e0) / Lj, t1=(h["t1"] * L + e0) / Lj) for h in holes]
+        w = wj
     out: list[dict] = []
     cursor = 0.0
-    for h in wall_holes(doc, w):
+    for h in holes:
         for s in (_wall_slab(w, cursor, h["t0"], z0, z1, "wall"),
                   _wall_slab(w, h["t0"], h["t1"], z0, min(h["zb"], z1), "wall_below"),
                   _wall_slab(w, h["t0"], h["t1"], max(h["zt"], z0), z1, "wall_above")):
@@ -155,6 +223,8 @@ def wall_whole(doc: dict, w: dict) -> dict | None:
     z0, z1 = vertical_extent(doc, w)
     if wall_length(w) <= 0 or z1 <= z0:
         return None
+    # IFC får väggen som den ritades: axeln läses tillbaka ur kroppen, och en vägg som kom tillbaka 300 mm
+    # längre vore en annan vägg
     return prism(w["id"], w["type"], wall_footprint(w), z0, z1, "wall")
 
 

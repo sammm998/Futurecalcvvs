@@ -124,12 +124,13 @@ export default function Drawing3DView({ result, title, onClose, controlRef, draw
   const [ready, setReady] = useState(false);
   const api = useRef<{
     view: (v: ViewName) => void; reset: () => void; spin: (dir: -1 | 1) => void;
-    setExploded: (v: boolean) => void; setLabels: (v: boolean) => void; setXray: (v: boolean) => void;
+    setExploded: (v: boolean) => void; setLabels: (v: boolean) => void; setXray: (v: boolean) => void; setFullWalls: (v: boolean) => void;
     setWalking: (v: boolean) => void;
   } | null>(null);
   const [exploded, setExploded] = useState(false);
   const [labels, setLabels] = useState(true);
   const [xray, setXray] = useState(false);
+  const [fullWalls, setFullWalls] = useState(false);
   const [walking, setWalking] = useState(false);
 
   // samma ordning som scenen lägger banden i, så panelen kan säga vilken höjd ett rör faktiskt ritades på
@@ -484,7 +485,8 @@ export default function Drawing3DView({ result, title, onClose, controlRef, draw
       const rad = Math.hypot(model.size.width, model.size.depth) / 2 + model.floorHeight;
       const vFov = (camera.fov * Math.PI) / 180;
       const hFov = 2 * Math.atan(Math.tan(vFov / 2) * (w / h));
-      return Math.max(4, (rad / Math.sin(Math.min(vFov, hFov) / 2)) * 0.86);
+      // närmare än att hela höljet får plats: hörnen av en rektangel ligger sällan i bild samtidigt från snett ovan
+      return Math.max(4, (rad / Math.sin(Math.min(vFov, hFov) / 2)) * 0.68);
     };
     const radius = fit();
     const state = { theta: Math.PI * 0.25, phi: 0.02, dist: radius };
@@ -671,13 +673,18 @@ export default function Drawing3DView({ result, title, onClose, controlRef, draw
     let last = performance.now();
     let wantLabels = true;
     let risen = false;
+    // Sett ovanifrån skymmer en vägg i full höjd rören som går under taket bakom den, och huset blir en
+    // samling vita lådor med enstaka rörbitar emellan. Översikten kapar därför väggarna i brösthöjd - som ett
+    // dockskåp - och inne i modellen står de i full höjd.
+    const CUT = model.floorHeight > 1.3 ? 1.1 / model.floorHeight : 1;
+    let full = false;
     let raf = 0;
     const tick = (now: number) => {
       const dt = Math.min(0.1, (now - last) / 1000);
       last = now;
       const t = RISE ? Math.min(1, (now - t0) / RISE) : 1;
       const e = easeOut(t);
-      wallGroup.scale.y = Math.max(0.001, e);
+      wallGroup.scale.y = Math.max(0.001, e * (walker.on || full ? 1 : CUT));
       wallGroup.position.y = 0;
       pipeGroup.visible = t > 0.35;
       pipeGroup.scale.y = Math.max(0.001, easeOut(Math.max(0, (t - 0.35) / 0.65)));
@@ -772,6 +779,7 @@ export default function Drawing3DView({ result, title, onClose, controlRef, draw
         if (!walker.on) pipeGroup.position.y = v ? model.floorHeight * 1.15 : 0;
       },
       setLabels: (v: boolean) => { wantLabels = v; labelGroup.visible = v; },
+      setFullWalls: (v: boolean) => { full = v; },
       setXray: (v: boolean) => {
         wallMat.transparent = v;
         wallMat.opacity = v ? 0.24 : 1;
@@ -826,6 +834,7 @@ export default function Drawing3DView({ result, title, onClose, controlRef, draw
   useEffect(() => { api.current?.setExploded(exploded); }, [exploded]);
   useEffect(() => { api.current?.setLabels(labels); }, [labels]);
   useEffect(() => { api.current?.setXray(xray); }, [xray]);
+  useEffect(() => { api.current?.setFullWalls(fullWalls); }, [fullWalls]);
   useEffect(() => { api.current?.setWalking(walking); }, [walking]);
 
   return (
@@ -853,6 +862,8 @@ export default function Drawing3DView({ result, title, onClose, controlRef, draw
         onLabels={setLabels}
         xray={xray}
         onXray={setXray}
+        fullWalls={fullWalls}
+        onFullWalls={setFullWalls}
         walking={walking}
         onWalk={setWalking}
       />

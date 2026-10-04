@@ -70,6 +70,65 @@ export function wallFootprint(w: Wall | CurtainWall): Pt[] {
   ];
 }
 
+// ---------------------------------------------------------------- väggarnas hörn
+
+const JOIN_COS = 0.985;      // väggar som går nästan i linje skarvas, de möts inte i ett hörn
+
+const joinCache = new WeakMap<object, Map<string, [number, number]>>();
+
+/** Hur långt varje ände av varje vägg går förbi sin punkt för att sluta hörnet mot en vägg som slutar där.
+ *
+ * Två väggar som ritas från hörn till hörn slutar båda på hörnets mittpunkt, och då saknas en kvadrat ytterst i
+ * hörnet - ett hack i varje yttre hörn, i planen och i 3D. Ett CAD-program fogar ihop dem: varje vägg går vidare
+ * halva den andras tjocklek, så att hörnet blir helt. Väggar i linje med varandra är en skarv och förlängs inte. */
+export function wallJoins(doc: CadDocument): Map<string, [number, number]> {
+  const hit = joinCache.get(doc.entities);
+  if (hit) return hit;
+  const walls = doc.entities.filter((e) => e.type === "wall" || e.type === "curtain_wall") as (Wall | CurtainWall)[];
+  const cell = 50;
+  const grid = new Map<string, { w: Wall | CurtainWall; end: 0 | 1 }[]>();
+  const key = (p: Pt) => `${Math.round(p[0] / cell)}:${Math.round(p[1] / cell)}`;
+  for (const w of walls) ([0, 1] as const).forEach((end) => {
+    const k = key(w.p[end]); (grid.get(k) ?? grid.set(k, []).get(k)!).push({ w, end });
+  });
+  const levelOf = (w: Wall | CurtainWall) => (w as any).base_level ?? w.level;
+  const out = new Map<string, [number, number]>();
+  for (const w of walls) {
+    const L = wallLength(w); if (L <= 0) continue;
+    const dir: Pt = [(w.p[1][0] - w.p[0][0]) / L, (w.p[1][1] - w.p[0][1]) / L];
+    const ext: [number, number] = [0, 0];
+    ([0, 1] as const).forEach((end) => {
+      const P = w.p[end];
+      const [cx, cy] = [Math.round(P[0] / cell), Math.round(P[1] / cell)];
+      for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) {
+        for (const o of grid.get(`${cx + dx}:${cy + dy}`) ?? []) {
+          if (o.w.id === w.id || levelOf(o.w) !== levelOf(w)) continue;
+          const Q = o.w.p[o.end];
+          if (Math.hypot(Q[0] - P[0], Q[1] - P[1]) > Math.max(5, Math.min(w.thickness, o.w.thickness) / 2)) continue;
+          const Lo = wallLength(o.w); if (Lo <= 0) continue;
+          const od: Pt = [(o.w.p[1][0] - o.w.p[0][0]) / Lo, (o.w.p[1][1] - o.w.p[0][1]) / Lo];
+          if (Math.abs(dir[0] * od[0] + dir[1] * od[1]) >= JOIN_COS) continue;
+          ext[end] = Math.max(ext[end], o.w.alignment === "left" || o.w.alignment === "right" ? o.w.thickness : o.w.thickness / 2);
+        }
+      }
+    });
+    if (ext[0] || ext[1]) out.set(w.id, ext);
+  }
+  joinCache.set(doc.entities, out);
+  return out;
+}
+
+/** Väggen med sina ändar förlängda in i de hörn den sluter, och hur mycket som lades till i varje ände. */
+export function joinedWall<W extends Wall | CurtainWall>(doc: CadDocument, w: W): { wall: W; e0: number; e1: number } {
+  const ext = wallJoins(doc).get(w.id);
+  if (!ext) return { wall: w, e0: 0, e1: 0 };
+  const L = wallLength(w) || 1;
+  const d: Pt = [(w.p[1][0] - w.p[0][0]) / L, (w.p[1][1] - w.p[0][1]) / L];
+  const a: Pt = [w.p[0][0] - d[0] * ext[0], w.p[0][1] - d[1] * ext[0]];
+  const b: Pt = [w.p[1][0] + d[0] * ext[1], w.p[1][1] + d[1] * ext[1]];
+  return { wall: { ...w, p: [a, b] }, e0: ext[0], e1: ext[1] };
+}
+
 /** Ett stycke av en vägg mellan två andelar längs den, mellan två höjder. */
 function wallSlab(w: Wall | CurtainWall, t0: number, t1: number, z0: number, z1: number, role: string): Prism | null {
   if (t1 - t0 <= 1e-9 || z1 - z0 <= 1e-9) return null;
@@ -87,6 +146,13 @@ export function wallSolids(doc: CadDocument, w: Wall | CurtainWall, openings = h
     .map((h) => ({ t0: Math.max(0, h.t - h.width / 2 / L), t1: Math.min(1, h.t + h.width / 2 / L), zb: z0 + (h.sill ?? (h.type === "door" ? 0 : 900)), zt: z0 + (h.sill ?? (h.type === "door" ? 0 : 900)) + h.height }))
     .filter((h) => h.t1 > h.t0)
     .sort((x, y) => x.t0 - y.t0);
+  // hörnen: väggen går vidare in i de hörn den sluter, och öppningarna står kvar där de stod
+  const { wall: wj, e0, e1 } = joinedWall(doc, w);
+  if (e0 || e1) {
+    const Lj = L + e0 + e1;
+    for (const h of holes) { h.t0 = (h.t0 * L + e0) / Lj; h.t1 = (h.t1 * L + e0) / Lj; }
+    w = wj;
+  }
   const out: Prism[] = [];
   let cursor = 0;
   for (const h of holes) {
