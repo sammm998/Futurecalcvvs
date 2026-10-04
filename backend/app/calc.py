@@ -290,7 +290,7 @@ def build(rows: list[dict], legend: list[dict], assumptions: dict, overrides: di
         plastic = _is_plastic(mcode, klass)
         horiz = float(q.get("confirmed_horizontal_m") or 0.0)
         risers = int(max(q.get("riser_count") or 0, q.get("riser_count_from_labels") or 0))
-        vert = risers * float(A["floor_height_m"])
+        vert = risers * float(q.get("riser_height_m") or A["floor_height_m"])   # en radiatoranslutning är 1,0 m
         netto_m = horiz + vert
         kalkyl_m = netto_m * (1 + float(A["spill_pct"]) / 100.0)
 

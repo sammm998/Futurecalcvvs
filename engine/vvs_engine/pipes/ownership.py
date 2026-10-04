@@ -320,10 +320,10 @@ def _declare_unowned(graphs: dict[str, PipeGraph], states: dict[str, dict[int, "
         ranked = sorted(((r[0], d) for d in declared if d.dn is not None
                          for r in [system_layer_rank(d.system_token, layer, spelled_out)] if r),
                         key=lambda t: (t[0], t[1].text))
-        if not ranked or (len(ranked) > 1 and ranked[1][0] == ranked[0][0]):
+        by_join = not layer and not ranked
+        if not by_join and (not ranked or (len(ranked) > 1 and ranked[1][0] == ranked[0][0])):
             continue
-        d = ranked[0][1]
-        ident = identity_from_text(d.text, d.dn, d.system_token, len(split_tokens(d.stem)))
+        d = None if by_join else ranked[0][1]
         n = 0
         for comp in _unowned_components(g, states[fk]):
             run = sum(g.prims[pid].seg.length for pid in comp)
@@ -331,14 +331,39 @@ def _declare_unowned(graphs: dict[str, PipeGraph], states: dict[str, dict[int, "
                 for pid in comp:
                     states[fk][pid].evidence.append("too_long_for_a_declared_connection_pipe")
                 continue                    # a main the rule for connection pipes does not name
+            here = _declared_by_join(g, states[fk], comp, declared) if by_join else d
+            if here is None:
+                continue
+            ident = identity_from_text(here.text, here.dn, here.system_token, len(split_tokens(here.stem)))
             for pid in comp:
                 st = states[fk][pid]
                 st.state, st.identity, st.reason = "CONFIRMED", ident, DECLARED_REASON
-                st.evidence = [f"sheet_table:{d.text}"]
+                st.evidence = [f"sheet_table:{here.text}"] + (["system_from_the_pipe_it_joins"] if by_join else [])
                 n += 1
         if n:
             given[fk] = n
     return given
+
+
+def _declared_by_join(g: PipeGraph, st: dict[int, "PrimState"], comp: list[int], declared):
+    """The declared connection pipe for a run on a pen with no layer name: the one system it joins.
+
+    A file exported without layers gives the pen no system, and the rule for connection pipes is written per
+    system. A connection tube runs from a distributor, so it meets the distributor's labelled pipe; when every
+    labelled pipe the run meets belongs to one declared system it is that system's connection pipe. A run that
+    meets two of them, or none, is left unowned - the sheet has not said which."""
+    nodes = {n for pid in comp for n in g.prim_nodes[pid]}
+    inside = set(comp)
+    systems = set()
+    for pid, ns in g.prim_nodes.items():
+        if pid in inside or st[pid].state != "CONFIRMED" or st[pid].identity is None:
+            continue
+        if nodes.intersection(ns):
+            systems.add((st[pid].identity.system or "").upper())
+    fits = [d for d in declared if d.dn is not None and (d.system_token or "").upper() in systems]
+    if len({(d.system_token or "").upper() for d in fits}) != 1 or len({d.text for d in fits}) != 1:
+        return None
+    return fits[0]
 
 
 def propagate(graphs: dict[str, PipeGraph], anchors: list[PipeCodeAnchor], page: int,

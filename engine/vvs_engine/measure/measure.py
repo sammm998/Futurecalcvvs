@@ -370,6 +370,9 @@ def aggregate(measures: list[PipeMeasure], ambiguous_pt: dict[str, float], mpp: 
                   "horizontal_pdf_units", "in_hatched_area_m", "ambiguous_pdf_units", "double_line_m", "review_m"):
             r[f] = round(r[f], 3)
         r["vertical_m"] = r["confirmed_vertical_m"] if r["vertical_known"] else "UNKNOWN"
+        h = slab_riser_height(r)
+        if h is not None:
+            r["riser_height_m"] = h      # what one riser counts on this row; absent means the storey height
         out.append(r)
     return out
 
@@ -407,6 +410,30 @@ def _fold_vent_rows(rows: dict[str, dict[str, Any]]) -> None:
                 t[f] = t.get(f, 0) + r[f]
         t["pipe_ids"] = list(t.get("pipe_ids", [])) + list(r.get("pipe_ids", []))
         t["vertical_known"] = bool(t.get("vertical_known") or r.get("vertical_known"))
+
+
+SLAB_RISER_M = 1.0         # m: a radiator connection rises through the slab to the radiator, not a storey
+SLAB_RISER_SYSTEM = "VS"    # heating (värmesystem)
+SLAB_RISER_MAX_DN = 15      # the connection sizes; a heating stack is larger
+SLAB_RISER_MATERIAL = "S"   # thin steel tube (S13 and kin); a copper heating riser is a full storey on the sheets
+
+
+def slab_riser_height(row: dict[str, Any]) -> float | None:
+    """The height one riser on this row stands for when the sheet does not say, or None for a storey.
+
+    A riser symbol on a heating pipe of connection size is the branch going up through the slab to a radiator on
+    the floor above (or down to one below): about a metre of pipe, not a storey. The takeoffs count it as
+    "upp genom bjälklag" 1.0 m; counting it as a storey put 1.8 m too many on every radiator."""
+    base = str(row.get("base") or row.get("designation") or "").upper()
+    parts = base.split("-")
+    if len(parts) < 2:
+        return None
+    system = "".join(c for c in parts[0] if c.isalpha())
+    dn = row.get("dn")
+    if system == SLAB_RISER_SYSTEM and parts[1].startswith(SLAB_RISER_MATERIAL) and isinstance(dn, (int, float)) \
+            and 0 < dn <= SLAB_RISER_MAX_DN:
+        return SLAB_RISER_M
+    return None
 
 
 def _empty_row(k: str) -> dict[str, Any]:

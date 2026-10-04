@@ -241,6 +241,8 @@ def _quantities_by_building(db: Session, project_id: str, report: dict) -> dict:
                 "sheets": [], "labels": 0})
             e["horizontal_m"] += q.get("confirmed_horizontal_m") or 0.0
             e["risers"] += max(q.get("riser_count") or 0, q.get("riser_count_from_labels") or 0)
+            if q.get("riser_height_m") is not None:
+                e["riser_height_m"] = q["riser_height_m"]
             e["labels"] += q.get("label_count") or 0
             fn = names.get(did)
             if fn and fn not in e["sheets"]:

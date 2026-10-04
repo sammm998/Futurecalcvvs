@@ -36,7 +36,35 @@ class AnalysisTookTooLong(Exception):
 VOCAB_HOLD = 2          # readings kept from the search for the list; past that, looking again is cheaper than keeping
 
 
-def _vocabulary(doc, known_legend: DrawingLegend | None, progress, ocr_assist: bool, film_sink=None):
+def _upright(pdf_path: str, doc, pages, out_dir: str, progress):
+    """The file to read: the one given, or a copy with the pages that lie on their side turned to read.
+
+    Every sheet's lettering is read as it lies; one that names few pipes with a size is tried a quarter turn each
+    way (see pdf/orient.py). The readings already paid for on the first sheets are handed on when nothing had to
+    be turned, so a sheet that reads as it lies costs nothing more to check."""
+    from .pdf.orient import turn_for, write_turned
+    turns: dict[int, int] = {}
+    held: dict[int, Any] = {}
+    for i in range(len(doc.pages)):
+        pg = doc.pages[i]
+        prep = prepare_page(pg)
+        t = turn_for(pdf_path, pg.info.index, prep)
+        if t:
+            turns[pg.info.index] = t
+        if len(held) < _R("cli.VOCAB_HOLD", VOCAB_HOLD):
+            held[i] = prep
+        elif i > 0:
+            doc.pages.release(i)
+    if not turns:
+        return pdf_path, doc, held, {}
+    if progress:
+        progress("READING_PDF")
+    turned = write_turned(pdf_path, turns, os.path.join(out_dir, "upright.pdf"))
+    return turned, extract_document(turned, pages, progress=progress, eager=False), {}, turns
+
+
+def _vocabulary(doc, known_legend: DrawingLegend | None, progress, ocr_assist: bool, film_sink=None,
+                held: dict | None = None):
     """The set's designation list, and the sheet readings the search for it already paid for.
 
     Sheets are looked at in order and the search stops at the first that carries a list, which on almost every
@@ -45,12 +73,14 @@ def _vocabulary(doc, known_legend: DrawingLegend | None, progress, ocr_assist: b
     """
     from .film import Film
     vocab = known_legend
-    held: dict[int, Any] = {}
+    held = dict(held or {})
     for i in range(len(doc.pages)):
         # The search for the list reads the front half of a sheet, and that is the half that takes the longest
         # with nothing to show. So it narrates while it goes, on the sheet the film is about.
-        prep = prepare_page(doc.pages[i], progress if i == 0 else None, ocr_assist,
-                            Film(film_sink) if i == 0 else None)
+        prep = held.get(i) if not ocr_assist else None
+        if prep is None:
+            prep = prepare_page(doc.pages[i], progress if i == 0 else None, ocr_assist,
+                                Film(film_sink) if i == 0 else None)
         if len(held) < _R("cli.VOCAB_HOLD", VOCAB_HOLD):
             held[i] = prep
         elif i > 0:
@@ -108,7 +138,8 @@ def sheet_record(pa) -> dict:
         "quantities": [{k: q.get(k) for k in ("designation", "base", "dn", "state", "label_count",
                                               "physical_pipe_count", "confirmed_horizontal_m",
                                               "confirmed_vertical_m", "confirmed_total_m", "ambiguous_m",
-                                              "in_hatched_area_m", "riser_count", "pipe_ids")}
+                                              "in_hatched_area_m", "riser_count", "riser_count_from_labels",
+                                              "riser_height_m", "pipe_ids")}
                        for q in pa.quantities],
         "second_reader": pa.second_reader,
         "source_assignment": {k: v for k, v in (pa.source_assignment or {}).items()
@@ -155,7 +186,9 @@ def analyze_pdf(pdf_path: str, out_dir: str, name: str | None = None, determinis
     # the sheet that has room for it, and lets the rest stand on that; a reading that takes each sheet as it comes
     # would have to go back and read the early ones again once the list turned up. Looking for the list first
     # costs nothing where it is on the front sheet, because that sheet's reading is kept and used.
-    vocab, held = _vocabulary(doc, known_legend, progress, ocr_assist, film_sink)
+    # A sheet lying on its side is turned to read first: everything after reads, and shows, the upright sheet.
+    pdf_path, doc, checked, turns = _upright(pdf_path, doc, pages, out_dir, progress)
+    vocab, held = _vocabulary(doc, known_legend, progress, ocr_assist, film_sink, held=checked)
     if progress:
         progress("READING_PDF")
     overlay = OverlayWriter(pdf_path, out_dir)
@@ -255,7 +288,10 @@ def analyze_pdf(pdf_path: str, out_dir: str, name: str | None = None, determinis
                "contamination": cont["state"] if cont else None, "files": files, "total_seconds": round(timings["total_s"], 2),
                "input": getattr(doc.pages[0], "input_class", None), "skipped_pages": doc.skipped_pages,
                "review": {"state": rev["state"], "n_findings": rev["n_findings"], "agents": rev["agents"]} if rev else None,
-               "ocr_assist": first.ocr_assist}
+               "ocr_assist": first.ocr_assist,
+               # sidor som låg på sidan och vreds för att kunna läsas: filen som lästes, och som ska visas, är den vridna
+               "turned_pages": {str(k): v for k, v in turns.items()},
+               "upright_file": os.path.basename(pdf_path) if turns else None}
     with open(os.path.join(out_dir, "summary.json"), "w", encoding="utf-8") as fh:
         json.dump(_stamp(summary), fh, indent=1, default=str)
     if progress:
