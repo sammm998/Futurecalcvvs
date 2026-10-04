@@ -47,3 +47,13 @@ def test_lettering_outside_the_box_is_not_this_label():
 def test_an_implausible_size_is_not_lent():
     labels = [_label()]
     assert repair(labels, [_host(dn=15)]) == []            # a drain is never DN 15
+
+
+def test_the_suffix_the_lettering_writes_comes_with_the_size():
+    # W-50-1-A-0114: a box cut after `VS1-S13-` lost both the size and the `/W` the lettering writes
+    labels = [{'id': 87, 'text': 'VS1-S13-\nCL 3400 ÖFG', 'rect': [603.0, 363.0, 644.0, 375.0], 'usable': False, 'designations': [
+        {'raw': 'VS1-S13', 'count': 1, 'system': 'VS', 'number': '1', 'dimension': None, 'middle': ['S13'],
+         'suffix': None, 'venting': False, 'recognised': True, 'partial': True}]}]
+    repair(labels, [_host(text="VS1-S13-54/W", dn=54, bbox=(606.0, 365.0, 640.0, 371.0))])
+    d = labels[0]['designations'][0]
+    assert d['dimension'] == 54 and d['suffix'] == 'W'
