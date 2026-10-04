@@ -347,6 +347,7 @@ def aggregate(measures: list[PipeMeasure], ambiguous_pt: dict[str, float], mpp: 
     for k, lst in (risers or {}).items():
         r = rows.setdefault(k, _empty_row(k))
         r["riser_count"] = len(lst)
+    _fold_vent_rows(rows)
     out = []
     for k in sorted(rows):
         r = rows[k]
@@ -371,6 +372,41 @@ def aggregate(measures: list[PipeMeasure], ambiguous_pt: dict[str, float], mpp: 
         r["vertical_m"] = r["confirmed_vertical_m"] if r["vertical_known"] else "UNKNOWN"
         out.append(r)
     return out
+
+
+VENT_MARK = "-(L)"
+VENT_SUMS = ("physical_pipe_count", "confirmed_horizontal_m", "confirmed_vertical_m", "confirmed_total_m", "horizontal_pdf_units",
+             "ambiguous_m", "review_m", "in_hatched_area_m", "declared_m", "double_line_m", "ambiguous_pdf_units")
+
+
+def _fold_vent_rows(rows: dict[str, dict[str, Any]]) -> None:
+    """A vent written on the pipe it vents - `S1-P2 / 75(L)`, `S2-P5-110 (L)`, `S3-R8-110L` - is that pipe in the takeoff.
+
+    The reading keeps the vent apart while it names pipes, so that the mark is not carried onto every pipe of the
+    size. In the quantity it is not a system of its own: no reference takeoff of the eleven measured sheets has a
+    vent row, and the metres a vent row held belong to the designation it is written on. They are added there. Its
+    labels and risers are not: the vent stack is counted by the sheet's own riser marks, and adding the vent label
+    as one more riser put a vertical too many on the row it joined.
+    """
+    for k in [k for k in rows if k.split("|DN")[0].endswith(VENT_MARK)]:
+        r = rows.pop(k)
+        base = k.split("|DN")[0][: -len(VENT_MARK)]
+        if not base:
+            rows[k] = r
+            continue
+        target = f"{base}|DN{k.split('|DN')[-1]}"
+        t = rows.get(target)
+        if t is None:
+            if not r.get("physical_pipe_count") and not r.get("ambiguous_pdf_units"):
+                continue                                    # nothing measured: a vent label alone is no row
+            t = rows[target] = {**r, "designation": f"{base}-{r.get('dn')}", "base": base,
+                                "label_count": 0, "riser_count": 0, "riser_count_from_labels": 0}
+            continue
+        for f in VENT_SUMS:
+            if r.get(f):
+                t[f] = t.get(f, 0) + r[f]
+        t["pipe_ids"] = list(t.get("pipe_ids", [])) + list(r.get("pipe_ids", []))
+        t["vertical_known"] = bool(t.get("vertical_known") or r.get("vertical_known"))
 
 
 def _empty_row(k: str) -> dict[str, Any]:
