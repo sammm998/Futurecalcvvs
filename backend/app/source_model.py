@@ -53,14 +53,27 @@ class AssignmentTransport:
                 candidate['swedish_interpretation'] = label_facts({'designations': [candidate.get('designation', {})]})
         content = serialize(pack(grouped))
         images = []
+        overview = []
         if self.page and self.page[0] and questions:
             from .drawing_evidence import visual_evidence
             visual, images = visual_evidence(*self.page, questions)
-            content = [{"type":"input_text","text":content}] + visual
+            # The sheet overview is the same in every request about this page, so it goes first, right after the
+            # instructions: the unchanging start of the request is what OpenAI caches and bills at a fraction.
+            # The questions and their own detail crops follow it.
+            # It is sent as a message of its own: the cache matches whole messages, not the start of one.
+            overview, details = visual[:2], visual[2:]
+            content = [{"type": "input_text", "text": content}] + details
+        # one cache key per sheet: the requests about one page share their opening and are routed to the same cache
+        cache_key = None
+        if self.page and self.page[0]:
+            import hashlib
+            cache_key = "fc-bind-" + hashlib.sha1(f"{self.page[0]}#{self.page[1]}".encode()).hexdigest()[:20]
         request = dict(
             model=self.model, store=False, max_output_tokens=12000,
+            **({"prompt_cache_key": cache_key} if cache_key else {}),
             reasoning={'effort': os.environ.get('STUDIO_ASTRA_EFFORT', 'medium')},
             input=[{'role': 'system', 'content': SYSTEM + '\n' + FORMAT + '\n' + ALIAS_FORMAT + '\nSTYLE CONVENTIONS:\n' + serialize(self.style.get('rules', [])) + '\nMEASURED DRAWING FEATURES (observations, not ownership rules):\n' + serialize(self.style.get('observed_features', {}))},
+                   *([{'role': 'user', 'content': overview}] if overview else []),
                    {'role': 'user', 'content': content}],
             text={'format': {'type': 'json_schema', 'name': 'pipe_assignments',
                              'strict': True, 'schema': SCHEMA}})
