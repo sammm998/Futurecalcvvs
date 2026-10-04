@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { t as tr } from "../i18n";
 import { Link, useLocation } from "react-router-dom";
 import "../landing.css";
@@ -39,6 +39,18 @@ export default function PublicFrame({ kicker, title, lede, children, wide = fals
 }) {
   const { pathname } = useLocation();
   useSmoothScroll();
+  // Mörkt som grund, ljust som andning: vart tredje avsnitt, med början på det andra, står på papper. Det sätts
+  // här och inte i varje sida, så att en ny sida får samma rytm utan att någon räknar avsnitt för hand.
+  const body = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = body.current; if (!el) return;
+    const mark = () => el.querySelectorAll(".pub-body > .pub-sec, .pub-body > section").forEach((sec, i) => {
+      sec.classList.toggle("fc-light", i % 3 === 1); sec.classList.toggle("pub-lit", i % 3 === 1); sec.classList.toggle("fc-bleed", i % 3 === 1);
+    });
+    mark();
+    const mo = new MutationObserver(mark); mo.observe(el, { childList: true, subtree: false });
+    return () => mo.disconnect();
+  }, [pathname]);
   useEffect(() => {
     document.body.classList.add("lp-dark");
     window.scrollTo(0, 0);
@@ -68,8 +80,8 @@ export default function PublicFrame({ kicker, title, lede, children, wide = fals
         </header>
       )}
 
-      {/* innehållet står på papper; hjälten ovanför och foten under står i mörker */}
-      <div className="fc-light pub-light">
+      {/* sidan står i mörker; vart tredje avsnitt läggs på papper (se effekten ovan) */}
+      <div className="pub-light" ref={body}>
         <main className={`pub-body${wide ? " wide" : ""}`}>{children}</main>
       </div>
 

@@ -83,7 +83,11 @@ export default function AnalysisPage() {
   // side panel before; each is a view of its own now.
   const [view, setView] = useState<"forklaring" | "analys" | "resonemang">("analys");
   const [selIdent, setSelIdent] = useState<string | null>(null);
-  const lastSaid = useRef<string | null>(null);   // det agenten senast visade, så samma rad inte zoomas om och om
+  const lastSaid = useRef<string | null>(null);
+  // Läsningens interna kontroller - täckning, oidentifierad geometri, annoteringar - är till för den som driver
+  // tjänsten. En kund ser mängden och det hon kan göra något åt (en skala som saknas), inte motorns egen loggbok.
+  const [staff, setStaff] = useState(false);
+  useEffect(() => { api.myRole().then((r: any) => setStaff(r?.role === "admin")).catch(() => setStaff(false)); }, []);   // det agenten senast visade, så samma rad inte zoomas om och om
   const [selPipe, setSelPipe] = useState<any>(null);
   // Frågan som ska ligga i agentens ruta när man går dit från ett utpekat rör.
   const [agentAsk, setAgentAsk] = useState("");
@@ -600,7 +604,7 @@ export default function AnalysisPage() {
                 catch (e: any) { setActionErr(e.message); } finally { setRescaling(false); }
               }}>{tr("Analysera ritningen")}</button>
             </div>
-            <AnalysisQuality quality={result.quality} />
+            {staff && <AnalysisQuality quality={result.quality} />}
             {actionErr && <p className="error" role="alert">{actionErr}</p>}
             {job?.motor?.foraldrad && (
               <p className="badge">
@@ -615,7 +619,7 @@ export default function AnalysisPage() {
                   }}>{rescaling ? tr("Läser om…") : tr("Läs om")}</button>
               </p>
             )}
-            {markup && (
+            {staff && markup && (
               <p className={`badge${markup.removed ? "" : " warn"}`}>
                 {markup.removed
                   ? `Bladet innehåller ${markup.n} PDF-annoteringar från ${Object.keys(markup.authors ?? {}).join(", ") || "okänd källa"}`
@@ -648,7 +652,7 @@ export default function AnalysisPage() {
                   </span>
                 </div>
               </>
-            ) : covWarn && (
+            ) : staff && covWarn && (
               <p className="badge warn">
                 {`${nm.pipe_names_with_metres} av ${nm.pipe_names} rörbeteckningar som ritningen skriver ut fick meter `
                   + `(${Math.round((namedShare ?? 0) * 100)} %). Av ${nm.drawn_m} m möjlig rörgeometri bar `
@@ -656,7 +660,7 @@ export default function AnalysisPage() {
                   + "beteckning namngav ligger grått på ritningen."}
               </p>
             )}
-            {c.unowned_outside_hatch_m != null && <p className="muted small">
+            {staff && c.unowned_outside_hatch_m != null && <p className="muted small">
               {tr("Oidentifierad rörgeometri utanför skrafferade områden")}: {c.unowned_outside_hatch_m} m.
               {" "}{tr("Oidentifierad rörgeometri inom skrafferade områden")}: {c.unowned_in_hatch_m} m.
               {" "}{tr("Skrafferad geometri undantas enligt källreglerna. Detta verifierar inte hela ritningens träffsäkerhet.")}
@@ -835,7 +839,7 @@ export default function AnalysisPage() {
                 catch (e: any) { setActionErr(e.message); } finally { setRescaling(false); }
               }}>{tr("Analysera ritningen")}</button>
             </div>
-            <AnalysisQuality quality={result.quality} />
+            {staff && <AnalysisQuality quality={result.quality} />}
             <DrawingQuality style={result.drawing_style} visibility={result.pdf_visibility} />
             <DrawingDeclarations declarations={result.declarations} />
             <ReferenceComparison report={result.reference_comparison} page={page} />

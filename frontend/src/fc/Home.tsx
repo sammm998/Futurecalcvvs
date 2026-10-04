@@ -1,11 +1,10 @@
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { t as tr, num } from "../i18n";
 import { Link } from "react-router-dom";
 import gsap from "gsap";
 import Nav, { Logo } from "./Nav";
 import Preloader from "./Preloader";
 import Blueprint, { RUNS, SYS } from "./Blueprint";
-import Scene3D from "./Scene3D";
 import {
   AppLink, ChapterIndicator, CountUp, CustomCursor, HorizontalGallery, LineReveal, MagneticButton,
   PinnedSection, RevealMedia, ScrollProgress, TechnicalLabel, WordReveal,
@@ -76,7 +75,12 @@ function Hero() {
 
   return (
     <section ref={ref} className="fc-hero" id="kap-1">
-      <div className="fc-grid" aria-hidden="true" />
+      {/* Bakgrunden är filmen: två kalkylatorer framför ett blad. Bilden under den visas där filmen inte spelas
+          (minskad rörelse, en webbläsare utan H.264) och medan den laddar. */}
+      <div className="fc-hero-media" aria-hidden="true">
+        <video className="fc-hero-video" src="/hero.mp4" poster="/hero-poster.jpg" autoPlay muted loop playsInline preload="auto" />
+        <div className="fc-hero-shade" />
+      </div>
       <div className="fc-hero-plan" aria-hidden="true"><Blueprint /></div>
 
       <div className="fc-hero-in">
@@ -116,7 +120,7 @@ function Hero() {
  * varandra i stället för under - och scenen börjar direkt efter. */
 function ChapterOpener({ n, title, sub, id }: { n: string; title: string; sub: string; id?: string }) {
   return (
-    <section className="fc-chap fc-light fc-bleed" id={id}>
+    <section className="fc-chap" id={id}>
       <div className="fc-chap-rule" />
       <p className="fc-label">Chapter {n}</p>
       <div className="fc-chap-in">
@@ -127,27 +131,45 @@ function ChapterOpener({ n, title, sub, id }: { n: string; title: string; sub: s
   );
 }
 
-/* ---------------------------------------------------------------- bladet som reser sig */
-
-function RiseScene() {
+/* ---------------------------------------------------------------- systemet i bild
+ *
+ * Riktiga vyer ur den inloggade appen, inte illustrationer: den som funderar på att använda FutureCalc vill se
+ * vad hon får. En flik per rum; bilden byts i samma ram, så ögat stannar på samma ställe medan innehållet växlar.
+ * Bilderna är tagna ur en riktig läsning av ett riktigt blad (public/screens).
+ */
+const SCREENS = [
+  { id: "analys", t: "Läsningen", d: "Varje rör färgat efter sin beteckning, mängden bredvid. Tryck på en rad så visas exakt vilka sträckor och etiketter den kommer ur." },
+  { id: "3d", t: "3D", d: "Samma läsning som en byggnad: rören i sina system, ritningen som golv, beteckningarna där rören går." },
+  { id: "cad", t: "CAD", d: "Rita det som saknas: väggar, rum, öppningar, rör. Plan och 3D sida vid sida, med lager, mått och export till IFC och DXF." },
+  { id: "kalkyl", t: "Kalkyl", d: "Mängden blir material ur grossistens bok och timmar ur Normtid VVS, rad för rad, med påslag och anbudssumma." },
+  { id: "agent", t: "Agenten", d: "Fråga ritningen med röst eller text. Agenten markerar själv röret den pratar om och svarar med metrarna ur läsningen." },
+];
+function SystemScreens() {
+  const [on, setOn] = useState(0);
+  const cur = SCREENS[on];
   return (
-    <section className="fc-rise" id="kap-1b">
-      <div className="fc-rise-pin">
-        <Scene3D className="fc-rise-3d" />
-        <div className="fc-rise-over">
-          <div className="fc-rise-t">
-            <p className="fc-label">{tr("Samma geometri, två representationer")}</p>
-            <h2 className="fc-display fc-display-lg">
-              ETT PLATT BLAD<br /><i className="fc-italic">{tr("blir en byggnad")}</i>
-            </h2>
-          </div>
-          <div className="fc-rise-meta">
-            <TechnicalLabel k="Blad" v="V-50-1-A0121" />
-            <TechnicalLabel k="Skala" v="1:50" />
-            <TechnicalLabel k="System" v="KV / VV / VVC / S / VS" />
-            <TechnicalLabel k="Våningshöjd" v="2,60 m" />
-            <TechnicalLabel k="Läst" v="Ur bladets bläck" on />
-          </div>
+    <section className="fc-scr" id="kap-1b">
+      <div className="fc-scr-in">
+        <header className="fc-scr-head">
+          <p className="fc-label fc-label-on">{tr("Systemet i bild")}</p>
+          <h2 className="fc-display fc-display-md">{tr("Ritningen in.")} <i className="fc-italic">{tr("Mängden, modellen och kalkylen ut.")}</i></h2>
+        </header>
+        <div className="fc-scr-tabs" role="tablist" aria-label={tr("Vyer i FutureCalc")}>
+          {SCREENS.map((sc, i) => (
+            <button key={sc.id} role="tab" aria-selected={i === on} className={i === on ? "on" : ""} onClick={() => setOn(i)}>
+              <span className="fc-num">0{i + 1}</span> {tr(sc.t)}
+            </button>
+          ))}
+        </div>
+        <div className="fc-scr-stage">
+          <figure className="fc-scr-frame">
+            <div className="fc-scr-bar" aria-hidden="true"><i /><i /><i /><span>futurecalc.se/{cur.id}</span></div>
+            {SCREENS.map((sc, i) => (
+              <img key={sc.id} src={`/screens/${sc.id}.webp`} alt={tr(sc.t)} loading={i === 0 ? "eager" : "lazy"}
+                className={i === on ? "on" : ""} />
+            ))}
+          </figure>
+          <p className="fc-body fc-scr-cap">{tr(cur.d)}</p>
         </div>
       </div>
     </section>
@@ -334,7 +356,7 @@ function ProductShowcase() {
 
 function AcademyChapter() {
   return (
-    <section className="fc-ac fc-light fc-bleed" id="kap-4">
+    <section className="fc-ac" id="kap-4">
       <div className="fc-ac-l">
         <p className="fc-label">{tr("Chapter IV — FutureCalc Academy")}</p>
         <LineReveal as="h2" className="fc-display fc-display-lg" text="KNOWLEDGE BECOMES PRECISION." />
@@ -445,7 +467,7 @@ export default function Home() {
       <Hero />
       <ChapterOpener n="I" title={tr("The future of calculation")}
         sub="FutureCalc läser en VVS-ritning som en mängdare gör det: via beteckningarna och deras hänvisningslinjer, aldrig via närmaste streck. Det som inte går att avgöra får heta tvetydigt." />
-      <RiseScene />
+      <SystemScreens />
       <StickyStatement />
 
       <ChapterOpener n="II" id="kap-2" title={tr("From drawing to quantity")}

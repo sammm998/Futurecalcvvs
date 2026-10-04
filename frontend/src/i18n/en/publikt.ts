@@ -483,4 +483,16 @@ export const publikt: Record<string, string> = {
   "Den sidan finns inte i akademin": "That page does not exist in the academy",
   "Adressen pekar på en kurs eller en föreläsning som inte finns. Kurserna står kvar där de var.":
     "The address points at a course or a lecture that does not exist. The courses are still where they were.",
+  "Systemet i bild": "The system in pictures",
+  "Ritningen in.": "The drawing in.",
+  "Mängden, modellen och kalkylen ut.": "Quantities, model and costing out.",
+  "Vyer i FutureCalc": "Views in FutureCalc",
+  "Läsningen": "The reading",
+  "Kalkyl": "Costing",
+  "Agenten": "The agent",
+  "Varje rör färgat efter sin beteckning, mängden bredvid. Tryck på en rad så visas exakt vilka sträckor och etiketter den kommer ur.": "Every pipe coloured by its designation, the quantity beside it. Tap a row to see exactly which runs and labels it comes from.",
+  "Samma läsning som en byggnad: rören i sina system, ritningen som golv, beteckningarna där rören går.": "The same reading as a building: the pipes in their systems, the drawing as the floor, the designations where the pipes run.",
+  "Rita det som saknas: väggar, rum, öppningar, rör. Plan och 3D sida vid sida, med lager, mått och export till IFC och DXF.": "Draw what is missing: walls, rooms, openings, pipes. Plan and 3D side by side, with layers, dimensions and export to IFC and DXF.",
+  "Mängden blir material ur grossistens bok och timmar ur Normtid VVS, rad för rad, med påslag och anbudssumma.": "The quantity becomes material from the wholesaler’s book and hours from Normtid VVS, row by row, with markups and a tender total.",
+  "Fråga ritningen med röst eller text. Agenten markerar själv röret den pratar om och svarar med metrarna ur läsningen.": "Ask the drawing by voice or text. The agent marks the pipe it is talking about and answers with the metres from the reading.",
 };

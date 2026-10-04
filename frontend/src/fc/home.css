@@ -304,3 +304,65 @@
 /* 3D-scenens textplatta följer mörkret i stället för att vara kolsvart. */
 .fc-rise-meta { background: rgba(13, 17, 23, 0.66); }
 .fc-rise-t h2, .fc-rise-t p { text-shadow: 0 2px 24px rgba(13, 17, 23, 0.85); }
+
+/* ---------------------------------------------------------------- hjältens film */
+.fc-hero-media { position: absolute; inset: 0; z-index: -2; overflow: hidden; background: #07090c url("/hero-poster.jpg") center / cover no-repeat; }
+.fc-hero-video { width: 100%; height: 100%; object-fit: cover; display: block; transform: scale(1.04); }
+/* Tonen över filmen: mörkast där texten står (vänster och nederkant), så att rubriken läses mot vad som helst
+   i bilden, och ett svagt grönt sken uppe till höger som knyter an till accenten. */
+.fc-hero-shade {
+  position: absolute; inset: 0;
+  background:
+    linear-gradient(90deg, rgba(8, 11, 15, 0.88) 0%, rgba(8, 11, 15, 0.55) 45%, rgba(8, 11, 15, 0.25) 100%),
+    linear-gradient(0deg, rgba(8, 11, 15, 0.92) 0%, rgba(8, 11, 15, 0) 42%),
+    radial-gradient(50% 50% at 85% 15%, rgba(110, 231, 165, 0.14), transparent 70%);
+}
+.fc-hero { background: #07090c; }
+.fc-hero .fc-hero-plan { opacity: 0.22; mix-blend-mode: screen; }
+@media (prefers-reduced-motion: reduce) { .fc-hero-video { display: none; } }
+@media (max-width: 760px) { .fc-hero-shade { background: linear-gradient(0deg, rgba(8, 11, 15, 0.94) 10%, rgba(8, 11, 15, 0.5) 100%); } }
+
+/* ---------------------------------------------------------------- systemet i bild */
+.fc-scr {
+  padding: clamp(70px, 13vh, 150px) var(--fc-gut);
+  background:
+    radial-gradient(50% 40% at 50% 0%, rgba(110, 231, 165, 0.08), transparent 70%),
+    var(--fc-black);
+}
+.fc-scr-in { max-width: 1240px; margin: 0 auto; display: grid; gap: clamp(22px, 4vh, 40px); justify-items: center; text-align: center; }
+.fc-scr-head { display: grid; gap: 14px; justify-items: center; }
+.fc-scr-head h2 { margin: 0; max-width: 22ch; }
+.fc-scr-tabs { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+.fc-scr-tabs button {
+  border: 1px solid var(--fc-line); background: transparent; color: var(--fc-ink-60);
+  border-radius: var(--fc-r-pill); padding: 10px 18px; cursor: pointer;
+  font-family: var(--fc-sans); font-size: 14px; letter-spacing: -0.01em;
+  transition: color var(--fc-d-fast), background var(--fc-d-fast), border-color var(--fc-d-fast);
+}
+.fc-scr-tabs button .fc-num { font-size: 11px; color: var(--fc-ink-40); margin-right: 6px; }
+.fc-scr-tabs button:hover { color: var(--fc-ink); border-color: var(--fc-line-3); }
+.fc-scr-tabs button.on { background: var(--fc-ink); color: var(--fc-black); border-color: var(--fc-ink); }
+.fc-scr-tabs button.on .fc-num { color: var(--fc-accent-ink); opacity: 0.6; }
+.fc-scr-stage { width: 100%; display: grid; gap: 18px; justify-items: center; }
+.fc-scr-frame {
+  margin: 0; width: 100%; position: relative; aspect-ratio: 16 / 10;
+  border-radius: 14px; overflow: hidden; background: #fbfaf8;
+  border: 1px solid var(--fc-line);
+  box-shadow: 0 50px 120px -40px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.04), 0 0 80px -20px rgba(110, 231, 165, 0.18);
+}
+.fc-scr-bar {
+  position: absolute; inset: 0 0 auto 0; height: 34px; z-index: 2;
+  display: flex; align-items: center; gap: 7px; padding: 0 14px;
+  background: #ecebe7; border-bottom: 1px solid rgba(0, 0, 0, 0.07);
+}
+.fc-scr-bar i { width: 10px; height: 10px; border-radius: 50%; background: #d4d1ca; }
+.fc-scr-bar i:first-child { background: #ec6a5e; } .fc-scr-bar i:nth-child(2) { background: #f4bf4f; } .fc-scr-bar i:nth-child(3) { background: #61c554; }
+.fc-scr-bar span { margin-left: 12px; font-family: var(--fc-mono); font-size: 11px; color: #8a867e; letter-spacing: 0.04em; }
+.fc-scr-frame img {
+  position: absolute; inset: 34px 0 0 0; width: 100%; height: calc(100% - 34px);
+  object-fit: cover; object-position: top left;
+  opacity: 0; transform: scale(1.015); transition: opacity 0.6s var(--fc-e-primary), transform 0.8s var(--fc-e-primary);
+}
+.fc-scr-frame img.on { opacity: 1; transform: none; }
+.fc-scr-cap { margin: 0; max-width: 62ch; }
+@media (max-width: 700px) { .fc-scr-frame { aspect-ratio: 4 / 3; } .fc-scr-tabs button { padding: 8px 13px; font-size: 13px; } }
