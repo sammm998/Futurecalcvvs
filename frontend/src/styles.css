@@ -270,12 +270,17 @@ select { padding-right: 34px; }
   background: #fff; color: var(--ink); box-shadow: var(--e1), var(--lift);
 }
 
-/* the language model a reading asks, chosen before it starts */
-.aimodel { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
-.aimodel.compact { margin-top: 8px; }
-.aimodel-l { font-family: var(--mono, ui-monospace, monospace); font-size: 10px; letter-spacing: .14em;
-  text-transform: uppercase; color: var(--muted); }
-.aimodel .seg button:disabled { opacity: .38; cursor: not-allowed; }
+/* the language model a reading asks, chosen in a dialog before it starts */
+.aidlg-back { position: fixed; inset: 0; z-index: 900; background: rgba(10, 12, 16, .42);
+  display: grid; place-items: center; padding: 16px; }
+.aidlg { width: min(520px, 100%); background: var(--card, #fff); }
+.aidlg-list { display: grid; gap: 8px; margin-top: 12px; }
+.aidlg-opt { display: flex; gap: 12px; align-items: flex-start; padding: 12px 14px; border: 1px solid var(--line);
+  border-radius: 14px; cursor: pointer; }
+.aidlg-opt.on { border-color: var(--ink); box-shadow: var(--e1); }
+.aidlg-opt.off { opacity: .5; cursor: not-allowed; }
+.aidlg-opt input { margin-top: 3px; }
+.aiusage { margin: 6px 0 14px; }
 
 /* ---------- the record list ---------- */
 

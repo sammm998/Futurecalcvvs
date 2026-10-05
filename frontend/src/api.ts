@@ -1,3 +1,4 @@
+import { askAiModel } from "./aiChoice";
 import { t as tr, trf, num } from "./i18n";
 
 const TOKEN_KEY = "vvs_token";
@@ -55,12 +56,6 @@ async function req(path: string, init: RequestInit = {}): Promise<any> {
 
 const assetUrls = new Map<string, string>();
 
-/** Språkmodellen som avgör rörens beteckningar, vald i AiModelPicker och sparad i webbläsaren - eller ingen. */
-export const AI_MODEL_KEY = "fc.aiModel";
-export function chosenAiModel(): string | undefined {
-  try { return localStorage.getItem(AI_MODEL_KEY) || undefined; } catch { return undefined; }
-}
-
 export const api = {
   login: async (email: string, password: string) => {
     const body = new URLSearchParams({ username: email, password });
@@ -82,10 +77,14 @@ export const api = {
   drawing: (id: string) => req(`/api/drawings/${id}`),
   deleteDrawing: (id: string) => req(`/api/drawings/${id}`, { method: "DELETE" }),
   /** scaleRatio: nämnaren i 1:N, för ett blad vars egen stämpel inte räckte. Utelämnad läser bladet självt. */
-  analyze: (drawingId: string, scaleRatio?: number, page = 0, _assignmentMode = "combined", _sourceStyle = "auto") =>
-    req(`/api/drawings/${drawingId}/analyze`, { method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ scale_ratio: scaleRatio, page, assignment_mode: "combined", source_style: "auto",
-                             ai_model: chosenAiModel() }) }),
+  /** aiModel: vilken språkmodell som läser - utelämnad frågas den som startar analysen (AiModelDialog). */
+  analyze: async (drawingId: string, scaleRatio?: number, page = 0, _assignmentMode = "combined", _sourceStyle = "auto",
+                  aiModel?: string) => {
+    const ai_model = aiModel ?? await askAiModel();
+    if (!ai_model) throw new Error("Analysen startades inte.");
+    return req(`/api/drawings/${drawingId}/analyze`, { method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ scale_ratio: scaleRatio, page, assignment_mode: "combined", source_style: "auto", ai_model }) });
+  },
   analysisOptions: () => req("/api/analysis-options"),
   job: (id: string) => req(`/api/jobs/${id}`),
   // bladet läsaren står på: rören, etiketterna och bläcket hör till ett blad, och handlingens mängd följer med

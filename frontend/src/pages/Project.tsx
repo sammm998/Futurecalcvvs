@@ -1,4 +1,4 @@
-import AiModelPicker from "../components/AiModelPicker";
+import { askAiModel } from "../aiChoice";
 import { useEffect, useRef, useState } from "react";
 import { t as tr, trf, locale } from "../i18n";
 import { Link, useParams } from "react-router-dom";
@@ -59,9 +59,12 @@ export default function ProjectPage() {
     const remaining = new Set(selected);
     try {
       const drawings = project.drawings.filter((d: any) => selected.has(d.id));
+      // en fråga om modellen för hela omgången, inte en per ritning
+      const aiModel = await askAiModel(drawings.length);
+      if (!aiModel) return;
       for (const [i, d] of drawings.entries()) {
         setProgress(`${i + 1} / ${drawings.length} · ${d.filename}`);
-        try { await api.analyze(d.id); remaining.delete(d.id); }
+        try { await api.analyze(d.id, undefined, 0, "combined", "auto", aiModel); remaining.delete(d.id); }
         catch (ex: any) { errors.push(`${d.filename}: ${ex.message}`); }
       }
       setSelected(remaining);
@@ -89,7 +92,6 @@ export default function ProjectPage() {
           <Link to={`/projects/${project.id}/analys`}><button className="secondary">{tr("Analysera projektet")}</button></Link>
         </div>
       </div>
-      <AiModelPicker />
       {progress && <p role="status" aria-live="polite">{progress}</p>}
       {notice && <p role="status">{notice}</p>}
       {err && <p className="error" style={{ marginTop: 18, whiteSpace: "pre-line" }}>{err}</p>}

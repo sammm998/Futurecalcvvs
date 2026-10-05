@@ -1,3 +1,4 @@
+import AiModelDialog from "./components/AiModelDialog";
 import { useEffect, useState } from "react";
 import { t as tr } from "./i18n";
 import { Link, Navigate, Route, Routes, useLocation, useNavigate, useParams } from "react-router-dom";
@@ -268,6 +269,7 @@ export default function App() {
   const railed = rail || (!chosen && (path.startsWith("/jobs/") || (path.startsWith("/cad/") && path !== "/cad")));
   return (
     <div className={`app${railed ? " railed" : ""}`}>
+      <AiModelDialog />
       <aside className="side">
         <button className="ghost small railbtn" onClick={toggleRail}
           title={rail ? tr("Visa sidopanelen") : tr("Fäll ihop sidopanelen")}
