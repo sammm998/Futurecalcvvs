@@ -42,6 +42,66 @@ def load_runtime():
     return extract, profile, detect, labels, style, vector_stages
 
 
+MIN_LANDINGS = 10        # leader landings on a pen before the sheet's own word can outvote the chosen pipe pen
+LANDING_MARGIN = 5       # ...that many times the landings on the chosen pen
+LENGTH_MARGIN = 3        # ...and that many times its landed-on length (PipeStudio's own flip rule, bucket.calibrate)
+
+
+def landed_policy(ex, B):
+    """The pens this sheet's own leaders point at, when they contradict the pipe pen the calibration chose.
+
+    The calibration may take a known style's starting values for the pipe pen. A sheet from another office that
+    happens to measure like that style then reads its grey building outline as pipes and its real pipes as nothing
+    (V-50-1-666340-0113: the 'Arildsson' starting value 0.72 pt, while 32 of the sheet's leaders land on its 1.44 pt
+    black pen and 3 on 0.72). Where the leaders say otherwise by PipeStudio's own margin, the pen they land on is
+    the pipe pen, their own pen is the leader pen, grey ink is the building, and the other black pens keep their
+    ordinary reading. Returned as a stroke policy for PipeStudio's style mechanism; None when nothing contradicts.
+    """
+    from studio.style_vision import inventory
+    C = B.get('calibration') or {}
+    land = C.get('landings') or {}
+    votes = land.get('votes') or {}
+    chosen = {round(float(w), 2) for w in C.get('pipe_widths') or []}
+    def width(key):
+        return round(float(key.split('|')[0]), 2)
+    black = {k: v for k, v in votes.items() if k.endswith('|black')}
+    if not black:
+        return None
+    best_key = max(black, key=lambda k: (black[k]['landings'], black[k]['length']))
+    best = black[best_key]
+    if width(best_key) in chosen:
+        return None
+    on_chosen = sum(v['landings'] for k, v in black.items() if width(k) in chosen)
+    length_chosen = sum(v['length'] for k, v in black.items() if width(k) in chosen)
+    if not (best['landings'] >= MIN_LANDINGS and best['landings'] >= LANDING_MARGIN * max(on_chosen, 1)
+            and best['length'] >= LENGTH_MARGIN * max(length_chosen, 1.0)):
+        return None
+    leaders = land.get('leader_families') or {}
+    leader_w = width(max(leaders, key=leaders.get)) if leaders else None
+    unit = C.get('u_paper') or 1.0
+    pipe_w = width(best_key) / unit
+    families = []
+    for f in inventory(ex, unit):
+        k = f['key']
+        grey = bool(k['color']) and max(k['color']) - min(k['color']) < .05 and min(k['color']) > .2
+        coloured = bool(k['color']) and max(k['color']) - min(k['color']) >= .05
+        if abs(k['width'] - pipe_w) <= .015 and not grey and not coloured:
+            role = 'pipe'
+        elif leader_w is not None and abs(k['width'] - leader_w / unit) <= .015 and not grey and not coloured:
+            role = 'leader'
+        elif grey:
+            role = 'architecture'
+        else:
+            role = 'symbol'
+        families.append({'key': k, 'role': role})
+    if not any(f['role'] == 'pipe' for f in families):
+        return None
+    return {'policy': {'families': families},
+            'report': {'chosen_pipe_widths': sorted(chosen), 'landed_pipe_pen': best_key,
+                       'landings': best['landings'], 'landings_on_chosen': on_chosen,
+                       'leader_pen': leader_w, 'method': C.get('family_method')}}
+
+
 def detect_page(pdf_path, page_number=0, style=None, progress=None, artifact_dir=None, strict_original=False):
     import pymupdf
     from ..pdf.extract import _inventory_annotations, _set_markup_aside
@@ -75,6 +135,10 @@ def detect_page(pdf_path, page_number=0, style=None, progress=None, artifact_dir
         # Model inference does not need the vector graph. Build it afterwards
         # so its allocations do not overlap the ONNX working set.
         ex = stage('extract', lambda: extract.extract(clean, page_number))
+        boxed = {'split': 0}
+        if not strict_original:
+            from .boxed_leaders import split
+            ex, boxed = split(ex, [b['rect'] for b in det.get('label_boxes', [])])
         P = stage('profile', lambda: profile.profile(ex))
         det = labels.text_label_boxes(ex, det, text_height=style_module.text_height(ex)[0])
         L = stage('ocr', lambda: labels.read_labels(clean, det, page_no=page_number))
@@ -107,13 +171,21 @@ def detect_page(pdf_path, page_number=0, style=None, progress=None, artifact_dir
             excluded = {l['id'] for l in unparsed}
             L = [l for l in L if l['id'] not in excluded]
             det = {**det, 'label_boxes': [b for b in det['label_boxes'] if b['id'] not in excluded]}
-        B, A, L, R = stage('vector_stages', lambda: vector_stages(ex, P, det, L, selected, mode='auto'))
+        read = L
+        B, A, L, R = stage('vector_stages', lambda: vector_stages(ex, P, det, read, selected, mode='auto'))
+        landed = None if selected.get('stroke_policy') is not None else landed_policy(ex, B)
+        if landed is not None:
+            # the matched style was contradicted by the sheet: none of its measures is taken, only the sheet's own
+            selected = {'id': 'auto', 'version': 1, 'calibration': {}, 'rules': [], 'calibration_mode': 'auto',
+                        'stroke_policy': landed['policy'], 'landed_pens': dict(landed['report'],
+                                                                              set_aside_style=selected.get('id'))}
+            B, A, L, R = stage('vector_stages_landed', lambda: vector_stages(ex, P, det, read, selected, mode='auto'))
         return {'source_pdf_sha256': _pdf_digest(pdf_path),
                 'page': page_number, 'extraction': asdict(ex), 'profile': P,
                 'detection': det, 'bucket': B, 'graph': A, 'labels': L,
                 'association': R, 'timings': timings, 'style': selected, 'style_match': match,
                 'unparsed_labels': unparsed, 'strict_original': strict_original,
-                'rotated_text_repairs': rotated_repairs,
+                'rotated_text_repairs': rotated_repairs, 'boxed_leaders': boxed,
                 'annotations_used': False, 'expert_overrides_used': False}
 
 

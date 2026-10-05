@@ -186,8 +186,21 @@ def project(graphs, native, result, page, elevations, host_reading=None):
 
 
 def analyze(graphs,native,page,ask,elevations,raw_page,host_reading=None):
-    if ask is not None and hasattr(ask,'for_page'):ask=ask.for_page(raw_page)
-    result=run(pen_layers(native['graph']),native['labels'],native['association'],native['style'],mode='combined',ask=ask)
+    import os
+    from .rule_answer import answer as by_rules
+    # The sheet is answered from its own evidence (rule_answer.py): on the eleven reference sheets it reads as much
+    # as the language model did, at no cost per drawing. The model answers only when the operator turns it on
+    # (VVS_ASSIGNMENT_MODEL=1); a model that is on but cannot be reached falls back to the rules, not to a failure.
+    if ask is None or os.environ.get('VVS_ASSIGNMENT_MODEL') != '1':
+        ask=by_rules
+    elif hasattr(ask,'for_page'):ask=ask.for_page(raw_page)
+    graph=pen_layers(native['graph'])
+    result=run(graph,native['labels'],native['association'],native['style'],mode='combined',ask=ask)
+    if result['combined']['status']!='COMPLETED' and ask is not by_rules:
+        failed=result['combined']
+        result=run(graph,native['labels'],native['association'],native['style'],mode='combined',ask=by_rules)
+        result['model_fallback']={'status':failed['status'],
+            'reason':(failed.get('result') or {}).get('failure_reason') or failed.get('reason')}
     if result['combined']['status']!='COMPLETED':
         why=(result['combined'].get('result') or {}).get('failure_reason') or result['combined'].get('reason')
         raise RuntimeError('Native combined assignment failed: '+result['combined']['status']+(f' ({why})' if why else ''))
