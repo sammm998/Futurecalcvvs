@@ -270,6 +270,13 @@ select { padding-right: 34px; }
   background: #fff; color: var(--ink); box-shadow: var(--e1), var(--lift);
 }
 
+/* the language model a reading asks, chosen before it starts */
+.aimodel { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
+.aimodel.compact { margin-top: 8px; }
+.aimodel-l { font-family: var(--mono, ui-monospace, monospace); font-size: 10px; letter-spacing: .14em;
+  text-transform: uppercase; color: var(--muted); }
+.aimodel .seg button:disabled { opacity: .38; cursor: not-allowed; }
+
 /* ---------- the record list ---------- */
 
 .list { margin-top: 8px; }

@@ -37,13 +37,14 @@ class AssignmentTransport:
         self.page = page
 
     def for_style(self, style):
-        return AssignmentTransport(self.client, self.model, style, self.page, self.request_cache)
+        return type(self)(self.client, self.model, style, self.page, self.request_cache)
 
     def for_page(self, page):
-        return AssignmentTransport(self.client, self.model, self.style, (page.source_path, page.info.index), self.request_cache)
+        return type(self)(self.client, self.model, self.style, (page.source_path, page.info.index), self.request_cache)
 
-    def __call__(self, questions):
-        from vvs_engine.source_rules.pipestudio.final_bind import SYSTEM, SCHEMA
+    def _payload(self, questions):
+        """What every model is asked: the instructions, the sheet overview, and the questions with their crops."""
+        from vvs_engine.source_rules.pipestudio.final_bind import SYSTEM
         from vvs_engine.source_rules.pipestudio.assignment_payload import FORMAT, pack, serialize
         from vvs_engine.source_rules.model_payload import FORMAT as ALIAS_FORMAT, group_equivalent_candidates
         grouped, aliases = group_equivalent_candidates(questions)
@@ -58,21 +59,30 @@ class AssignmentTransport:
             from .drawing_evidence import visual_evidence
             visual, images = visual_evidence(*self.page, questions)
             # The sheet overview is the same in every request about this page, so it goes first, right after the
-            # instructions: the unchanging start of the request is what OpenAI caches and bills at a fraction.
-            # The questions and their own detail crops follow it.
+            # instructions: the unchanging start of the request is what the provider caches and bills at a fraction.
             # It is sent as a message of its own: the cache matches whole messages, not the start of one.
             overview, details = visual[:2], visual[2:]
             content = [{"type": "input_text", "text": content}] + details
+        system = (SYSTEM + '\n' + FORMAT + '\n' + ALIAS_FORMAT + '\nSTYLE CONVENTIONS:\n' + serialize(self.style.get('rules', []))
+                  + '\nMEASURED DRAWING FEATURES (observations, not ownership rules):\n' + serialize(self.style.get('observed_features', {})))
+        return system, overview, content, images, aliases
+
+    def _cache_key(self):
         # one cache key per sheet: the requests about one page share their opening and are routed to the same cache
-        cache_key = None
         if self.page and self.page[0]:
             import hashlib
-            cache_key = "fc-bind-" + hashlib.sha1(f"{self.page[0]}#{self.page[1]}".encode()).hexdigest()[:20]
+            return "fc-bind-" + hashlib.sha1(f"{self.page[0]}#{self.page[1]}".encode()).hexdigest()[:20]
+        return None
+
+    def _send(self, system, overview, content):
+        """One request to OpenAI; returns (decisions, usage record)."""
+        from vvs_engine.source_rules.pipestudio.final_bind import SCHEMA
+        cache_key = self._cache_key()
         request = dict(
             model=self.model, store=False, max_output_tokens=12000,
             **({"prompt_cache_key": cache_key} if cache_key else {}),
             reasoning={'effort': os.environ.get('STUDIO_ASTRA_EFFORT', 'medium')},
-            input=[{'role': 'system', 'content': SYSTEM + '\n' + FORMAT + '\n' + ALIAS_FORMAT + '\nSTYLE CONVENTIONS:\n' + serialize(self.style.get('rules', [])) + '\nMEASURED DRAWING FEATURES (observations, not ownership rules):\n' + serialize(self.style.get('observed_features', {}))},
+            input=[{'role': 'system', 'content': system},
                    *([{'role': 'user', 'content': overview}] if overview else []),
                    {'role': 'user', 'content': content}],
             text={'format': {'type': 'json_schema', 'name': 'pipe_assignments',
@@ -86,25 +96,31 @@ class AssignmentTransport:
             return response
         response, reused = self.request_cache.run(request, produce)
         u = response.usage
-        with self.lock:
-            self.candidate_aliases.extend(aliases)
-            self.usage.append({'model': response.model, 'response_id': response.id,
-                'tokens_in': 0 if reused else u.input_tokens if u else None,
-                'tokens_out': 0 if reused else u.output_tokens if u else None,
-                'cached_tokens': 0 if reused else getattr(getattr(u, 'input_tokens_details', None), 'cached_tokens', 0),
-                'request_reused': reused, 'drawing_images': images})
+        record = {'model': response.model, 'response_id': response.id,
+                  'tokens_in': 0 if reused else u.input_tokens if u else None,
+                  'tokens_out': 0 if reused else u.output_tokens if u else None,
+                  'cached_tokens': 0 if reused else getattr(getattr(u, 'input_tokens_details', None), 'cached_tokens', 0),
+                  'request_reused': reused}
         if response.status != 'completed':
             raise RuntimeError('Model assignment did not complete')
-        decisions = json.loads(response.output_text)['decisions']
+        return json.loads(response.output_text)['decisions'], record
+
+    def __call__(self, questions):
+        system, overview, content, images, aliases = self._payload(questions)
+        decisions, record = self._send(system, overview, content)
+        with self.lock:
+            self.candidate_aliases.extend(aliases)
+            self.usage.append(dict(record, drawing_images=images))
         if not isinstance(decisions, list):
             raise ValueError('Invalid assignment response')
         return decisions
 
 
-def transport():
-    key, model = connection_settings()
+def transport(model=None):
+    key, configured_model = connection_settings()
     if not key:
         return None
+    model = model or configured_model
     from openai import OpenAI
     # A request that has not answered in a minute is split and asked again in smaller pieces by the assignment
     # (engine source_rules/dual.py), which is faster than waiting on it or letting the client repeat it whole.

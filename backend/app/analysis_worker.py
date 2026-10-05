@@ -53,9 +53,13 @@ def _child(connection, args, kwargs, rule_values):
         if kwargs.pop('second_reader_enabled', False):
             from tools.readers import panel_transport
             kwargs['second_reader'] = panel_transport()
+        # the language model the reading was started with, or none: the sheet's own evidence answers then
+        from . import ai_models
+        ai_model = kwargs.pop('ai_model', None) or ai_models.default()
         if kwargs.get('source_mode') in ('model', 'compare', 'combined'):
-            from .source_model import transport
-            kwargs['source_ask'] = transport()
+            kwargs['source_ask'] = ai_models.transport(ai_model)
+            if ai_model != ai_models.NONE and kwargs['source_ask'] is None:
+                raise RuntimeError(f'{ai_models.LABELS.get(ai_model, ai_model)} är inte ansluten på servern.')
         persistent_dir = kwargs.pop('native_cache_dir', None)
         if kwargs.pop('native_detection', False):
             from vvs_engine.source_rules.native_detection import detect_page

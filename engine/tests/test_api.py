@@ -1282,16 +1282,43 @@ def test_source_modes_are_validated_and_preserved_without_charging_for_missing_m
     url=f"/api/drawings/{d['id']}/analyze"
     from app import source_model
     monkeypatch.setattr(source_model, 'configured', lambda: False)
-    missing=client.post(url,json={'assignment_mode':'model'},headers=H)
-    assert missing.status_code==422 and 'Modellanslutning saknas' in missing.text
+    monkeypatch.delenv('ANTHROPIC_API_KEY', raising=False)
+    # a model the server has no key for cannot be chosen, and nothing is charged for asking
+    missing=client.post(url,json={'assignment_mode':'model','ai_model':'gpt-6-astra'},headers=H)
+    assert missing.status_code==422 and 'GPT-6 Astra är inte ansluten' in missing.text
+    claude=client.post(url,json={'ai_model':'claude-opus-5-5'},headers=H)
+    assert claude.status_code==422 and 'Claude Opus 5.5 är inte ansluten' in claude.text
+    assert client.post(url,json={'ai_model':'gpt-5'},headers=H).status_code==422
     assert client.post(url,json={'assignment_mode':'vvs5'},headers=H).status_code==422
     monkeypatch.setattr(source_model, 'configured', lambda: True)
-    started=client.post(url,json={'assignment_mode':'compare','source_style':'style-1'},headers=H)
+    started=client.post(url,json={'assignment_mode':'compare','source_style':'style-1','ai_model':'gpt-6-astra'},headers=H)
     assert started.status_code==200
+    assert started.json()['summary']['ai_model']=='gpt-6-astra'
+    other=client.post(url,json={'ai_model':'none'},headers=H)
+    assert other.status_code==409 and 'annan AI-modell' in other.text
     assert started.json()['summary']['assignment_mode']=='combined'
     assert started.json()['summary']['source_style']=='auto'
-    assert client.post(url,json={'assignment_mode':'dimension'},headers=H).json()['id']==started.json()['id']
-    assert client.post(url,json={'assignment_mode':'compare'},headers=H).json()['id']==started.json()['id']
+    assert client.post(url,json={'assignment_mode':'dimension','ai_model':'gpt-6-astra'},headers=H).json()['id']==started.json()['id']
+    assert client.post(url,json={'assignment_mode':'compare','ai_model':'gpt-6-astra'},headers=H).json()['id']==started.json()['id']
+
+
+def test_a_reading_without_ai_needs_no_model_connection(client, synthetic_pdf, monkeypatch):
+    monkeypatch.delenv('OPENAI_API_KEY', raising=False)
+    monkeypatch.delenv('VVS_ASSIGNMENT_MODEL', raising=False)
+    from app import jobs, source_model
+    monkeypatch.setattr(jobs, 'submit', lambda *_: None)
+    monkeypatch.setattr(source_model, 'configured', lambda: False)
+    r=client.post('/api/auth/register', json={'email':'no-ai@example.com','password':'hemligt1'}).json()
+    H={'Authorization':f"Bearer {r['access_token']}"}
+    p=client.post('/api/projects',json={'name':'Utan AI'},headers=H).json()
+    with open(synthetic_pdf,'rb') as f:
+        d=client.post(f"/api/projects/{p['id']}/drawings",files={'file':('rules.pdf',f,'application/pdf')},headers=H).json()
+    started=client.post(f"/api/drawings/{d['id']}/analyze",json={},headers=H)
+    assert started.status_code==200 and started.json()['summary']['ai_model']=='none'
+    options=client.get('/api/analysis-options',headers=H).json()
+    assert [(m['id'], m['available']) for m in options['ai_models']] == [
+        ('none', True), ('gpt-6-astra', False), ('claude-opus-5-5', False)]
+    assert options['ai_default']=='none'
 
 
 def test_analysis_options_exposes_styles_and_connection_status_without_credentials(client, monkeypatch):

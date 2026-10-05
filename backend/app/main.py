@@ -439,8 +439,12 @@ def analysis_options(user: User = Depends(current_user)):
     from vvs_engine.source_rules.styles import profiles
     from .source_model import connection_settings
     key, model = connection_settings()
+    from . import ai_models
+    ready = ai_models.available()
     return {"styles": [{"id": k, "name": p.get("name", k)} for k,p in profiles().items()],
-            "model": {"configured": bool(key), "name": model}}
+            "model": {"configured": bool(key), "name": model},
+            "ai_models": [{"id": c, "label": ai_models.LABELS[c], "available": ready[c]} for c in ai_models.CHOICES],
+            "ai_default": ai_models.default()}
 
 
 # ---------------------------------------------------------------- analysis jobs
@@ -454,6 +458,8 @@ class AnalyzeIn(BaseModel):
     """
     assignment_mode: Literal["combined", "dimension", "model", "compare"] = "combined"
     source_style: str = "auto"
+    # vilken språkmodell som avgör rörens beteckningar - eller ingen, då ritningens egna belägg avgör
+    ai_model: Literal["none", "gpt-6-astra", "claude-opus-5-5"] | None = None
     scale_ratio: float | None = Field(default=None, ge=1, le=20000, allow_inf_nan=False)
     page: int = Field(default=0, ge=0)
 
@@ -469,10 +475,10 @@ def analyze(drawing_id: str, body: AnalyzeIn | None = None, user: User = Depends
     if style_id != "auto" and style_id not in profiles():
         raise HTTPException(422, "Okänd ritningsstil.")
     style_id = "auto"  # Style is inferred for every application analysis.
-    if mode == "combined":
-        from .source_model import configured
-        if not configured():
-            raise HTTPException(422, "Modellanslutning saknas. Konfigurera OpenAI på servern så att både dimensionsregler och modellbedömning kan köras.")
+    from . import ai_models
+    ai_model = (body.ai_model if body else None) or ai_models.default()
+    if not ai_models.available().get(ai_model):
+        raise HTTPException(422, f"{ai_models.LABELS[ai_model]} är inte ansluten på servern. Välj en annan modell eller Utan AI.")
     given: dict | None = None
     if body is not None and body.scale_ratio is not None:
         if body.page >= d.n_pages:
@@ -487,11 +493,14 @@ def analyze(drawing_id: str, body: AnalyzeIn | None = None, user: User = Depends
             raise HTTPException(409, "Ritningen analyseras redan med en annan ritningsstil.")
         if (active.summary or {}).get("assignment_mode", "dimension") != mode:
             raise HTTPException(409, "Ritningen analyseras redan med ett annat analysläge. Vänta tills den analysen är klar.")
+        if (active.summary or {}).get("ai_model", ai_models.NONE) != ai_model:
+            raise HTTPException(409, "Ritningen analyseras redan med en annan AI-modell. Vänta tills den analysen är klar.")
         if ((active.summary or {}).get("given_scale") or None) != given:
             raise HTTPException(409, "Ritningen analyseras redan. Vänta tills den analysen är klar innan skalan ändras.")
         return _job_out(active)
     j = AnalysisJob(drawing_id=d.id, status="QUEUED", stage="QUEUED", progress=0.0,
-                    summary={"given_scale": given, "assignment_mode": mode, "source_style": style_id})
+                    summary={"given_scale": given, "assignment_mode": mode, "source_style": style_id,
+                             "ai_model": ai_model})
     db.add(j); db.flush()
     # priset dras innan läsningen startar, och det som drogs står på jobbet; räcker inte saldot skapas inget jobb
     charged = credits_api.charge_for_reading(db, user, d, j)
