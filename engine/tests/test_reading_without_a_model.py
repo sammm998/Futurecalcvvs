@@ -132,3 +132,15 @@ def test_a_leader_without_a_landing_lands_where_its_free_end_meets_a_pipe():
     assert [g['node'] for g in R['leaders'][0]['landings']] == [7]
     assert [g['node'] for g in R['leaders'][1]['landings']] == [8]
     assert [g['node'] for g in R['leaders'][2]['landings']] == [99] and report['landed'] == 2
+
+
+def test_a_leader_lands_on_the_slash_drawn_where_it_meets_its_pipe():
+    from vvs_engine.source_rules.free_end_landings import land_free_ends
+    # V-50-2-666339-0001, VS1-S13-54/V3: the leader touches the pipe ink 3.8 pt from the slash between the walls
+    A = {'nodes': [{'id': 635, 'x': 1006.08, 'y': 785.68, 'kind': 'tick', 'stretches': [803]},
+                   {'id': 9, 'x': 1006.08, 'y': 794.0, 'kind': 'end', 'stretches': [5]}]}
+    R = {'tolerances': {'landing': 3.0}, 'leaders': [
+        {'id': 0, 'label': 3, 'anchor': [927.1, 572.0], 'points': [[1006.08, 789.52], [927.1, 572.0]],
+         'landings': [{'point': [1006.08, 789.52], 'node': None}]}]}
+    R, report = land_free_ends(A, R, [])
+    assert [g['node'] for g in R['leaders'][0]['landings'] if g['node'] is not None] == [635]

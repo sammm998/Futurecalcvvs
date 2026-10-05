@@ -22,16 +22,41 @@ def merge_detection(page, native, graphs, families, anchors, identities, elevati
     for path in page.paths:
         indexed[_key(path.layer, path.width, path.bbox)].append(path)
     mapped = {}
+    # By pen and place, for the strokes whose box the two readers measure differently (V-50-1-666340-0113: one
+    # stroke in five of the pipe pen, 1275.1 against 1278.0 at its right edge): there the stroke is matched on
+    # its geometry alone - the same pen, and lines within the same .05 pt.
+    by_pen = defaultdict(list)
+    for path in page.paths:
+        if path.segs:
+            by_pen[(path.layer, round(path.width, 2))].append(path)
+    def same_lines(path, host):
+        source_lines = list(flatten(path['items']))
+        if not source_lines:
+            return None
+        original = MultiLineString(source_lines)
+        visible = MultiLineString([[(s.x0,s.y0),(s.x1,s.y1)] for s in host.segs])
+        return original.hausdorff_distance(visible)
     for path in native['extraction']['paths']:
         found = indexed[_key(path['layer'], path['width'], path['rect'])]
         # Ambiguous paths are not matched by list order.
         if len(found) == 1 and found[0].segs:
-            source_lines = list(flatten(path['items']))
-            if not source_lines: continue
-            original = MultiLineString(source_lines)
-            visible = MultiLineString([[(s.x0,s.y0),(s.x1,s.y1)] for s in found[0].segs])
-            if original.hausdorff_distance(visible) <= .05:
+            d = same_lines(path, found[0])
+            if d is not None and d <= .05:
                 mapped[path['id']] = found[0]
+            continue
+        if found:
+            continue
+        x0, y0, x1, y1 = path['rect']
+        near = [h for h in by_pen[(path['layer'], round(path['width'], 2))]
+                if h.bbox[0] <= x0 + 4 and h.bbox[1] <= y0 + 4 and h.bbox[2] >= x1 - 4 and h.bbox[3] >= y1 - 4
+                and h.bbox[0] >= x0 - 4 and h.bbox[1] >= y0 - 4 and h.bbox[2] <= x1 + 4 and h.bbox[3] <= y1 + 4]
+        matches = [h for h in near if (lambda d: d is not None and d <= .05)(same_lines(path, h))]
+        if len(matches) == 1:
+            mapped[path['id']] = matches[0]
+    # a stroke the reading split into pieces: each piece is part of the PDF stroke it came from
+    for new_id, original in (native.get('split_from') or {}).items():
+        if int(original) in mapped:
+            mapped[int(new_id)] = mapped[int(original)]
     native_stretches = {s['id']: s for s in native['graph']['stretches']}
     native['_host_paths'] = {pid: path.pid for pid, path in mapped.items()}
     used = {pid for s in native_stretches.values() if not s.get('in_wall') and not s.get('entry')

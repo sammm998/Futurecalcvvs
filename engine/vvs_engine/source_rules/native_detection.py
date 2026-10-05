@@ -47,7 +47,7 @@ LANDING_MARGIN = 5       # ...that many times the landings on the chosen pen
 LENGTH_MARGIN = 3        # ...and that many times its landed-on length (PipeStudio's own flip rule, bucket.calibrate)
 
 
-def landed_policy(ex, B):
+def landed_policy(ex, B, extra_pipe_widths=()):
     """The pens this sheet's own leaders point at, when they contradict the pipe pen the calibration chose.
 
     The calibration may take a known style's starting values for the pipe pen. A sheet from another office that
@@ -85,7 +85,8 @@ def landed_policy(ex, B):
         k = f['key']
         grey = bool(k['color']) and max(k['color']) - min(k['color']) < .05 and min(k['color']) > .2
         coloured = bool(k['color']) and max(k['color']) - min(k['color']) >= .05
-        if abs(k['width'] - pipe_w) <= .015 and not grey and not coloured:
+        if (abs(k['width'] - pipe_w) <= .015 or any(abs(k['width'] - w / unit) <= .005 for w in extra_pipe_widths)) \
+                and not grey and not coloured:
             role = 'pipe'
         elif leader_w is not None and abs(k['width'] - leader_w / unit) <= .015 and not grey and not coloured:
             role = 'leader'
@@ -135,11 +136,23 @@ def detect_page(pdf_path, page_number=0, style=None, progress=None, artifact_dir
         # Model inference does not need the vector graph. Build it afterwards
         # so its allocations do not overlap the ONNX working set.
         ex = stage('extract', lambda: extract.extract(clean, page_number))
+        # the strokes as the PDF holds them: the reading below may split a stroke or file it under a pen of its
+        # own, but the measurement matches the reading's pipes to the page by the PDF's own strokes
+        original_ex = ex
         boxed = {'split': 0}
         if not strict_original:
             from .boxed_leaders import split, reorder_leaders
+            from .pipestudio.vvs import parse_designation
+            # the detector's label boxes, and the text spans that write a pipe designation: the boxes built from
+            # the text layer come later, and a label found only there has its frame and leader drawn just the same
             label_rects = [b['rect'] for b in det.get('label_boxes', [])]
+            # a text span's box is the letters' own: its underline runs a few points past them on either side
+            text_rects = [[t.bbox[0] - 3, t.bbox[1] - 2, t.bbox[2] + 3, t.bbox[3] + 2] for t in ex.texts
+                          if any(parse_designation(w) for w in t.text.split())]
             ex, boxed = split(ex, label_rects)
+            ex, by_text = split(ex, text_rects, underline_only=True)
+            boxed = dict(boxed, by_text=by_text.get('split', 0), paths=boxed.get('paths', []) + by_text.get('paths', []))
+            label_rects = label_rects + text_rects
             ex, reordered = reorder_leaders(ex, label_rects)
             boxed = dict(boxed, reordered=reordered)
         P = stage('profile', lambda: profile.profile(ex))
@@ -151,7 +164,11 @@ def detect_page(pdf_path, page_number=0, style=None, progress=None, artifact_dir
             with pymupdf.open(clean) as text_doc:
                 rotated_repairs = repair(text_doc[page_number], L)
         shelves = {'widened': 0}
+        recovered = {'recovered': 0}
         if not strict_original:
+            from .text_labels import recover
+            det, L, recovered = recover(clean, page_number, det, L, ex, labels.read_labels,
+                                        style_module.text_height(ex)[0])
             from .label_shelves import extend_to_shelves
             det, L, shelves = extend_to_shelves(ex, det, L)
         save('detection-inputs.json', {'extraction': asdict(ex), 'profile': P,
@@ -178,9 +195,28 @@ def detect_page(pdf_path, page_number=0, style=None, progress=None, artifact_dir
             excluded = {l['id'] for l in unparsed}
             L = [l for l in L if l['id'] not in excluded]
             det = {**det, 'label_boxes': [b for b in det['label_boxes'] if b['id'] not in excluded]}
+        renumbered, declared = {}, []
+        if not strict_original:
+            from .label_ids import renumber, declared_systems
+            det, L, renumbered = renumber(det, L)
+            L, declared = declared_systems(L)
         read = L
         B, A, L, R = stage('vector_stages', lambda: vector_stages(ex, P, det, read, selected, mode='auto'))
         landed = None if selected.get('stroke_policy') is not None else landed_policy(ex, B)
+        dashed = {'pipes': 0}
+        if landed is not None and landed['report'].get('leader_pen'):
+            # pipes drawn dashed in the leader pen, which the sheet's own leaders point at (dashed_pipes.py)
+            from .dashed_pipes import dashed_paths, leaders_ending_on, file_apart
+            pen = landed['report']['leader_pen']
+            ids = dashed_paths(ex, pen)
+            hits = leaders_ending_on(ex, ids, [b['rect'] for b in det.get('label_boxes', [])], pen)
+            dashed = {'pipes': len(ids), 'leaders_on_them': hits}
+            if hits >= 3:
+                ex, apart = file_apart(ex, ids, pen)
+                again = landed_policy(ex, B, extra_pipe_widths=(apart,))
+                if again is not None:
+                    landed = again
+                dashed['pen'] = apart
         if landed is not None:
             # the matched style was contradicted by the sheet: none of its measures is taken, only the sheet's own
             selected = {'id': 'auto', 'version': 1, 'calibration': {}, 'rules': [], 'calibration_mode': 'auto',
@@ -189,12 +225,19 @@ def detect_page(pdf_path, page_number=0, style=None, progress=None, artifact_dir
             B, A, L, R = stage('vector_stages_landed', lambda: vector_stages(ex, P, det, read, selected, mode='auto'))
         from .free_end_landings import land_free_ends
         R, rescued = land_free_ends(A, R, L)
+        split_from = {}
+        for report in (boxed, boxed.get('reordered') or {}):
+            for item in (report.get('paths') or []):
+                for new_id in (item.get('leader_paths') or []) + (item.get('marks') or []):
+                    split_from[new_id] = item['path']
         return {'source_pdf_sha256': _pdf_digest(pdf_path), 'free_end_landings': rescued,
-                'page': page_number, 'extraction': asdict(ex), 'profile': P,
+                'page': page_number, 'extraction': asdict(original_ex), 'split_from': split_from, 'profile': P,
                 'detection': det, 'bucket': B, 'graph': A, 'labels': L,
                 'association': R, 'timings': timings, 'style': selected, 'style_match': match,
                 'unparsed_labels': unparsed, 'strict_original': strict_original,
                 'rotated_text_repairs': rotated_repairs, 'boxed_leaders': boxed, 'label_shelves': shelves,
+                'dashed_pipes': dashed, 'text_labels': recovered,
+                'label_ids_from': renumbered, 'declared_systems': declared,
                 'annotations_used': False, 'expert_overrides_used': False}
 
 
