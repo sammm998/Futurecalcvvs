@@ -188,9 +188,10 @@ def project(graphs, native, result, page, elevations, host_reading=None):
 def analyze(graphs,native,page,ask,elevations,raw_page,host_reading=None):
     import os
     from .rule_answer import answer as by_rules
-    # Without a model connection - or when told to - the sheet is answered from its own evidence (rule_answer.py);
-    # a model that is configured but cannot be reached does the same instead of failing the sheet.
-    if ask is None or os.environ.get('VVS_RULES_ONLY') == '1':
+    # The sheet is answered from its own evidence (rule_answer.py): on the eleven reference sheets it reads as much
+    # as the language model did, at no cost per drawing. The model answers only when the operator turns it on
+    # (VVS_ASSIGNMENT_MODEL=1); a model that is on but cannot be reached falls back to the rules, not to a failure.
+    if ask is None or os.environ.get('VVS_ASSIGNMENT_MODEL') != '1':
         ask=by_rules
     elif hasattr(ask,'for_page'):ask=ask.for_page(raw_page)
     graph=pen_layers(native['graph'])
