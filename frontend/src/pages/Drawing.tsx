@@ -1,5 +1,4 @@
 
-import AiModelPicker from "../components/AiModelPicker";
 import { useEffect, useState } from "react";
 import { t as tr, locale } from "../i18n";
 import { Link, useParams } from "react-router-dom";
@@ -49,7 +48,6 @@ export default function DrawingPage() {
           }}>{tr("Ny analys")}</button>
         </div>
       </div>
-      <AiModelPicker />
 
       {err && <p className="error" style={{ marginTop: 18 }}>{err}</p>}
       <div className="rule" />

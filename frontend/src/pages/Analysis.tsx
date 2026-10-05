@@ -1,4 +1,4 @@
-import AiModelPicker, { AiUsage } from "../components/AiModelPicker";
+import { AiUsage } from "../components/AiUsage";
 import { extension, withPipeExtensions } from "../live/gestures";
 import type { DrawingAction } from "../live/LiveDrawingAgent";
 import SourceAssignment from "../components/SourceAssignment";
@@ -605,7 +605,6 @@ export default function AnalysisPage() {
                 catch (e: any) { setActionErr(e.message); } finally { setRescaling(false); }
               }}>{tr("Analysera ritningen")}</button>
             </div>
-            <AiModelPicker compact />
             <AiUsage usage={job?.summary?.ai_usage} />
             {staff && <AnalysisQuality quality={result.quality} />}
             {actionErr && <p className="error" role="alert">{actionErr}</p>}
@@ -842,7 +841,6 @@ export default function AnalysisPage() {
                 catch (e: any) { setActionErr(e.message); } finally { setRescaling(false); }
               }}>{tr("Analysera ritningen")}</button>
             </div>
-            <AiModelPicker compact />
             <AiUsage usage={job?.summary?.ai_usage} />
             {staff && <AnalysisQuality quality={result.quality} />}
             <DrawingQuality style={result.drawing_style} visibility={result.pdf_visibility} />
