@@ -115,11 +115,21 @@ def reorder_leaders(ex, boxes, max_items=8):
             paths.append(replace(p, id=next_id, items=m, rect=_rect(m), closed=False))
             made.append(next_id); next_id += 1
         report.append({'path': p.id, 'marks': made})
-    return replace(ex, paths=paths), {'reordered': len(report), 'paths': report[:200]}
+    return replace(ex, paths=paths), {'reordered': len(report), 'paths': report}
 
 
-def split(ex, boxes, pipe_widths=()):
-    """`ex` with every thin frame-and-leader stroke split into its frame and its leader. Returns (ex, report)."""
+def _underline(it, box):
+    """A horizontal piece at the foot of the box, under most of its text: the label's underline."""
+    x0, y0, x1, y1 = box
+    return (abs(it[2] - it[4]) <= 0.5 and abs((it[2] + it[4]) / 2 - y1) <= 4.0
+            and min(max(it[1], it[3]), x1) - max(min(it[1], it[3]), x0) >= 0.6 * (x1 - x0))
+
+
+def split(ex, boxes, pipe_widths=(), underline_only=False):
+    """`ex` with every thin frame-and-leader stroke split into its frame and its leader. Returns (ex, report).
+
+    underline_only: the boxes are tight text boxes, not the detector's label boxes - a stroke is split only when it
+    is short and its piece at the box is the label's underline, so a pipe passing under the text is never cut."""
     boxes = [list(b) for b in boxes]
     if not boxes:
         return ex, {'split': 0}
@@ -135,9 +145,13 @@ def split(ex, boxes, pipe_widths=()):
             continue
         if p.color and max(p.color) > .25:
             continue      # grey or coloured ink is the building or a note, never a label's leader
+        if underline_only and len(p.items) > 8:
+            continue
         for box in boxes:
             inside = [it for it in p.items if _inside(it, box)]
             if not inside:
+                continue
+            if underline_only and not any(_underline(it, box) for it in inside):
                 continue
             outside = [it for it in p.items if not _inside(it, box)]
             # the leader leaves the box: at least one outside piece starts or ends on it
@@ -151,4 +165,4 @@ def split(ex, boxes, pipe_widths=()):
                 next_id += 1
             report.append({'path': p.id, 'leader_paths': made, 'box': [round(v, 2) for v in box]})
             break
-    return replace(ex, paths=paths), {'split': len(report), 'paths': report[:200]}
+    return replace(ex, paths=paths), {'split': len(report), 'paths': report}

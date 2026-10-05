@@ -203,6 +203,13 @@ def analyze(graphs,native,page,ask,elevations,raw_page,host_reading=None):
     if result['combined']['status']!='COMPLETED':
         why=(result['combined'].get('result') or {}).get('failure_reason') or result['combined'].get('reason')
         raise RuntimeError('Native combined assignment failed: '+result['combined']['status']+(f' ({why})' if why else ''))
+    if ask is by_rules or result.get('model_fallback'):
+        # the assignment names its decider after the configured model; the drawing's own evidence decided here
+        for part in ('model','combined'):
+            for b in (result.get(part,{}).get('result') or {}).get('bindings',[]):
+                if b.get('rule')=='astra_final':
+                    b['rule']='rules_final'
+                    b['reason']="Final pipe assignment by the drawing's own evidence (no AI model)"
     return project(graphs,native,result,page,elevations,host_reading)
 
 
