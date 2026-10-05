@@ -137,8 +137,11 @@ def detect_page(pdf_path, page_number=0, style=None, progress=None, artifact_dir
         ex = stage('extract', lambda: extract.extract(clean, page_number))
         boxed = {'split': 0}
         if not strict_original:
-            from .boxed_leaders import split
-            ex, boxed = split(ex, [b['rect'] for b in det.get('label_boxes', [])])
+            from .boxed_leaders import split, reorder_leaders
+            label_rects = [b['rect'] for b in det.get('label_boxes', [])]
+            ex, boxed = split(ex, label_rects)
+            ex, reordered = reorder_leaders(ex, label_rects)
+            boxed = dict(boxed, reordered=reordered)
         P = stage('profile', lambda: profile.profile(ex))
         det = labels.text_label_boxes(ex, det, text_height=style_module.text_height(ex)[0])
         L = stage('ocr', lambda: labels.read_labels(clean, det, page_no=page_number))
@@ -147,6 +150,10 @@ def detect_page(pdf_path, page_number=0, style=None, progress=None, artifact_dir
             from .rotated_labels import repair
             with pymupdf.open(clean) as text_doc:
                 rotated_repairs = repair(text_doc[page_number], L)
+        shelves = {'widened': 0}
+        if not strict_original:
+            from .label_shelves import extend_to_shelves
+            det, L, shelves = extend_to_shelves(ex, det, L)
         save('detection-inputs.json', {'extraction': asdict(ex), 'profile': P,
                                      'detection': det, 'labels': L, 'timings': timings})
         # Unknown styles still use the original automatic measurement/calibration.
@@ -180,12 +187,14 @@ def detect_page(pdf_path, page_number=0, style=None, progress=None, artifact_dir
                         'stroke_policy': landed['policy'], 'landed_pens': dict(landed['report'],
                                                                               set_aside_style=selected.get('id'))}
             B, A, L, R = stage('vector_stages_landed', lambda: vector_stages(ex, P, det, read, selected, mode='auto'))
-        return {'source_pdf_sha256': _pdf_digest(pdf_path),
+        from .free_end_landings import land_free_ends
+        R, rescued = land_free_ends(A, R, L)
+        return {'source_pdf_sha256': _pdf_digest(pdf_path), 'free_end_landings': rescued,
                 'page': page_number, 'extraction': asdict(ex), 'profile': P,
                 'detection': det, 'bucket': B, 'graph': A, 'labels': L,
                 'association': R, 'timings': timings, 'style': selected, 'style_match': match,
                 'unparsed_labels': unparsed, 'strict_original': strict_original,
-                'rotated_text_repairs': rotated_repairs, 'boxed_leaders': boxed,
+                'rotated_text_repairs': rotated_repairs, 'boxed_leaders': boxed, 'label_shelves': shelves,
                 'annotations_used': False, 'expert_overrides_used': False}
 
 
