@@ -1,3 +1,4 @@
+import AiModelPicker from "../components/AiModelPicker";
 import { useEffect, useRef, useState } from "react";
 import { t as tr, trf, locale } from "../i18n";
 import { Link, useParams } from "react-router-dom";
@@ -88,6 +89,7 @@ export default function ProjectPage() {
           <Link to={`/projects/${project.id}/analys`}><button className="secondary">{tr("Analysera projektet")}</button></Link>
         </div>
       </div>
+      <AiModelPicker />
       {progress && <p role="status" aria-live="polite">{progress}</p>}
       {notice && <p role="status">{notice}</p>}
       {err && <p className="error" style={{ marginTop: 18, whiteSpace: "pre-line" }}>{err}</p>}

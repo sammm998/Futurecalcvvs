@@ -260,7 +260,9 @@ def run_job(job_id: str) -> None:
         # att jobbet kördes om efter en omstart är en del av dess historia och följer med in i det färdiga svaret,
         # och likaså den skala någon skrev in för hand innan det kördes: en mängd ska bära hur den blev mätbar
         carried = {k: v for k, v in (job.summary or {}).items()
-                   if k in ("resubmitted_after_restart", "given_scale", "credits", "assignment_mode", "source_style")}
+                   if k in ("resubmitted_after_restart", "given_scale", "credits", "assignment_mode", "source_style",
+                            "ai_model")}
+        ai_model = (job.summary or {}).get("ai_model")
         gs = (job.summary or {}).get("given_scale") or None
         by_hand = {int(gs["page"]): float(gs["meters_per_pdf_point"])} if gs else None
         job.status = "RUNNING"; job.started_at = dt.datetime.now(dt.timezone.utc); job.result_key = result_key
@@ -282,10 +284,12 @@ def run_job(job_id: str) -> None:
                                 second_reader_enabled=second_reader_state()[0], known_families=known, known_legend=vocab,
                                 given_scale=by_hand, source_mode="combined", native_detection=True,
                                 native_cache_dir=storage.path(f"cache/native/{drawing.project_id}"),
-                                source_style="auto")
+                                source_style="auto", ai_model=ai_model)
             # Ett blad som låg på sidan lästes vridet upprätt, och dess koordinater gäller det vridna bladet. Ritningen
             # som visas byts mot den vridna - samma innehåll, bara /Rotate ändrad - så att markeringarna hamnar rätt.
             _keep_upright(summary, out_dir, pdf_path)
+            from .ai_usage import read_usage
+            summary["summary"]["ai_usage"] = read_usage(out_dir, ai_model)
             from .diagnostic_storage import compress_native_diagnostics
             compress_native_diagnostics(out_dir)
             from .disk_space import link_sheet_copies

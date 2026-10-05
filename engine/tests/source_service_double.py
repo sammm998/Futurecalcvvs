@@ -18,6 +18,7 @@ def offline_source_service():
     def offline_analysis(*args, **kwargs):
         kwargs.pop('rule_values',None);kwargs.pop('label_audit',None);kwargs.pop('second_reader_enabled',None)
         kwargs.pop('native_cache_dir',None)
+        kwargs.pop('ai_model',None)  # the worker's choice of model; this double answers in its place
         kwargs.pop('native_detection',None)  # Real detector has separate integration/geometry tests.
         kwargs['source_ask']=offline_model
         result = analyze_pdf(*args, **kwargs)
