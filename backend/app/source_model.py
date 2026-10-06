@@ -74,9 +74,27 @@ class AssignmentTransport:
             return "fc-bind-" + hashlib.sha1(f"{self.page[0]}#{self.page[1]}".encode()).hexdigest()[:20]
         return None
 
-    def _send(self, system, overview, content):
-        """One request to OpenAI; returns (decisions, usage record)."""
+    def review_flags(self, flags):
+        """The consistency flags shown to the model with the places they are at; returns its verdicts."""
+        from vvs_engine.source_rules.consistency import REVIEW_SYSTEM, REVIEW_SCHEMA
+        numbered = [dict(f, id=i) for i, f in enumerate(flags)]
+        overview, content = [], json.dumps({'flags': numbered}, ensure_ascii=False)
+        images = []
+        if self.page and self.page[0]:
+            from .drawing_evidence import visual_evidence
+            places = [{'points': [f['at']]} for f in numbered if f.get('at')]
+            visual, images = visual_evidence(*self.page, places)
+            overview, details = visual[:2], visual[2:]
+            content = [{"type": "input_text", "text": content}] + details
+        verdicts, record = self._send(REVIEW_SYSTEM, overview, content, schema=REVIEW_SCHEMA, key='verdicts')
+        with self.lock:
+            self.usage.append(dict(record, drawing_images=images, purpose='consistency_review'))
+        return verdicts
+
+    def _send(self, system, overview, content, schema=None, key='decisions'):
+        """One request to OpenAI; returns (the answer's `key` list, usage record)."""
         from vvs_engine.source_rules.pipestudio.final_bind import SCHEMA
+        schema = schema or SCHEMA
         cache_key = self._cache_key()
         request = dict(
             model=self.model, store=False, max_output_tokens=12000,
@@ -85,13 +103,13 @@ class AssignmentTransport:
             input=[{'role': 'system', 'content': system},
                    *([{'role': 'user', 'content': overview}] if overview else []),
                    {'role': 'user', 'content': content}],
-            text={'format': {'type': 'json_schema', 'name': 'pipe_assignments',
-                             'strict': True, 'schema': SCHEMA}})
+            text={'format': {'type': 'json_schema', 'name': 'pipe_assignments' if key == 'decisions' else key,
+                             'strict': True, 'schema': schema}})
         def produce():
             response = self.client.responses.create(**request)
             if response.status != 'completed':
                 raise RuntimeError('Model assignment did not complete')
-            if not isinstance(json.loads(response.output_text).get('decisions'), list):
+            if not isinstance(json.loads(response.output_text).get(key), list):
                 raise ValueError('Invalid assignment response')
             return response
         response, reused = self.request_cache.run(request, produce)
@@ -103,7 +121,7 @@ class AssignmentTransport:
                   'request_reused': reused}
         if response.status != 'completed':
             raise RuntimeError('Model assignment did not complete')
-        return json.loads(response.output_text)['decisions'], record
+        return json.loads(response.output_text)[key], record
 
     def __call__(self, questions):
         system, overview, content, images, aliases = self._payload(questions)

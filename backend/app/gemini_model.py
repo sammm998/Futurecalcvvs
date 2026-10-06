@@ -39,23 +39,24 @@ def _parts(items):
 
 
 class GeminiTransport(AssignmentTransport):
-    def _send(self, system, overview, content):
+    def _send(self, system, overview, content, schema=None, key='decisions'):
         from vvs_engine.source_rules.pipestudio.final_bind import SCHEMA
+        schema = schema or SCHEMA
         from google.genai import types
         parts = _parts(overview) + _parts(content)
         config = types.GenerateContentConfig(system_instruction=system, response_mime_type='application/json',
-                                             response_json_schema=_schema(SCHEMA), max_output_tokens=16000)
+                                             response_json_schema=_schema(schema), max_output_tokens=16000)
         # the request cache compares plain data: the parts as the text and image digests they were built from
-        key = {'model': self.model, 'system': system, 'overview': overview, 'content': content}
+        request = {'model': self.model, 'system': system, 'overview': overview, 'content': content, 'schema': schema}
 
         def produce():
             response = self.client.models.generate_content(
                 model=self.model, contents=[types.Content(role='user', parts=parts)], config=config)
-            if not isinstance(json.loads(response.text or '{}').get('decisions'), list):
+            if not isinstance(json.loads(response.text or '{}').get(key), list):
                 raise ValueError('Invalid assignment response')
             return response
         try:
-            response, reused = self.request_cache.run(key, produce)
+            response, reused = self.request_cache.run(request, produce)
         except (ValueError, RuntimeError):
             raise
         except Exception as exc:
@@ -68,7 +69,7 @@ class GeminiTransport(AssignmentTransport):
                   'tokens_out': 0 if reused else ((getattr(u, 'candidates_token_count', 0) or 0)
                                                   + (getattr(u, 'thoughts_token_count', 0) or 0)),
                   'cached_tokens': cached, 'request_reused': reused}
-        return json.loads(response.text)['decisions'], record
+        return json.loads(response.text)[key], record
 
 
 def transport(model=None):

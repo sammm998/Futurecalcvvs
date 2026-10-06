@@ -1827,11 +1827,12 @@ def analyze_page(page: RawPage, progress: Callable[[str], None] | None = None, o
         sv = {"FROM_THE_SET": "hämtad från handlingen - bladets egen stämpel avgjorde inget",
               "VERIFIED": "verifierad - utskriven skala och skalstock säger samma sak",
               "STATED": "tagen ur den utskrivna skalan", "BAR_ONLY": "tagen ur skalstocken; ingen utskriven skala",
+              "DIMENSIONS_ONLY": "tagen ur bladets måttsättning; ingen utskriven skala",
               "CONFLICT": "utskriven skala och skalstock säger emot varandra", "NONE": "gick inte att fastställa"}
         film.note("MEASURING",
                   f"Skalan: {sv.get(scale.state, scale.state.lower())}"
                   + (f", {scale.meters_per_pt:.6f} m per punkt." if scale.meters_per_pt else ".")
-                  + ("" if scale.state in ("VERIFIED", "STATED", "BAR_ONLY", "FROM_THE_SET")
+                  + ("" if scale.state in ("VERIFIED", "STATED", "BAR_ONLY", "FROM_THE_SET", "DIMENSIONS_ONLY")
                      else " Utan säker skala mäts ingenting."))
     elevations = _elevations(blocks, anchors)
     # read the sheet again by the other routes, put the answers side by side, and let a second route add what the

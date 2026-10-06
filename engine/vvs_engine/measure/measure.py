@@ -187,7 +187,7 @@ class PipeMeasure:
 # Vad bladet självt har avgjort om sin storlek. En meter mätt under något annat är ett förslag: den redovisas
 # med sitt tal, för den som granskar behöver se vad stocken gav, men den får inte heta bekräftad. Skillnaden
 # mellan de två är hela skillnaden mellan ett mått och en gissning på tusen gånger fel.
-SETTLED_SCALE = ("VERIFIED", "TEXT_ONLY", "BAR_ONLY")
+SETTLED_SCALE = ("VERIFIED", "TEXT_ONLY", "BAR_ONLY", "DIMENSIONS_ONLY")
 UNSETTLED_ROW_STATE = {"CONFLICT": "SCALE_UNSETTLED", "FROM_THE_SET": "SCALE_FROM_THE_SET",
                        "GIVEN_BY_HAND": "SCALE_GIVEN_BY_HAND"}
 HATCHED_ONLY = "IN_HATCHED_AREA"        # hela stråket ligger inne i en skraffering: ritat, men inte det här bladets
@@ -206,7 +206,7 @@ def measure_pipes(own: OwnershipResult, scale: ScaleResult, elevations: dict[str
     hatched_pt: physical_pipe_id -> length (pdf units) of the pipe inside hatched areas."""
     out: list[PipeMeasure] = []
     mpp = scale.meters_per_pt if scale.state in ("VERIFIED", "TEXT_ONLY", "BAR_ONLY", "CONFLICT", "FROM_THE_SET",
-                                                "GIVEN_BY_HAND") and scale.meters_per_pt else None
+                                                "GIVEN_BY_HAND", "DIMENSIONS_ONLY") and scale.meters_per_pt else None
     # A sheet whose scale evidence disagrees still gets measured - the geometric bar is the better witness and
     # the reason for choosing it is recorded - but every metre that comes out of it carries the conflict, so no
     # single run can be read as confidently measured when the sheet's own scale is unsettled.

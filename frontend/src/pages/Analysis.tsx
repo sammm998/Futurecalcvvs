@@ -676,6 +676,30 @@ export default function AnalysisPage() {
                 </div>
               </details>
             )}
+            {(() => {
+              const flags = (result.source_assignment?.consistency_flags ?? []).filter((f: any) => f.model_verdict !== "dismiss");
+              if (!flags.length) return null;
+              const FLAG_TEXT: Record<string, string> = {
+                dimension_change_without_fitting: "dimensionen byts där två rör möts, utan etikett eller reducering",
+                system_change_along_run: "systemet byts längs samma stråk, utan etikett",
+                named_without_dimension: "rör med namn men utan dimension",
+              };
+              return (
+                <details className="settings">
+                  <summary>{tr("Logikkontroll: att granska")} · {flags.length}</summary>
+                  <div className="body">
+                    {flags.slice(0, 80).map((f: any, i: number) => (
+                      <div key={i} className="small">
+                        <button className="link small" disabled={!f.at} onClick={() => {
+                          if (f.at) viewer.current?.zoomTo([f.at[0] - 60, f.at[1] - 60, f.at[0] + 60, f.at[1] + 60]);
+                        }}>{(f.designations ?? []).join(" → ")}</button>
+                        {" "}<span className="muted">{tr(FLAG_TEXT[f.flag] ?? f.flag)}{f.model_verdict === "confirm" ? ` · ${tr("AI bekräftar")}: ${f.model_reason}` : ""}</span>
+                      </div>
+                    ))}
+                  </div>
+                </details>
+              );
+            })()}
             {staff && c.unowned_outside_hatch_m != null && <p className="muted small">
               {tr("Oidentifierad rörgeometri utanför skrafferade områden")}: {c.unowned_outside_hatch_m} m.
               {" "}{tr("Oidentifierad rörgeometri inom skrafferade områden")}: {c.unowned_in_hatch_m} m.
