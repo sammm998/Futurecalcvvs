@@ -769,7 +769,7 @@ def materials(q: str = "", group: str = "", unit: str = "", limit: int = 60, off
 # A riser is one storey, 2.8 m, until the service or the reader says otherwise: every reference takeoff measured
 # (W-50-1-A-0033, -0111, -0114 and the rest) counts each riser at 2.80 m, and a vertical column left UNKNOWN
 # dropped the risers the reading had found - ten of ten on -0033 - out of the total.
-ASSUMPTION_DEFAULTS = {"floor_height_m": 2.8, "riser_source": "labels", "include_hatched": False,
+ASSUMPTION_DEFAULTS = {"floor_height_m": 2.8, "riser_source": "symbols", "include_hatched": False,
                        "include_declared": True}
 
 # Vad läsningen kör, till skillnad från vad den antar. De två OCR-passen kostar tid och är mätta: se
@@ -1392,7 +1392,7 @@ def _attachment(name: str) -> dict:
 
 @app.get("/api/jobs/{job_id}/export/{fmt}")
 def export(job_id: str, fmt: str, floor_height: float | None = None, include_hatched: bool = False,
-           riser_source: str = "labels", include_declared: bool = True,
+           riser_source: str = "symbols", include_declared: bool = True,
            user: User = Depends(current_user), db: Session = Depends(get_db)):
     j = _job(db, user, job_id)
     rd = _result_dir(j)

@@ -128,7 +128,7 @@ export default function AnalysisPage() {
   // Förklarade kopplingsledningar räknas med som förval: det är ritningens eget besked om dem. Valet finns för
   // den förteckning som prissätter dem per apparat eller mäter dem på ett annat blad.
   const [includeDeclared, setIncludeDeclared] = useState<boolean>(() => { try { return localStorage.getItem("vvs.includeDeclared") !== "0"; } catch { return true; } });
-  const [riserSource, setRiserSource] = useState<string>(() => { try { return localStorage.getItem("vvs.riserSource") ?? "labels"; } catch { return "labels"; } });
+  const [riserSource, setRiserSource] = useState<string>(() => { try { return localStorage.getItem("vvs.riserSource") ?? "symbols"; } catch { return "symbols"; } });
   // the service's assumptions are the starting point; what this browser set for itself stays in front of them
   useEffect(() => {
     api.settings().then((s) => {

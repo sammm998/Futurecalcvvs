@@ -10,11 +10,11 @@ from openpyxl import Workbook
 from openpyxl.styles import Font
 from openpyxl.utils import get_column_letter
 
-HEADERS = ["Beteckning", "DN", "Beteckningar på ritningen", "Sammanhängande rörsträckor", "Horisontellt m", "Vertikalt m", "Vertikalt ursprung", "Totalt m", "Tvetydigt m", "Varav enligt bladets tabell m", "Varav i skrafferat område m", "Andra kanten av dubbellinje m", "Stigare (symboler)", "Stigare (etiketter)", "Status", "Varav behöver granskas m"]
+HEADERS = ["Beteckning", "DN", "Beteckningar på ritningen", "Sammanhängande rörsträckor", "Horisontellt m", "Vertikalt m", "Vertikalt ursprung", "Totalt m", "Tvetydigt m", "Varav enligt bladets tabell m", "I skrafferat område, ej i mängden m", "Andra kanten av dubbellinje m", "Stigare (symboler)", "Stigare (etiketter)", "Status", "Varav behöver granskas m"]
 
 
 def _rows(result_dir: str, floor_height: float | None = None, include_hatched: bool = False,
-          rows: list[dict] | None = None, riser_source: str = "labels", include_declared: bool = True) -> list[dict]:
+          rows: list[dict] | None = None, riser_source: str = "symbols", include_declared: bool = True) -> list[dict]:
     """The rows an export is built from.
 
     `rows` is the corrected reading when the caller has one. Without it the engine's own reading is read off the
@@ -93,7 +93,7 @@ def _markup_row(m: dict) -> list:
 
 
 def to_xlsx(result_dir: str, floor_height: float | None = None, include_hatched: bool = False,
-          rows: list[dict] | None = None, riser_source: str = "labels", markups: list[dict] | None = None,
+          rows: list[dict] | None = None, riser_source: str = "symbols", markups: list[dict] | None = None,
           include_declared: bool = True) -> bytes:
     wb = Workbook()
     ws = wb.active
@@ -126,7 +126,7 @@ def to_xlsx(result_dir: str, floor_height: float | None = None, include_hatched:
 
 
 def to_csv(result_dir: str, floor_height: float | None = None, include_hatched: bool = False,
-          rows: list[dict] | None = None, riser_source: str = "labels", include_declared: bool = True) -> str:
+          rows: list[dict] | None = None, riser_source: str = "symbols", include_declared: bool = True) -> str:
     buf = io.StringIO()
     w = csv.writer(buf, delimiter=";")
     w.writerow(HEADERS)
