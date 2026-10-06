@@ -44,7 +44,7 @@ const Drawing3DView = lazy(() => import("../components/Drawing3DView").catch((e)
 
 // why a label never got a line to follow, said the way a person reads a drawing
 
-const LAYER_LABELS: Record<Layer, string> = { pipes: "Mätta rör", ambiguous: "Tvetydigt", claimed: "Påpekad men onämnd", unowned: "Oidentifierat", declined: "Bortvald geometri", designations: "Beteckningar", legend: "Förklaringslistan", leaders: "CAD-leaders", anchors: "Anslutningar", inWall: "I vägg (räknas ej)", frontiers: "Var rören slutar" };
+const LAYER_LABELS: Record<Layer, string> = { pipes: "Mätta rör", ambiguous: "Tvetydigt", claimed: "Påpekad men onämnd", unowned: "Oidentifierat", declined: "Bortvald geometri", designations: "Beteckningar", legend: "Förklaringslistan", leaders: "CAD-leaders", anchors: "Anslutningar", inWall: "I vägg (räknas ej)", frontiers: "Var rören slutar", confidence: "Säkerhet (grön/gul/röd)" };
 const LAYER_HINTS: Record<Layer, string> = {
   pipes: "Sträckor som fått en identitet och en längd, en färg per beteckning",
   ambiguous: "Ritad linje som kunde tillhöra mer än en beteckning — mäts inte",
@@ -55,6 +55,7 @@ const LAYER_HINTS: Record<Layer, string> = {
   legend: "Varje beteckning färgad efter vad handlingens förklaringslista säger att koden är: grönt rörsystem, orange komponent, grått material — och magenta streckat för en kod som inte står i listan alls. Listans egen ruta markeras där den står på bladet.",
   leaders: "Hänvisningslinjerna som ritningen drar från etikett till rör",
   anchors: "Där en beteckning faktiskt möter sitt rör",
+  confidence: "Färgar varje mätt rör efter hur säker läsningen är: grönt där en egen etikett namnger röret, gult där namnet är härlett ur ritningens logik (fortsätter från ett namngivet rör, självfallsledningens nivåer, värdläsningen), rött där det ska granskas (osäker läsning, namn från AI:ns kontroll eller en flagga från logikkontrollen).",
   frontiers: "Varje kant på varje mätt rör, med skälet: grönt där röret slutar på rätt ställe (annan dimension, annat system, stigare, komponent, bladets kant), rött där läsningen sannolikt tappar meter (samma penna fortsätter utan namn, ett gap som inte överbryggades, byte av penna), orange där något lämnats öppet (tvetydig korsning). Det valda röret visar alltid sina kanter. Inget rör slutar tyst.",
   inWall: "Rör i vägg ritas alltid i det ej räknades färg — längden ligger utanför den horisontella mängden. Etiketter, hänvisningslinjer och anslutningar över en skrafferad yta ritas blekt; det här lagret lyfter fram dem. Ingenting läsningen hittade göms.",
 };
@@ -162,7 +163,7 @@ export default function AnalysisPage() {
   // The sheet opens showing what was measured. Ink the reading accepted as pipe but no label reached is a real
   // finding and has its own switch - shown first it reads as a fault, and a grey tangle over a good reading is
   // the fastest way to make a correct answer look wrong.
-  const [layers, setLayers] = useState<Record<Layer, boolean>>({ pipes: true, ambiguous: true, claimed: true, unowned: false, declined: false, designations: false, legend: false, leaders: false, anchors: false, inWall: false, frontiers: false });
+  const [layers, setLayers] = useState<Record<Layer, boolean>>({ pipes: true, ambiguous: true, claimed: true, unowned: false, declined: false, designations: false, legend: false, leaders: false, anchors: false, inWall: false, frontiers: false, confidence: false });
   // which bortvald family the reader is pointing at, so the sheet can show that ink and not all of it at once
   const selDeclined: string | null = null;
   const [layersOpen, setLayersOpen] = useState(false);
