@@ -109,6 +109,19 @@ def landed_policy(ex, B, extra_pipe_widths=()):
                        'leader_pen': leader_w, 'method': C.get('family_method')}}
 
 
+def dashed_pens(ex, B):
+    """The pens a sheet may draw its leaders in, the measured leader pen first: every black stroke pen thinner than
+    the pipe pen. The measured one can be wrong - on V-50-1-666340-0112 the leaders that land on nothing vote for
+    0.96 pt, while the leaders to the dashed pipes are drawn in 0.48 pt."""
+    C = B.get('calibration') or {}
+    pipe = min([float(w) for w in C.get('pipe_widths') or []] or [1e9])
+    first = C.get('leader_width')
+    widths = sorted({round(p.width, 3) for p in ex.paths if p.kind == 's' and p.duplicate_of is None
+                     and (not p.color or max(p.color) <= .25) and 0 < p.width < pipe - .015})
+    pens = [round(first, 3)] if first else []
+    return pens + [w for w in widths if not pens or abs(w - pens[0]) > .015]
+
+
 def kept_policy(ex, B, extra_pipe_width, leader_width):
     """The first reading's own pens as a stroke policy, with the dashed strokes filed apart read as pipe ink.
 
@@ -248,16 +261,21 @@ def detect_page(pdf_path, page_number=0, style=None, progress=None, artifact_dir
         B, A, L, R = stage('vector_stages', lambda: vector_stages(ex, P, det, read, selected, mode='auto'))
         landed = None if selected.get('stroke_policy') is not None else landed_policy(ex, B)
         dashed = {'pipes': 0}
-        first_leader_pen = (B.get('calibration') or {}).get('leader_width')
-        pen = landed['report'].get('leader_pen') if landed is not None else (
-            None if selected.get('stroke_policy') is not None or not first_leader_pen else round(first_leader_pen, 3))
-        if pen:
+        if landed is not None and landed['report'].get('leader_pen'):
+            pens = [landed['report']['leader_pen']]
+        elif landed is None and selected.get('stroke_policy') is None:
+            pens = dashed_pens(ex, B)
+        else:
+            pens = []
+        from .dashed_pipes import dashed_paths, leaders_ending_on, file_apart, MIN_LEADERS
+        boxes = [b['rect'] for b in det.get('label_boxes', [])]
+        for pen in pens:
             # pipes drawn dashed in the leader pen, which the sheet's own leaders point at (dashed_pipes.py)
-            from .dashed_pipes import dashed_paths, leaders_ending_on, file_apart
             ids = dashed_paths(ex, pen)
-            hits = leaders_ending_on(ex, ids, [b['rect'] for b in det.get('label_boxes', [])], pen)
-            dashed = {'pipes': len(ids), 'leaders_on_them': hits}
-            if hits >= 3:
+            hits = leaders_ending_on(ex, ids, boxes, pen)
+            if hits > dashed.get('leaders_on_them', -1):
+                dashed = {'pipes': len(ids), 'leaders_on_them': hits, 'leader_pen': pen}
+            if hits >= MIN_LEADERS:
                 ex, apart = file_apart(ex, ids, pen)
                 again = landed_policy(ex, B, extra_pipe_widths=(apart,))
                 if again is not None:
@@ -265,6 +283,7 @@ def detect_page(pdf_path, page_number=0, style=None, progress=None, artifact_dir
                 elif landed is None:
                     landed = kept_policy(ex, B, apart, pen)
                 dashed['pen'] = apart
+                break
         if landed is not None:
             # the matched style was contradicted by the sheet: none of its measures is taken, only the sheet's own
             selected = {'id': 'auto', 'version': 1, 'calibration': {}, 'rules': [], 'calibration_mode': 'auto',
