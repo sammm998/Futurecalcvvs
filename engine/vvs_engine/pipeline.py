@@ -1866,6 +1866,14 @@ def analyze_page(page: RawPage, progress: Callable[[str], None] | None = None, o
     measures = measure_pipes(ownership, scale, elevations, hatched_pt)
     risers = _riser_symbols(page, ann_layers, glyph_pids, graphs, ownership, anchors, identities)
     label_risers = _risers_from_dn_rows(designations, anchors, leaders, identities)
+    # En stigare inne i en skraffering hör till den del bladet inte redovisar, precis som röret där: mängdaren
+    # räknar den inte (W-50-1-A-0013-bladet med pålbalken: ändpunkterna i skrafferingen räknades som stigare 75).
+    if hatch:
+        for book in (risers, label_risers):
+            for key in list(book):
+                book[key] = [r for r in book[key] if inside_hatch(hatch, *r["point"]) is None]
+                if not book[key]:
+                    del book[key]
     # var varje rör slutar, och varför: inget rör lämnar läsningen utan en kant med skäl
     frontiers = frontiers_of(page, graphs, ownership, risers)
     _by_pipe: dict[str, list[dict]] = defaultdict(list)

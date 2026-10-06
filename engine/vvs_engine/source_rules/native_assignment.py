@@ -629,6 +629,7 @@ def _twins_carry_one_size(graphs,states):
 
 
 LANDING_TOL=0.6
+LANDING_REACH=6.0     # pt: how far a landing may lie from the host node it is read at when none is closer
 STUB_PT=12.0          # a leader landing this close to where the pipe ends labels the pipe, not the stub past it
 STATS=Counter()
 GRAVITY_SYSTEM=__import__('re').compile(r'^(S|D)\d')       # spillvatten, dagvatten: runs laid to fall, VG printed
@@ -664,6 +665,14 @@ def _walk_gravity_runs(graphs,states,local_levels):
                         n=g.nodes[nid];d=math.hypot(n.x-x,n.y-y)
                         if d<=LANDING_TOL and (best is None or d<best[0]):
                             best=(d,nid)
+            if best is None:
+                # the two graphs may turn a corner a few points apart (S1-P2 sheet: the native landing of
+                # S1-P2-75 VG+1.66 lies 4.3 pt from the host's corner node); then the nearest node within reach
+                # is the landing, so the walk stops at that designation instead of running past it
+                for nid,n in g.nodes.items():
+                    d=math.hypot(n.x-x,n.y-y)
+                    if d<=LANDING_REACH and (best is None or d<best[0]):
+                        best=(d,nid)
             if best is not None:
                 landing.setdefault(best[1],[]).extend(hit)
         STATS['landings']+=len(landing)
