@@ -10,6 +10,9 @@ from .swedish import designation_text
 from .pipestudio import vvs
 
 
+MAX_LANDINGS = 2     # a host leader's contacts that land on more lines than this name none of them
+
+
 def supplement(native, anchors, identities, elevations):
     A, L, R = native['graph'], native['labels'], native['association']
     mapped = native.get('_host_paths', {})
@@ -121,6 +124,12 @@ def supplement(native, anchors, identities, elevations):
                 lands.append({'node':nid,'point':[node['x'],node['y']],'binds':True})
         lands = list({x['node']:x for x in lands}.values())
         if not lands:
+            rejected += 1
+            continue
+        if len(lands) > MAX_LANDINGS:
+            # a leader that crosses more lines than a pair is not telling which of them it names: on
+            # W-50-1-A-0122 the VS1-S13-12/W leaders cross the parallel supply and return pairs, five or six ticks
+            # each, and every crossing read as the branch's size laid on the 35 main
             rejected += 1
             continue
         existing = labels_by_text.get(designation_text(designation), set())
