@@ -84,10 +84,12 @@ def project(graphs, native, result, page, elevations, host_reading=None):
     # designation on it. Two separate readings agreeing on one name is the confirmation the tentative one lacked;
     # where the host names something else, or nothing, the piece stays tentative (below).
     filled=agreed=0;host=None
-    # Only a pen the native reading itself named pipe on is pipe to the host's fill and to the continuation below:
-    # the host reads pens by its own measure, and on V-50-1-666340-0112 - where every pipe is drawn thin and dashed -
-    # it landed a leader on the grey wall pen, and the name ran 20 m along the walls.
-    native_pens={fk for fk,family in states.items() if any(s.state!='UNOWNED' for s in family.values())}
+    # Grey or coloured ink is pipe to the host's fill and to the continuation below only where the native reading
+    # itself named pipe in that pen: the host reads pens by its own measure, and on V-50-1-666340-0112 - where every
+    # pipe is drawn thin, black and dashed - it landed a leader on the grey wall pen, and the name ran 20 m along the
+    # walls. Black pens the native reading missed stay open to the host (S4 pipes on a generic layer, A0311).
+    native_pens={fk for fk,family in states.items()
+                 if any(s.state!='UNOWNED' for s in family.values()) or not _grey_or_coloured(fk)}
     if host_reading is not None:
         host=host_reading(graphs).prim_states
         for fk,family in states.items():
@@ -271,6 +273,19 @@ def _direction_away(seg,x,y):
 
 
 STRAIGHT_COS=-0.985          # leaving a joint in opposite directions within about ten degrees: straight through
+
+
+def _grey_or_coloured(family_key):
+    """A pen family drawn in grey or in colour (its key ends c(r, g, b)): the building, or a note, on most sheets."""
+    import re
+    m=re.search(r'c\(([^)]*)\)',family_key or '')
+    if not m:
+        return False
+    try:
+        rgb=[float(v) for v in m.group(1).split(',')]
+    except ValueError:
+        return False
+    return bool(rgb) and max(rgb)>.25
 
 
 def _settle_unowned(graphs,states,set_aside,host,pens=None):

@@ -19,3 +19,4 @@ anthropic>=1.11,<2
 
 # Safe XML parsing for annotation import tooling.
 defusedxml>=0.7.1,<1
+google-genai>=1.30,<3

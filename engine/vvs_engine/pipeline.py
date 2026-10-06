@@ -2427,6 +2427,24 @@ def _generalize_families(page: RawPage, pipe_families: dict, graphs: dict, never
     return pipe_families, graphs
 
 
+def _text_layer_pipe_names(pa: PageAnalysis) -> dict[str, list]:
+    """{designation: [rect, ...]} for every pipe designation the page writes as text; empty without a text layer."""
+    from types import SimpleNamespace
+    from .source_rules.text_labels import text_designations
+    from .source_rules.swedish import designation_text
+    spans = getattr(getattr(pa, "page", None), "spans", None) or []
+    out: dict[str, list] = {}
+    try:
+        found = text_designations(SimpleNamespace(texts=spans))
+    except Exception:
+        return {}
+    for rect, d in found:
+        name = (designation_text(dict(d.__dict__)) or "").strip().upper()
+        if name:
+            out.setdefault(name, []).append([round(v, 1) for v in rect])
+    return out
+
+
 def reading_coverage(pa: PageAnalysis) -> dict[str, Any]:
     """How much of what the sheet names the reading actually carried through to a metre.
 
@@ -2442,6 +2460,12 @@ def reading_coverage(pa: PageAnalysis) -> dict[str, Any]:
     named = {(d.text or "").strip().upper() for d in pa.designations
              if pa.legend.names_a_pipe(d) and (d.text or "").upper() not in pa.legend.components()}
     named.discard("")
+    # A sheet whose lettering is text says itself which pipes it names: every designation it writes, the split form
+    # (code over a bare dimension) joined. That list, not the host's own parse of the lettering, is what the share
+    # is taken over: the host's parse counts fire classes and fittings (EI60, TV102) and the split form unjoined.
+    places = _text_layer_pipe_names(pa)
+    if places:
+        named = set(places)
     measured = {q["designation"].upper() for q in pa.quantities if (q.get("confirmed_total_m") or 0) > 0}
 
     def carried(name: str) -> bool:
@@ -2467,6 +2491,9 @@ def reading_coverage(pa: PageAnalysis) -> dict[str, Any]:
         "pipe_names": len(named), "pipe_names_with_metres": len(got),
         "share": round(len(got) / len(named), 3) if named else None,
         "without_metres": sorted(named - got)[:40],
+        "names_from": "text_layer" if places else "reading",
+        # where on the sheet each name without metres is written, so the reader can go and look
+        "missed": [{"name": n, "rects": places[n][:6]} for n in sorted(named - got)][:60] if places else [],
         "drawn_m": metres(ink["drawn_pt"]), "confirmed_m": metres(ink["confirmed_pt"]),
         "ambiguous_m": metres(ink["ambiguous_pt"]), "unowned_m": metres(ink["unowned_pt"]),
         "drawn_pt": round(ink["drawn_pt"], 2), "confirmed_pt": round(ink["confirmed_pt"], 2),
