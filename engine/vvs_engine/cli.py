@@ -103,7 +103,7 @@ def scale_of_the_set(sheets: list[dict]) -> tuple[float, list[int]] | None:
     not saying anything about the sheet that failed. Where nothing is agreed, nothing is lent.
     """
     settled = [(sh.get("page"), (sh.get("scale") or {}).get("meters_per_pt")) for sh in sheets
-               if (sh.get("scale") or {}).get("state") in ("VERIFIED", "TEXT_ONLY", "BAR_ONLY")]
+               if (sh.get("scale") or {}).get("state") in ("VERIFIED", "TEXT_ONLY", "BAR_ONLY", "DIMENSIONS_ONLY")]
     got = [(pg, v) for pg, v in settled if v]
     if len(got) < _R("cli.SET_SCALE_MIN", SET_SCALE_MIN):
         return None

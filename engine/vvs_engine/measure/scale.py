@@ -34,7 +34,7 @@ FORMAT_RE = re.compile(r"\bA([0-4])\b")
 
 @dataclass
 class ScaleEvidence:
-    kind: str                       # 'scale_text' | 'scale_bar'
+    kind: str                       # 'scale_text' | 'scale_bar' | 'dimensions'
     text: str
     bbox: list[float]
     value: float                    # meters per pdf point implied
@@ -136,6 +136,19 @@ def discover_scale(page: RawPage, lines: list[TextRow]) -> ScaleResult:
         return ScaleResult(bars[0].value, "page", "CONFLICT", ev, "scale_bar_disagrees_with_scale_text; bar (geometric) used")
     if bars:
         return ScaleResult(bars[0].value, "page", "BAR_ONLY", ev, "vector_scale_bar_only")
+    dims = _dimension_scale(page, lines) if not bars else None
+    if dims is not None:
+        ev.append(dims)
+        for t in texts:
+            r = _ratio_for_other_format(page, t)
+            for v, why in ((t.value, "scale_text_and_dimensions_agree"),
+                           (r[0] if r else None, "scale_text_for_other_format_rescaled_and_dimensions_agree")):
+                if v and abs(v / dims.value - 1) <= DIM_TOL:
+                    return ScaleResult(v, "page", "VERIFIED", ev, why)
+        if texts:
+            return ScaleResult(dims.value, "page", "CONFLICT", ev,
+                               f"dimensions_disagree_with_scale_text; dimensions used ({dims.detail['agreeing']} agree)")
+        return ScaleResult(dims.value, "page", "DIMENSIONS_ONLY", ev, "sheet_dimensions_only")
     if texts:
         vals = sorted({round(t.value, 9) for t in texts})
         # a scale bar whose numbers are too small to read is still drawn: its length in metres under a given
@@ -395,6 +408,74 @@ def _unit_beside(units: list[_Label], a: _Label, d, n, span_p: float) -> str | N
         if -0.5 - 6 * H <= t <= span_p + 6 * H:
             said.add(b.unit)
     return said.pop() if len(said) == 1 else None
+
+
+DIM_MIN_AGREE = 3          # dimensions that must agree before they say anything about the scale
+DIM_TOL = 0.02             # ...within this share of each other, and of a printed ratio they confirm
+
+
+def _crossed_at(segs, idx, end, angle, reach=1.0) -> bool:
+    """A short stroke across the line at this end: a dimension line's end mark."""
+    x, y = end
+    for i in idx.query((x - reach, y - reach, x + reach, y + reach)):
+        sg = segs[i]
+        if min(abs(sg.angle - angle), 180 - abs(sg.angle - angle)) < 30:
+            continue
+        if point_seg_distance(x, y, sg)[0] <= reach:
+            return True
+    return False
+
+
+def _dimension_scale(page: RawPage, lines: list[TextRow]) -> ScaleEvidence | None:
+    """The scale the sheet's own dimensioning implies: a length in millimetres written at the middle of a straight
+    line drawn parallel to it, the dimension line. Each gives metres per point; at least DIM_MIN_AGREE of them have
+    to agree within DIM_TOL, and they have to be most of what was found, or the dimensioning says nothing.
+
+    Installation plans rarely dimension anything (none of the eleven reference sheets does), so this mostly stays
+    silent; where a sheet does, it checks a printed ratio against the drawing's geometry the way a scale bar does."""
+    nums = [n for n in _numeric_words(lines) if n.unit in (None, "mm") and 300 <= n.value <= 99999
+            and n.value == int(n.value) and n.height > 0]
+    if len(nums) < DIM_MIN_AGREE:
+        return None
+    segs = [sg for p in page.paths if p.kind != "f" for sg in p.segs if sg.length >= 1.5]
+    idx = GridIndex(cell=80.0)
+    for i, sg in enumerate(segs):
+        idx.insert(i, (min(sg.x0, sg.x1), min(sg.y0, sg.y1), max(sg.x0, sg.x1), max(sg.y0, sg.y1)))
+    found = []
+    for n in nums:
+        d, nrm = row_axes(n.angle)
+        H = n.height
+        width = n.bbox[2] - n.bbox[0] if abs(math.sin(math.radians(n.angle))) < .5 else n.bbox[3] - n.bbox[1]
+        best = None
+        for i in idx.query(bbox_expand(n.bbox, 2.5 * H)):
+            sg = segs[i]
+            if min(abs(sg.angle - n.angle % 180), 180 - abs(sg.angle - n.angle % 180)) > 2.0:
+                continue
+            off = abs(project(sg.mid, nrm) - project((n.cx, n.cy), nrm))
+            if sg.length < 15.0 or not 0.2 * H <= off <= 2.0 * H or sg.length < 3 * width:
+                continue
+            along = abs(project(sg.mid, d) - project((n.cx, n.cy), d))
+            if along > 0.15 * sg.length:
+                continue
+            # a dimension line ends in a mark at both ends - a tick, a slash, an extension line - drawn across it;
+            # a pipe or a wall a number happens to sit beside does not
+            if not all(_crossed_at(segs, idx, end, sg.angle) for end in ((sg.x0, sg.y0), (sg.x1, sg.y1))):
+                continue
+            if best is None or along < best[0]:
+                best = (along, sg.length)
+        if best is not None:
+            found.append(n.value / 1000.0 / best[1])
+    if len(found) < DIM_MIN_AGREE:
+        return None
+    found.sort()
+    med = found[len(found) // 2]
+    agree = [v for v in found if abs(v / med - 1) <= DIM_TOL]
+    if len(agree) < DIM_MIN_AGREE or len(agree) < 0.6 * len(found):
+        return None
+    value = sum(agree) / len(agree)
+    return ScaleEvidence(kind="dimensions", text=f"{len(agree)} måttsättningar", bbox=[0.0, 0.0, 0.0, 0.0],
+                         value=value, detail={"agreeing": len(agree), "found": len(found),
+                                              "ratio": round(value / (MM_PER_PT / 1000.0), 1)})
 
 
 def _find_scale_bar(page: RawPage, lines: list[TextRow]) -> ScaleEvidence | None:

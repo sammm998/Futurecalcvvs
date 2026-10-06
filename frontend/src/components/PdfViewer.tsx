@@ -10,7 +10,11 @@ import { type Pt, type Snap, type SnapSettings, constrain, defaultSnaps, snapPoi
 import { frontierColor, frontierText } from "../frontier";
 import { InkIndex } from "../cad/pagesnap";
 
-export type Layer = "pipes" | "ambiguous" | "claimed" | "unowned" | "declined" | "designations" | "legend" | "leaders" | "anchors" | "inWall" | "frontiers";
+export type Layer = "pipes" | "ambiguous" | "claimed" | "unowned" | "declined" | "designations" | "legend" | "leaders" | "anchors" | "inWall" | "frontiers" | "confidence";
+
+/* Hur säker läsningen är på ett mätt rör: grönt en egen etikett, gult härlett ur ritningens logik, rött att granska. */
+const TIER_COLOR: Record<string, string> = { sure: "#16a34a", inferred: "#f59e0b", review: "#dc2626" };
+const TIER_TEXT: Record<string, string> = { sure: "säker – egen etikett", inferred: "härledd ur ritningens logik", review: "att granska" };
 export type EditKind = "extend" | "draw" | "erase" | null;
 
 /** What a finished edit gesture produced: the line drawn, and what it does to the measurement. */
@@ -946,11 +950,12 @@ const PdfViewer = forwardRef<ViewerHandle, ViewerProps>(function PdfViewer(props
                       strokeOpacity={dim ? 0.2 : 0.9} strokeLinecap="round" strokeLinejoin="round"
                       style={{ pointerEvents: "none" }} />
                     <polyline points={pts} fill="none"
-                      stroke={sel ? "#ff2d00" : pipeColor(p)} strokeWidth={sw(sel ? 5.5 : 4)}
+                      stroke={sel ? "#ff2d00" : props.layers.confidence && p.confidence_tier ? TIER_COLOR[p.confidence_tier] : pipeColor(p)} strokeWidth={sw(sel ? 5.5 : 4)}
                       strokeDasharray={p.needs_review ? `${sw(7)} ${sw(4)}` : undefined}
                       strokeOpacity={dim ? 0.2 : 1} strokeLinecap="round" strokeLinejoin="round"
                       style={{ pointerEvents: "none" }}>
-                      {p.needs_review && <title>{`${p.designation}: mätt på bästa läsningen – kontrollera på bladet`}</title>}
+                      {props.layers.confidence && p.confidence_tier ? <title>{`${p.designation}: ${TIER_TEXT[p.confidence_tier]}`}</title>
+                        : p.needs_review && <title>{`${p.designation}: mätt på bästa läsningen – kontrollera på bladet`}</title>}
                     </polyline>
                     {/* where a run starts and ends - a joint, a branch, a label's landing - a white ring in its
                         colour, so one run can be told from the next where they meet */}

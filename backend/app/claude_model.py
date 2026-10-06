@@ -63,8 +63,9 @@ def usd(model, tokens_in, tokens_out, cache_read, cache_write):
 
 
 class ClaudeTransport(AssignmentTransport):
-    def _send(self, system, overview, content):
+    def _send(self, system, overview, content, schema=None, key='decisions'):
         from vvs_engine.source_rules.pipestudio.final_bind import SCHEMA
+        schema = schema or SCHEMA
         import anthropic
         opening = _blocks(overview)
         if opening:
@@ -74,7 +75,7 @@ class ClaudeTransport(AssignmentTransport):
             system=[{'type': 'text', 'text': system, 'cache_control': {'type': 'ephemeral'}}],
             messages=[{'role': 'user', 'content': opening + _blocks(content)}],
             output_config={'effort': os.environ.get('VVS_CLAUDE_EFFORT', 'medium'),
-                           'format': {'type': 'json_schema', 'schema': _schema(SCHEMA)}},
+                           'format': {'type': 'json_schema', 'schema': _schema(schema)}},
             # a request a safety classifier declines is answered by Anthropic's recommended fallback model instead
             betas=['server-side-fallback-2026-07-01'], fallbacks='default')
         def produce():
@@ -84,7 +85,7 @@ class ClaudeTransport(AssignmentTransport):
             if response.stop_reason == 'max_tokens':
                 raise RuntimeError('Claude ran out of output tokens')
             text = next(b.text for b in response.content if b.type == 'text')
-            if not isinstance(json.loads(text).get('decisions'), list):
+            if not isinstance(json.loads(text).get(key), list):
                 raise ValueError('Invalid assignment response')
             return response
         try:
@@ -100,7 +101,7 @@ class ClaudeTransport(AssignmentTransport):
                   'tokens_out': tokens_out, 'cached_tokens': read, 'cache_write_tokens': written,
                   'usd': usd(self.model, tokens_in, tokens_out, read, written), 'request_reused': reused}
         text = next(b.text for b in response.content if b.type == 'text')
-        return json.loads(text)['decisions'], record
+        return json.loads(text)[key], record
 
 
 def transport(model=CLAUDE_MODEL):

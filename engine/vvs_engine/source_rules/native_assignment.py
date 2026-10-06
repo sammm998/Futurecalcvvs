@@ -67,7 +67,10 @@ def project(graphs, native, result, page, elevations, host_reading=None):
             state=PrimState();states[fk][pid]=state
             if not matches:continue
             identities={i for i,b in matches}
-            state.reason='pipestudio_native_assignment'
+            # how the name came: a label of its own, or the rules where the chosen model gave none (confidence.py)
+            rules={b.get('rule') for i,b in matches}
+            state.reason=('rules_where_model_abstained' if rules=={'rules_where_model_abstained'}
+                          else 'pipestudio_native_assignment')
             state.evidence=['authority:pipestudio-main','projection:original_pdf_ink']
             state.anchors={f"native_label_{b['label']}" for i,b in matches}
             if len(identities)==1 and all(b['confidence']!='low' for i,b in matches):
@@ -170,6 +173,11 @@ def project(graphs, native, result, page, elevations, host_reading=None):
                         pipe.elevation_anchor_ids.append(aid)
                         pipe.section_levels.append({'anchor_id':aid,'point':[n.x,n.y],'level':label['level']})
             pipes.append(pipe)
+    # what a reader would stop at: sizes and systems changing where runs simply meet (consistency.py)
+    from .consistency import check as consistency_check
+    landing_points=[(nodes[g['node']]['x'],nodes[g['node']]['y']) for ld in R['leaders']
+                    for g in ld.get('landings',[]) if g.get('node') in nodes]
+    result['consistency_flags']=consistency_check(graphs,pipes,landing_points)
     result.update(selected='combined', statuses={k:result[k]['status'] for k in ('dimension','model')},
         graph={'nodes':len(A['nodes']),'stretches':len(A['stretches']),'labels':len(L)},
         adapter={'geometry':'pipestudio_native_topology_original_pdf_ink','entry_detection':'pipestudio_assemble',
@@ -240,7 +248,19 @@ def analyze(graphs,native,page,ask,elevations,raw_page,host_reading=None):
                 if b.get('rule')=='astra_final':
                     b['rule']='rules_final'
                     b['reason']="Final pipe assignment by the drawing's own evidence (no AI model)"
-    return project(graphs,native,result,page,elevations,host_reading)
+    ownership,result=project(graphs,native,result,page,elevations,host_reading)
+    flags=result.get('consistency_flags') or []
+    if flags and ask is not by_rules and not result.get('model_fallback') and hasattr(ask,'review_flags'):
+        # the model looks at what the checks flagged and may dismiss a flag the drawing explains (consistency.py)
+        from .consistency import apply_review
+        before=len(getattr(ask,'usage',[]) or [])
+        try:
+            result['consistency_review']={'status':'COMPLETED','flags':len(flags),
+                'dismissed':apply_review(flags,ownership.pipes,ask.review_flags(flags[:60])),
+                'model':{'status':'COMPLETED','result':{'usage':list((getattr(ask,'usage',[]) or [])[before:])}}}
+        except Exception as exc:
+            result['consistency_review']={'status':'FAILED','reason':type(exc).__name__}
+    return ownership,result
 
 
 PEN_LAYER='(no CAD layer) pen '

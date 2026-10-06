@@ -44,7 +44,7 @@ const Drawing3DView = lazy(() => import("../components/Drawing3DView").catch((e)
 
 // why a label never got a line to follow, said the way a person reads a drawing
 
-const LAYER_LABELS: Record<Layer, string> = { pipes: "Mätta rör", ambiguous: "Tvetydigt", claimed: "Påpekad men onämnd", unowned: "Oidentifierat", declined: "Bortvald geometri", designations: "Beteckningar", legend: "Förklaringslistan", leaders: "CAD-leaders", anchors: "Anslutningar", inWall: "I vägg (räknas ej)", frontiers: "Var rören slutar" };
+const LAYER_LABELS: Record<Layer, string> = { pipes: "Mätta rör", ambiguous: "Tvetydigt", claimed: "Påpekad men onämnd", unowned: "Oidentifierat", declined: "Bortvald geometri", designations: "Beteckningar", legend: "Förklaringslistan", leaders: "CAD-leaders", anchors: "Anslutningar", inWall: "I vägg (räknas ej)", frontiers: "Var rören slutar", confidence: "Säkerhet (grön/gul/röd)" };
 const LAYER_HINTS: Record<Layer, string> = {
   pipes: "Sträckor som fått en identitet och en längd, en färg per beteckning",
   ambiguous: "Ritad linje som kunde tillhöra mer än en beteckning — mäts inte",
@@ -55,6 +55,7 @@ const LAYER_HINTS: Record<Layer, string> = {
   legend: "Varje beteckning färgad efter vad handlingens förklaringslista säger att koden är: grönt rörsystem, orange komponent, grått material — och magenta streckat för en kod som inte står i listan alls. Listans egen ruta markeras där den står på bladet.",
   leaders: "Hänvisningslinjerna som ritningen drar från etikett till rör",
   anchors: "Där en beteckning faktiskt möter sitt rör",
+  confidence: "Färgar varje mätt rör efter hur säker läsningen är: grönt där en egen etikett namnger röret, gult där namnet är härlett ur ritningens logik (fortsätter från ett namngivet rör, självfallsledningens nivåer, värdläsningen), rött där det ska granskas (osäker läsning, namn från AI:ns kontroll eller en flagga från logikkontrollen).",
   frontiers: "Varje kant på varje mätt rör, med skälet: grönt där röret slutar på rätt ställe (annan dimension, annat system, stigare, komponent, bladets kant), rött där läsningen sannolikt tappar meter (samma penna fortsätter utan namn, ett gap som inte överbryggades, byte av penna), orange där något lämnats öppet (tvetydig korsning). Det valda röret visar alltid sina kanter. Inget rör slutar tyst.",
   inWall: "Rör i vägg ritas alltid i det ej räknades färg — längden ligger utanför den horisontella mängden. Etiketter, hänvisningslinjer och anslutningar över en skrafferad yta ritas blekt; det här lagret lyfter fram dem. Ingenting läsningen hittade göms.",
 };
@@ -162,7 +163,7 @@ export default function AnalysisPage() {
   // The sheet opens showing what was measured. Ink the reading accepted as pipe but no label reached is a real
   // finding and has its own switch - shown first it reads as a fault, and a grey tangle over a good reading is
   // the fastest way to make a correct answer look wrong.
-  const [layers, setLayers] = useState<Record<Layer, boolean>>({ pipes: true, ambiguous: true, claimed: true, unowned: false, declined: false, designations: false, legend: false, leaders: false, anchors: false, inWall: false, frontiers: false });
+  const [layers, setLayers] = useState<Record<Layer, boolean>>({ pipes: true, ambiguous: true, claimed: true, unowned: false, declined: false, designations: false, legend: false, leaders: false, anchors: false, inWall: false, frontiers: false, confidence: false });
   // which bortvald family the reader is pointing at, so the sheet can show that ink and not all of it at once
   const selDeclined: string | null = null;
   const [layersOpen, setLayersOpen] = useState(false);
@@ -675,6 +676,30 @@ export default function AnalysisPage() {
                 </div>
               </details>
             )}
+            {(() => {
+              const flags = (result.source_assignment?.consistency_flags ?? []).filter((f: any) => f.model_verdict !== "dismiss");
+              if (!flags.length) return null;
+              const FLAG_TEXT: Record<string, string> = {
+                dimension_change_without_fitting: "dimensionen byts där två rör möts, utan etikett eller reducering",
+                system_change_along_run: "systemet byts längs samma stråk, utan etikett",
+                named_without_dimension: "rör med namn men utan dimension",
+              };
+              return (
+                <details className="settings">
+                  <summary>{tr("Logikkontroll: att granska")} · {flags.length}</summary>
+                  <div className="body">
+                    {flags.slice(0, 80).map((f: any, i: number) => (
+                      <div key={i} className="small">
+                        <button className="link small" disabled={!f.at} onClick={() => {
+                          if (f.at) viewer.current?.zoomTo([f.at[0] - 60, f.at[1] - 60, f.at[0] + 60, f.at[1] + 60]);
+                        }}>{(f.designations ?? []).join(" → ")}</button>
+                        {" "}<span className="muted">{tr(FLAG_TEXT[f.flag] ?? f.flag)}{f.model_verdict === "confirm" ? ` · ${tr("AI bekräftar")}: ${f.model_reason}` : ""}</span>
+                      </div>
+                    ))}
+                  </div>
+                </details>
+              );
+            })()}
             {staff && c.unowned_outside_hatch_m != null && <p className="muted small">
               {tr("Oidentifierad rörgeometri utanför skrafferade områden")}: {c.unowned_outside_hatch_m} m.
               {" "}{tr("Oidentifierad rörgeometri inom skrafferade områden")}: {c.unowned_in_hatch_m} m.
@@ -908,6 +933,8 @@ export default function AnalysisPage() {
             <h4>Export</h4>
             <div className="row">
               <button onClick={() => dl(api.exportUrl(id!, "pdf"), "markerad.pdf")}>{tr("Markerad PDF")}</button>
+              <button onClick={() => dl(api.exportUrl(id!, "control"), "kontroll.pdf")}
+                title={tr("Varje mätt rör i grönt (egen etikett), gult (härlett) eller rött (att granska), med beteckning och meter")}>{tr("Kontrollritning")}</button>
               <button onClick={() => dl(api.exportUrl(id!, "xlsx") + (exportQuery ? `?${exportQuery}` : ""), "mangder.xlsx")}>Excel</button>
               <button onClick={() => dl(api.exportUrl(id!, "csv") + (exportQuery ? `?${exportQuery}` : ""), "mangder.csv")}>CSV</button>
               <button onClick={() => dl(api.exportUrl(id!, "json"), "quantities.json")}>JSON</button>

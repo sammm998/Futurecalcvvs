@@ -8,6 +8,7 @@ from typing import Any
 import math
 
 from ..pipes.ownership import OwnershipResult, PhysicalPipe, DECLARED_REASON
+from ..pipes.confidence import tier, REVIEW, INFERRED
 from .scale import ScaleResult
 
 # A pipe of some size is drawn as two lines - its two edges - a few points apart, and a label with a tick on
@@ -186,7 +187,7 @@ class PipeMeasure:
 # Vad bladet självt har avgjort om sin storlek. En meter mätt under något annat är ett förslag: den redovisas
 # med sitt tal, för den som granskar behöver se vad stocken gav, men den får inte heta bekräftad. Skillnaden
 # mellan de två är hela skillnaden mellan ett mått och en gissning på tusen gånger fel.
-SETTLED_SCALE = ("VERIFIED", "TEXT_ONLY", "BAR_ONLY")
+SETTLED_SCALE = ("VERIFIED", "TEXT_ONLY", "BAR_ONLY", "DIMENSIONS_ONLY")
 UNSETTLED_ROW_STATE = {"CONFLICT": "SCALE_UNSETTLED", "FROM_THE_SET": "SCALE_FROM_THE_SET",
                        "GIVEN_BY_HAND": "SCALE_GIVEN_BY_HAND"}
 HATCHED_ONLY = "IN_HATCHED_AREA"        # hela stråket ligger inne i en skraffering: ritat, men inte det här bladets
@@ -205,7 +206,7 @@ def measure_pipes(own: OwnershipResult, scale: ScaleResult, elevations: dict[str
     hatched_pt: physical_pipe_id -> length (pdf units) of the pipe inside hatched areas."""
     out: list[PipeMeasure] = []
     mpp = scale.meters_per_pt if scale.state in ("VERIFIED", "TEXT_ONLY", "BAR_ONLY", "CONFLICT", "FROM_THE_SET",
-                                                "GIVEN_BY_HAND") and scale.meters_per_pt else None
+                                                "GIVEN_BY_HAND", "DIMENSIONS_ONLY") and scale.meters_per_pt else None
     # A sheet whose scale evidence disagrees still gets measured - the geometric bar is the better witness and
     # the reason for choosing it is recorded - but every metre that comes out of it carries the conflict, so no
     # single run can be read as confidently measured when the sheet's own scale is unsettled.
@@ -311,8 +312,11 @@ def aggregate(measures: list[PipeMeasure], ambiguous_pt: dict[str, float], mpp: 
         if m.horizontal_m is not None:
             r["confirmed_horizontal_m"] += m.horizontal_m
             r["confirmed_total_m"] += m.horizontal_m
-            if getattr(m.pipe, "needs_review", False):
+            level = tier(m.pipe.evidence, bool(getattr(m.pipe, "needs_review", False)), getattr(m.pipe, "flags", ()))
+            if level == REVIEW:
                 r["review_m"] += m.horizontal_m     # counted, and marked: the best reading, not a confirmed one
+            elif level == INFERRED:
+                r["inferred_m"] = r.get("inferred_m", 0.0) + m.horizontal_m   # named by the drawing's logic
             r["in_hatched_area_m"] += m.hatched_m or 0.0      # excluded from the horizontal quantity
             r["hatched_only_pipes"] = r.get("hatched_only_pipes", 0) + (1 if m.state == HATCHED_ONLY else 0)
             if m.state in UNSETTLED_ROW_STATE.values() and r["state"] == "CONFIRMED":
@@ -358,6 +362,7 @@ def aggregate(measures: list[PipeMeasure], ambiguous_pt: dict[str, float], mpp: 
         r.setdefault("double_line_m", 0.0)
         r.setdefault("ambiguous_pdf_units", 0.0)
         r.setdefault("review_m", 0.0)
+        r.setdefault("inferred_m", 0.0)
         if r["physical_pipe_count"] == 0 and r["ambiguous_pdf_units"] == 0 \
                 and max(r["riser_count"], r["riser_count_from_labels"]) > 0:
             r["state"] = "RISER_LABELS_ONLY"
@@ -367,7 +372,8 @@ def aggregate(measures: list[PipeMeasure], ambiguous_pt: dict[str, float], mpp: 
             r["state"] = HATCHED_ONLY
         r.pop("hatched_only_pipes", None)
         for f in ("confirmed_horizontal_m", "confirmed_vertical_m", "confirmed_total_m", "ambiguous_m",
-                  "horizontal_pdf_units", "in_hatched_area_m", "ambiguous_pdf_units", "double_line_m", "review_m"):
+                  "horizontal_pdf_units", "in_hatched_area_m", "ambiguous_pdf_units", "double_line_m", "review_m",
+                  "inferred_m"):
             r[f] = round(r[f], 3)
         r["vertical_m"] = r["confirmed_vertical_m"] if r["vertical_known"] else "UNKNOWN"
         h = slab_riser_height(r)
@@ -379,7 +385,7 @@ def aggregate(measures: list[PipeMeasure], ambiguous_pt: dict[str, float], mpp: 
 
 VENT_MARK = "-(L)"
 VENT_SUMS = ("physical_pipe_count", "confirmed_horizontal_m", "confirmed_vertical_m", "confirmed_total_m", "horizontal_pdf_units",
-             "ambiguous_m", "review_m", "in_hatched_area_m", "declared_m", "double_line_m", "ambiguous_pdf_units")
+             "ambiguous_m", "review_m", "inferred_m", "in_hatched_area_m", "declared_m", "double_line_m", "ambiguous_pdf_units")
 
 
 def _fold_vent_rows(rows: dict[str, dict[str, Any]]) -> None:
