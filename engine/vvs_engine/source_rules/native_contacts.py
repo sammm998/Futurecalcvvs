@@ -10,7 +10,7 @@ from .swedish import designation_text
 from .pipestudio import vvs
 
 
-MAX_LANDINGS = 2     # a host leader's contacts that land on more lines than this name none of them
+MAX_LANDINGS = 2     # a host leader's contacts that land on more lines than this (or its count, 3x) name none
 
 
 def supplement(native, anchors, identities, elevations):
@@ -126,7 +126,7 @@ def supplement(native, anchors, identities, elevations):
         if not lands:
             rejected += 1
             continue
-        if len(lands) > MAX_LANDINGS:
+        if len(lands) > max(MAX_LANDINGS, anchor.multiplier or 1):
             # a leader that crosses more lines than a pair is not telling which of them it names: on
             # W-50-1-A-0122 the VS1-S13-12/W leaders cross the parallel supply and return pairs, five or six ticks
             # each, and every crossing read as the branch's size laid on the 35 main
