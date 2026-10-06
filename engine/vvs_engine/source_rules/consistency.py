@@ -36,6 +36,10 @@ def _line(identity):
     return re.sub(r'-W$', '', identity.base or '')
 
 
+def _system(identity):
+    return getattr(identity, 'system', None) or (identity.base or '').split('-')[0]
+
+
 def check(graphs, pipes, landings) -> list[dict]:
     """Flags on `pipes` (each gets .flags appended) and the list of them. `landings` are the (x, y) points where
     a label's leader lands."""
@@ -66,6 +70,8 @@ def check(graphs, pipes, landings) -> list[dict]:
             same_line = _line(a.identity) == _line(b.identity)
             if same_line and a.identity.dn == b.identity.dn:
                 continue
+            if not same_line and _system(a.identity) == _system(b.identity):
+                continue          # one system, another material or kind of pipe: a connection, not a reading error
             if labelled(n.x, n.y):
                 continue
             kind = 'dimension_change_without_fitting' if same_line else 'system_change_along_run'
