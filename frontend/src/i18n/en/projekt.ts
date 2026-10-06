@@ -164,6 +164,7 @@ export const projekt: Record<string, string> = {
   "Utan AI": "No AI",
   "Inte ansluten på servern": "Not connected on the server",
   "Läst med": "Read with",
+  "Beteckningar som ritningen skriver men som inte fick meter": "Designations the drawing writes that got no metres",
   "kontroll av missade": "check for missed labels",
   "rör namngivna, att granska": "pipes named, to review",
   "anrop": "requests",

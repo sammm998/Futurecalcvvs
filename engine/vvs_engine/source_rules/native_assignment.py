@@ -84,9 +84,15 @@ def project(graphs, native, result, page, elevations, host_reading=None):
     # designation on it. Two separate readings agreeing on one name is the confirmation the tentative one lacked;
     # where the host names something else, or nothing, the piece stays tentative (below).
     filled=agreed=0;host=None
+    # Only a pen the native reading itself named pipe on is pipe to the host's fill and to the continuation below:
+    # the host reads pens by its own measure, and on V-50-1-666340-0112 - where every pipe is drawn thin and dashed -
+    # it landed a leader on the grey wall pen, and the name ran 20 m along the walls.
+    native_pens={fk for fk,family in states.items() if any(s.state!='UNOWNED' for s in family.values())}
     if host_reading is not None:
         host=host_reading(graphs).prim_states
         for fk,family in states.items():
+            if fk not in native_pens:
+                continue
             for pid,state in family.items():
                 if (fk,pid) in set_aside:
                     continue
@@ -127,7 +133,7 @@ def project(graphs, native, result, page, elevations, host_reading=None):
     # same one; where it joins two different pipes it is a junction the drawing does not settle, and it stays
     # unnamed. Only ink in the same pen counts as joined: across pens, on the reference sheets, it mostly reached
     # walls and fittings. Measured there, the same-pen pieces were named right on all of their length.
-    continued=_settle_unowned(graphs,states,set_aside,host if host_reading is not None else None)
+    continued=_settle_unowned(graphs,states,set_aside,host if host_reading is not None else None,native_pens)
     landed=_landed_labels(graphs,A,R,labels)
     continued['same_line_larger_on_both_sides']=_undo_a_smaller_size_between_larger(graphs,states,landed)
     continued['connection_piece_is_only_the_end']=_a_connection_piece_is_only_the_end(graphs,states,landed)
@@ -204,6 +210,23 @@ def analyze(graphs,native,page,ask,elevations,raw_page,host_reading=None):
         why=(result['combined'].get('result') or {}).get('failure_reason') or result['combined'].get('reason')
         raise RuntimeError('Native combined assignment failed: '+result['combined']['status']+(f' ({why})' if why else ''))
     if ask is not by_rules and not result.get('model_fallback'):
+        # A model never reads less than the drawing's own evidence does: a stretch it left without a name, where the
+        # rules name it from the sheet's leaders and runs, takes the rules' name (marked as the rules' answer).
+        from copy import deepcopy
+        rules=run(deepcopy(graph),deepcopy(native['labels']),deepcopy(native['association']),deepcopy(native['style']),
+                  mode='combined',ask=by_rules)
+        final=result['combined'].get('result') or {}
+        mine=final.setdefault('bindings',[])
+        have={b['stretch'] for b in mine}
+        nxt=max([b.get('id',-1) for b in mine]+[-1])+1
+        added=0
+        for b in (rules['combined'].get('result') or {}).get('bindings',[]):
+            if b['stretch'] in have:
+                continue
+            mine.append(dict(b,id=nxt,rule='rules_where_model_abstained',
+                             reason="Named by the drawing's own evidence where the model gave no name"))
+            nxt+=1;added+=1
+        result['rules_where_model_abstained']=added
         # the model also looks for labels the reading missed and the unnamed pipe near them (completeness_check.py)
         from .completeness_check import check
         result['completeness']=check(graph,native['association'],native['labels'],result,ask,
@@ -250,7 +273,7 @@ def _direction_away(seg,x,y):
 STRAIGHT_COS=-0.985          # leaving a joint in opposite directions within about ten degrees: straight through
 
 
-def _settle_unowned(graphs,states,set_aside,host):
+def _settle_unowned(graphs,states,set_aside,host,pens=None):
     """Give drawn pipe no label reached the name the drawing gives it, and guess where the drawing makes it plain.
 
     Rules, in the order they are trusted, repeated until nothing changes - a piece named by one can let the next
@@ -268,6 +291,8 @@ def _settle_unowned(graphs,states,set_aside,host):
     """
     counts={'continues_the_connected_pipe':0,'host_reading_single_candidate':0,'straight_through_the_junction':0}
     for fk,g in graphs.items():
+        if pens is not None and fk not in pens:
+            continue
         family=states[fk]
         partner=defaultdict(set)
         for br in g.bridges or []:
