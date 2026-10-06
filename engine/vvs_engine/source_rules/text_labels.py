@@ -59,6 +59,51 @@ def text_designations(ex, text_height=11.0):
     return out
 
 
+def _joined_rows(rows):
+    """The rows with each split form joined: VV1-K1/S3 over a bare 22 is VV1-K1-22/S3."""
+    from .pipestudio.vvs import parse_designation
+    out, i = [], 0
+    while i < len(rows):
+        row = rows[i].strip()
+        nxt = rows[i + 1].strip() if i + 1 < len(rows) else ''
+        p = parse_designation(row, allow_partial=True) if '/' in row and ' ' not in row else None
+        if p and p.recognised and p.dimension is None and p.middle and DIM_ONLY.match(nxt):
+            base, _, suffix = row.partition('/')
+            joined = base + '-' + nxt + '/' + suffix
+            d = parse_designation(joined)
+            if d and d.recognised and _pipe_shaped(d):
+                out.append(joined); i += 2
+                continue
+        out.append(row); i += 1
+    return out
+
+
+def rejoin(labels):
+    """Labels whose split form with a suffix was read as no designation, read again with the form joined.
+
+    The reading joins a code and the bare dimension under it (VV1-X32 over 16), but not when the code carries
+    a suffix: VV1-K1/S3 over 22 read as nothing (V-50-1-666339-0123: three risers on one shelf, KV1-K1/S2,
+    VVC1-X3/S3 and VV1-K1/S3 over 22, 16 and 22, and VS2-S13/S4 over 35). Returns (labels, number rejoined)."""
+    from vectorascore import vvs
+    from vectorascore.labels import label_valid
+    n = 0
+    for l in labels:
+        if l.get('designations'):
+            continue
+        rows = [t for t in (l.get('text') or '').split('\n') if t.strip()]
+        joined = _joined_rows(rows)
+        if joined == rows:
+            continue
+        des, level, unknown = vvs.parse_block(joined)
+        des = [vvs.sanitize_dimension(d) for d in des]
+        if not des:
+            continue
+        l.update(designations=des, level=level, unknown_rows=unknown, valid=label_valid(des, l.get('score')),
+                 usable=any(d.get('dimension') for d in des), rejoined=joined)
+        n += 1
+    return labels, n
+
+
 def recover(pdf_path, page_no, det, labels, ex, read_labels, text_height=11.0):
     """(det, labels, report) with a label added for every text designation no label carries."""
     have = [(l.get('rect') or [0, 0, 0, 0], {_key(d) for d in l.get('designations', [])}) for l in labels]
@@ -74,7 +119,7 @@ def recover(pdf_path, page_no, det, labels, ex, read_labels, text_height=11.0):
         return det, labels, {'recovered': 0}
     nxt = max([b['id'] for b in det.get('label_boxes', [])] + [l['id'] for l in labels] + [-1]) + 1
     boxes = [{'id': nxt + i, 'rect': r, 'score': 1.0, 'src': 'text_recovered'} for i, r in enumerate(missing)]
-    read = [l for l in read_labels(pdf_path, {**det, 'label_boxes': boxes}, page_no=page_no)
+    read = [l for l in rejoin(read_labels(pdf_path, {**det, 'label_boxes': boxes}, page_no=page_no))[0]
             if any(d.get('middle') and any(re.search(r'[A-ZÅÄÖ]', m or '') for m in d['middle'])
                    for d in l.get('designations', []))]
     kept = {l['id'] for l in read}

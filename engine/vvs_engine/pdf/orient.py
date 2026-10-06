@@ -72,7 +72,11 @@ def text_turn(pdf_path: str, pno: int):
     import re
     from collections import Counter
     pattern = re.compile(r'[A-ZÅÄÖ]{1,4}\d*-[A-ZÅÄÖ]{1,3}\d')
-    with pymupdf.open(pdf_path) as doc:
+    try:
+        doc = pymupdf.open(pdf_path)
+    except (pymupdf.FileNotFoundError, pymupdf.FileDataError, RuntimeError):
+        return None
+    with doc:
         page = doc[pno]
         dirs = Counter()
         for block in page.get_text('dict').get('blocks', []):

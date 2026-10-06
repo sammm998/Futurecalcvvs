@@ -109,6 +109,43 @@ def landed_policy(ex, B, extra_pipe_widths=()):
                        'leader_pen': leader_w, 'method': C.get('family_method')}}
 
 
+def kept_policy(ex, B, extra_pipe_width, leader_width):
+    """The first reading's own pens as a stroke policy, with the dashed strokes filed apart read as pipe ink.
+
+    For a sheet where the leaders contradict nothing - its pipe pen stands - but some pipes are drawn dashed in the
+    leader pen (V-50-1-666340-0111: the only pipes on the sheet are KV2-E13-25/SRN, dashed 0.48 pt, and its four
+    leaders end on them). Every other family keeps the role most of its ink had in the first reading."""
+    from studio.style_vision import inventory
+    from vectorascore.geom import path_length
+    C = B.get('calibration') or {}
+    unit = C.get('u_paper') or 1.0
+    buckets = B.get('buckets') or {}
+    families = []
+    for f in inventory(ex, unit):
+        k = f['key']
+        black = not k['color'] or max(k['color']) <= .25
+        if abs(k['width'] - extra_pipe_width / unit) <= .005 and black:
+            role = 'pipe'
+        else:
+            ink = {}
+            for p in f['paths']:
+                b = buckets.get(str(p.id), buckets.get(p.id))
+                ink[b] = ink.get(b, 0.0) + path_length(p.items)
+            top = max(ink, key=ink.get) if ink else None
+            if top == 'pipe':
+                role = 'pipe'
+            elif leader_width is not None and abs(k['width'] - leader_width / unit) <= .015 and black:
+                role = 'leader'
+            elif top in ('architecture', 'unknown'):
+                role = top
+            else:
+                role = 'symbol'
+        families.append({'key': k, 'role': role})
+    return {'policy': {'families': families},
+            'report': {'chosen_pipe_widths': sorted(C.get('pipe_widths') or []), 'dashed_pipe_pen': extra_pipe_width,
+                       'leader_pen': leader_width, 'method': C.get('family_method')}}
+
+
 def detect_page(pdf_path, page_number=0, style=None, progress=None, artifact_dir=None, strict_original=False):
     import pymupdf
     from ..pdf.extract import _inventory_annotations, _set_markup_aside
@@ -170,9 +207,10 @@ def detect_page(pdf_path, page_number=0, style=None, progress=None, artifact_dir
             with pymupdf.open(clean) as text_doc:
                 rotated_repairs = repair(text_doc[page_number], L)
         shelves = {'widened': 0}
-        recovered = {'recovered': 0}
+        recovered, rejoined = {'recovered': 0}, 0
         if not strict_original:
-            from .text_labels import recover
+            from .text_labels import recover, rejoin
+            L, rejoined = rejoin(L)
             det, L, recovered = recover(clean, page_number, det, L, ex, labels.read_labels,
                                         style_module.text_height(ex)[0])
             from .label_shelves import extend_to_shelves
@@ -210,10 +248,12 @@ def detect_page(pdf_path, page_number=0, style=None, progress=None, artifact_dir
         B, A, L, R = stage('vector_stages', lambda: vector_stages(ex, P, det, read, selected, mode='auto'))
         landed = None if selected.get('stroke_policy') is not None else landed_policy(ex, B)
         dashed = {'pipes': 0}
-        if landed is not None and landed['report'].get('leader_pen'):
+        first_leader_pen = (B.get('calibration') or {}).get('leader_width')
+        pen = landed['report'].get('leader_pen') if landed is not None else (
+            None if selected.get('stroke_policy') is not None or not first_leader_pen else round(first_leader_pen, 3))
+        if pen:
             # pipes drawn dashed in the leader pen, which the sheet's own leaders point at (dashed_pipes.py)
             from .dashed_pipes import dashed_paths, leaders_ending_on, file_apart
-            pen = landed['report']['leader_pen']
             ids = dashed_paths(ex, pen)
             hits = leaders_ending_on(ex, ids, [b['rect'] for b in det.get('label_boxes', [])], pen)
             dashed = {'pipes': len(ids), 'leaders_on_them': hits}
@@ -222,6 +262,8 @@ def detect_page(pdf_path, page_number=0, style=None, progress=None, artifact_dir
                 again = landed_policy(ex, B, extra_pipe_widths=(apart,))
                 if again is not None:
                     landed = again
+                elif landed is None:
+                    landed = kept_policy(ex, B, apart, pen)
                 dashed['pen'] = apart
         if landed is not None:
             # the matched style was contradicted by the sheet: none of its measures is taken, only the sheet's own
@@ -242,7 +284,7 @@ def detect_page(pdf_path, page_number=0, style=None, progress=None, artifact_dir
                 'association': R, 'timings': timings, 'style': selected, 'style_match': match,
                 'unparsed_labels': unparsed, 'strict_original': strict_original,
                 'rotated_text_repairs': rotated_repairs, 'boxed_leaders': boxed, 'label_shelves': shelves,
-                'dashed_pipes': dashed, 'text_labels': recovered,
+                'dashed_pipes': dashed, 'text_labels': dict(recovered, rejoined=rejoined),
                 'label_ids_from': renumbered, 'declared_systems': declared,
                 'annotations_used': False, 'expert_overrides_used': False}
 
