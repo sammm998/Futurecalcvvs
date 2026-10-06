@@ -164,6 +164,8 @@ export const projekt: Record<string, string> = {
   "Utan AI": "No AI",
   "Inte ansluten på servern": "Not connected on the server",
   "Läst med": "Read with",
+  "Kontrollritning": "Control drawing",
+  "Varje mätt rör i grönt (egen etikett), gult (härlett) eller rött (att granska), med beteckning och meter": "Every measured pipe in green (own label), yellow (inferred) or red (to review), with designation and metres",
   "OpenAI:s billigare modell avgör de rör där beläggen ger flera möjliga beteckningar.": "OpenAI's cheaper model decides the pipes where the evidence allows several designations.",
   "Googles senaste Pro-modell avgör de rör där beläggen ger flera möjliga beteckningar.": "Google's latest Pro model decides the pipes where the evidence allows several designations.",
   "Beteckningar som ritningen skriver men som inte fick meter": "Designations the drawing writes that got no metres",

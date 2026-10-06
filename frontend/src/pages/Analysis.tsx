@@ -909,6 +909,8 @@ export default function AnalysisPage() {
             <h4>Export</h4>
             <div className="row">
               <button onClick={() => dl(api.exportUrl(id!, "pdf"), "markerad.pdf")}>{tr("Markerad PDF")}</button>
+              <button onClick={() => dl(api.exportUrl(id!, "control"), "kontroll.pdf")}
+                title={tr("Varje mätt rör i grönt (egen etikett), gult (härlett) eller rött (att granska), med beteckning och meter")}>{tr("Kontrollritning")}</button>
               <button onClick={() => dl(api.exportUrl(id!, "xlsx") + (exportQuery ? `?${exportQuery}` : ""), "mangder.xlsx")}>Excel</button>
               <button onClick={() => dl(api.exportUrl(id!, "csv") + (exportQuery ? `?${exportQuery}` : ""), "mangder.csv")}>CSV</button>
               <button onClick={() => dl(api.exportUrl(id!, "json"), "quantities.json")}>JSON</button>

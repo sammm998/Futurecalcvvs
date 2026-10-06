@@ -153,6 +153,9 @@ export default function QuantityTable({ rows, selected, onSelect, floorHeight, i
                     those runs on the sheet (they are drawn broken, on an amber halo) */}
                 {!noScale && (r.review_m ?? 0) > 0.005 && (
                   <span className="assumed" title={`${Number(r.review_m).toFixed(2)} m är mätta på bästa läsningen och bör kontrolleras på bladet. De visas streckade med gul kant.`}> varav {Number(r.review_m).toFixed(1)} att granska</span>
+                )}
+                {!noScale && (r.inferred_m ?? 0) > 0.005 && (
+                  <span className="assumed" title={`${Number(r.inferred_m).toFixed(2)} m har sitt namn härlett ur ritningens logik (fortsätter från ett namngivet rör, självfallsledningens nivåer, värdläsningen) snarare än från en egen etikett. Lagret Säkerhet visar dem gula.`}> · {Number(r.inferred_m).toFixed(1)} härlett</span>
                 )}</td>
               <td className="num">{!noScale && r.ambiguous_m > 0 ? r.ambiguous_m.toFixed(2) : "–"}</td>
               <td className="num">{!noScale && (r.in_hatched_area_m ?? 0) > 0 ? Number(r.in_hatched_area_m).toFixed(2) : "–"}</td>

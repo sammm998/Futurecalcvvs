@@ -96,6 +96,7 @@ class PhysicalPipe:
     section_levels: list[dict] = field(default_factory=list)
     elevation_anchor_ids: list[str] | None = None
     needs_review: bool = False                # measured on a tentative reading; the person checks it on the sheet
+    flags: list = field(default_factory=list)  # consistency checks this run fails (source_rules/consistency.py)
 
     @property
     def length_pt(self) -> float:

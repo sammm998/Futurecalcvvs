@@ -67,7 +67,10 @@ def project(graphs, native, result, page, elevations, host_reading=None):
             state=PrimState();states[fk][pid]=state
             if not matches:continue
             identities={i for i,b in matches}
-            state.reason='pipestudio_native_assignment'
+            # how the name came: a label of its own, or the rules where the chosen model gave none (confidence.py)
+            rules={b.get('rule') for i,b in matches}
+            state.reason=('rules_where_model_abstained' if rules=={'rules_where_model_abstained'}
+                          else 'pipestudio_native_assignment')
             state.evidence=['authority:pipestudio-main','projection:original_pdf_ink']
             state.anchors={f"native_label_{b['label']}" for i,b in matches}
             if len(identities)==1 and all(b['confidence']!='low' for i,b in matches):

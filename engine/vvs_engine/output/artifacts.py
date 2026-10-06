@@ -16,6 +16,7 @@ from ..profile.layers import layer_tokens
 from ..pipeline import reading_coverage
 from ..measure.measure import SETTLED_SCALE
 from ..semantics.leaders import leader_family_report
+from ..pipes.confidence import tier
 
 
 def _dump(path: str, obj: Any) -> None:
@@ -708,6 +709,8 @@ def physical_pipe_dict(m) -> dict[str, Any]:
             "total_m": None if m.total_m is None else round(m.total_m, 3), "evidence_state": m.state, "evidence": p.evidence,
             "in_hatched_area_m": None if m.hatched_m is None else round(m.hatched_m, 3),
             "ambiguity_reason": None, "reasons": m.reasons, "needs_review": bool(getattr(p, "needs_review", False)),
+            "confidence_tier": tier(p.evidence, bool(getattr(p, "needs_review", False)), getattr(p, "flags", ())),
+            "flags": list(getattr(p, "flags", ()) or ()),
             "frontier_reasons": list(p.frontier_reasons), "frontiers": list(getattr(p, "frontiers", []) or [])}
 
 

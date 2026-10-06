@@ -1430,6 +1430,11 @@ def export(job_id: str, fmt: str, floor_height: float | None = None, include_hat
         return FileResponse(os.path.join(rd, "analysis-report.md"), media_type="text/markdown", filename=f"{base}-analysrapport.md")
     if fmt == "pdf":
         return FileResponse(os.path.join(rd, "production-overlay.pdf"), media_type="application/pdf", filename=f"{base}-markerad.pdf")
+    if fmt == "control":
+        # the sheet with every run in how sure the reading is of it: green, yellow, red (control_pdf.py)
+        from .control_pdf import render
+        return Response(render(storage.path(j.drawing.storage_key), rd), media_type="application/pdf",
+                        headers=_attachment(f"{base}-kontroll.pdf"))
     raise HTTPException(404, "Okänt exportformat")
 
 
