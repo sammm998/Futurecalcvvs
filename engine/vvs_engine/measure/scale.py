@@ -157,6 +157,13 @@ def discover_scale(page: RawPage, lines: list[TextRow]) -> ScaleResult:
                                        f"scale_text_for_{r[1]}_rescaled_to_{r[2]}_and_confirmed_by_scale_bar "
                                        f"({round(tick[1] * r[0])} m over {tick[1]:.1f} pt)")
         if len(vals) == 1:
+            # a ratio stated for another sheet format ("SKALA 1:50 (A1)" on an A2 print) applies to this sheet
+            # scaled by the step between the two formats, as the bar-confirmed case above does
+            for t in texts:
+                r = _ratio_for_other_format(page, t)
+                if r is not None:
+                    return ScaleResult(r[0], "page", "TEXT_ONLY", ev,
+                                       f"scale_text_for_{r[1]}_rescaled_to_{r[2]} (no vector scale bar found)")
             return ScaleResult(vals[0], "page", "TEXT_ONLY", ev, "scale_text_only (no vector scale bar found)")
         # several ratios (e.g. '1:50 (1:100)'): prefer the one whose qualifier matches the page format
         fmt = _page_format(page)

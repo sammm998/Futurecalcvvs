@@ -45,6 +45,10 @@ def load_runtime():
 MIN_LANDINGS = 10        # leader landings on a pen before the sheet's own word can outvote the chosen pipe pen
 LANDING_MARGIN = 5       # ...that many times the landings on the chosen pen
 LENGTH_MARGIN = 3        # ...and that many times its landed-on length (PipeStudio's own flip rule, bucket.calibrate)
+LIBRARY_MARGIN = 1.5     # both margins when the chosen pen is another office's stored style rather than this sheet's
+                         # own width rule: a value measured on a different sheet yields to this sheet's leaders sooner
+                         # (V-50-1-666340-0113 with every pen black: 40 landings on 1.44 pt against 25 on the stored
+                         # style's 0.72 pt, now the building's black outline)
 
 
 def landed_policy(ex, B, extra_pipe_widths=()):
@@ -73,8 +77,10 @@ def landed_policy(ex, B, extra_pipe_widths=()):
         return None
     on_chosen = sum(v['landings'] for k, v in black.items() if width(k) in chosen)
     length_chosen = sum(v['length'] for k, v in black.items() if width(k) in chosen)
-    if not (best['landings'] >= MIN_LANDINGS and best['landings'] >= LANDING_MARGIN * max(on_chosen, 1)
-            and best['length'] >= LENGTH_MARGIN * max(length_chosen, 1.0)):
+    stored = (C.get('family_method') or '').startswith('library starting values')
+    landing_margin, length_margin = (LIBRARY_MARGIN, LIBRARY_MARGIN) if stored else (LANDING_MARGIN, LENGTH_MARGIN)
+    if not (best['landings'] >= MIN_LANDINGS and best['landings'] >= landing_margin * max(on_chosen, 1)
+            and best['length'] >= length_margin * max(length_chosen, 1.0)):
         return None
     leaders = land.get('leader_families') or {}
     leader_w = width(max(leaders, key=leaders.get)) if leaders else None

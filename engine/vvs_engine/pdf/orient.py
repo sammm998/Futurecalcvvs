@@ -55,8 +55,46 @@ def _reading_turned(pdf_path: str, pno: int, turn: int):
         os.unlink(tmp)
 
 
+TEXT_MIN_LINES = 5       # designation lines in the text layer before their direction decides the turn
+TEXT_AGREEMENT = 0.8     # ...and the share of them that run the same way
+# the turn, on top of the page's own /Rotate, that shows text running this way (content space, y down) left to right
+_TURN_OF_DIR = {(1, 0): 0, (0, -1): 90, (-1, 0): 180, (0, 1): 270}
+
+
+def text_turn(pdf_path: str, pno: int):
+    """The turn that shows the sheet's text layer left to right, or None when the sheet has no text layer to say.
+
+    A sheet whose lettering is real text says which way it reads. A PDF may ask the viewer to turn the page
+    (/Rotate 90) over content drawn upright, or draw the content on its side on an upright page; either way the
+    sheet as shown has its designations running up or down the page, and the reading - label boxes from the text,
+    leaders from the ink - is made on the sheet as shown (P0113 with /Rotate 90: 6 of 24 designations measured).
+    Counted on the lines that write a pipe designation, so a rotated title block does not decide it."""
+    import re
+    from collections import Counter
+    pattern = re.compile(r'[A-ZÅÄÖ]{1,4}\d*-[A-ZÅÄÖ]{1,3}\d')
+    with pymupdf.open(pdf_path) as doc:
+        page = doc[pno]
+        dirs = Counter()
+        for block in page.get_text('dict').get('blocks', []):
+            for line in block.get('lines', []):
+                text = ''.join(span.get('text', '') for span in line.get('spans', []))
+                if pattern.search(text):
+                    dirs[(round(line['dir'][0]), round(line['dir'][1]))] += 1
+        rotation = page.rotation
+    total = sum(dirs.values())
+    if total < TEXT_MIN_LINES:
+        return None
+    way, n = dirs.most_common(1)[0]
+    if n < TEXT_AGREEMENT * total or way not in _TURN_OF_DIR:
+        return None
+    return (_TURN_OF_DIR[way] - rotation) % 360
+
+
 def turn_for(pdf_path: str, pno: int, prep) -> int:
     """The quarter turn that makes page `pno` read, given its reading as it lies; 0 when it already reads."""
+    by_text = text_turn(pdf_path, pno)
+    if by_text is not None:
+        return by_text
     if reads_upright(prep):
         return 0
     here, _ = _named(prep)
