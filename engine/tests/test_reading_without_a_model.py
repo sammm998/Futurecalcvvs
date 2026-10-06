@@ -1,8 +1,13 @@
 """The final assignment answered from the drawing's own evidence, and framed leaders taken apart."""
+import sys
 from dataclasses import dataclass
 
 from vvs_engine.source_rules.boxed_leaders import split
+from vvs_engine.source_rules.native_detection import SOURCE
 from vvs_engine.source_rules.rule_answer import answer
+
+if str(SOURCE) not in sys.path:
+    sys.path.insert(0, str(SOURCE))
 
 
 def cand(label, raw, *evidence):
@@ -144,3 +149,29 @@ def test_a_leader_lands_on_the_slash_drawn_where_it_meets_its_pipe():
          'landings': [{'point': [1006.08, 789.52], 'node': None}]}]}
     R, report = land_free_ends(A, R, [])
     assert [g['node'] for g in R['leaders'][0]['landings'] if g['node'] is not None] == [635]
+
+
+def test_a_split_form_with_a_suffix_is_read_joined():
+    # V-50-1-666339-0123: 'VV1-K1/S3' over a bare '22' is VV1-K1-22/S3; a label that reads as something stays
+    from vvs_engine.source_rules.text_labels import rejoin
+    riser = {'text': 'VV1-K1/S3\n22', 'designations': [], 'score': .9}
+    stack = {'text': 'VS2-S13/S4\n35', 'designations': [], 'score': .9}
+    other = {'text': 'APPARATSKÅP', 'designations': [], 'score': .9}
+    labels, n = rejoin([riser, stack, other])
+    assert n == 2
+    assert [d['raw'] for d in riser['designations']] == ['VV1-K1-22/S3']
+    assert [d['raw'] for d in stack['designations']] == ['VS2-S13-35/S4']
+    assert other['designations'] == []
+
+
+def test_dashed_pipes_in_the_leader_pen_keep_every_other_pen_as_read():
+    # V-50-1-666340-0111: the pipe pen stands; the dashed 0.48 pt strokes become pipe, the plain 0.48 pt leaders
+    from vvs_engine.source_rules.native_detection import kept_policy
+    pipe = P(0, 's', 1.44, [0, 0, 0], None, '[] 0', 'P', False, [0, 0, 100, 0], [['l', 0, 0, 100, 0]])
+    wall = P(1, 's', .25, [.5, .5, .5], None, '[] 0', 'A', False, [0, 9, 100, 9], [['l', 0, 9, 100, 9]])
+    dash = P(2, 's', .5, [0, 0, 0], None, '[] 0', 'S', False, [0, 50, 90, 50], [['l', 0, 50, 17, 50]])
+    lead = P(3, 's', .48, [0, 0, 0], None, '[] 0', 'S', False, [5, 50, 5, 80], [['l', 5, 50, 5, 80]])
+    B = {'calibration': {'u_paper': 1.0, 'pipe_widths': [1.44]},
+         'buckets': {'0': 'pipe', '1': 'architecture', '2': 'thin_other', '3': 'thin_other'}}
+    roles = {f['key']['width']: f['role'] for f in kept_policy(Ex([pipe, wall, dash, lead]), B, .5, .48)['policy']['families']}
+    assert roles == {1.44: 'pipe', .25: 'architecture', .5: 'pipe', .48: 'leader'}

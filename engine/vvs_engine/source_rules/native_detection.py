@@ -45,6 +45,10 @@ def load_runtime():
 MIN_LANDINGS = 10        # leader landings on a pen before the sheet's own word can outvote the chosen pipe pen
 LANDING_MARGIN = 5       # ...that many times the landings on the chosen pen
 LENGTH_MARGIN = 3        # ...and that many times its landed-on length (PipeStudio's own flip rule, bucket.calibrate)
+LIBRARY_MARGIN = 1.5     # both margins when the chosen pen is another office's stored style rather than this sheet's
+                         # own width rule: a value measured on a different sheet yields to this sheet's leaders sooner
+                         # (V-50-1-666340-0113 with every pen black: 40 landings on 1.44 pt against 25 on the stored
+                         # style's 0.72 pt, now the building's black outline)
 
 
 def landed_policy(ex, B, extra_pipe_widths=()):
@@ -73,8 +77,10 @@ def landed_policy(ex, B, extra_pipe_widths=()):
         return None
     on_chosen = sum(v['landings'] for k, v in black.items() if width(k) in chosen)
     length_chosen = sum(v['length'] for k, v in black.items() if width(k) in chosen)
-    if not (best['landings'] >= MIN_LANDINGS and best['landings'] >= LANDING_MARGIN * max(on_chosen, 1)
-            and best['length'] >= LENGTH_MARGIN * max(length_chosen, 1.0)):
+    stored = (C.get('family_method') or '').startswith('library starting values')
+    landing_margin, length_margin = (LIBRARY_MARGIN, LIBRARY_MARGIN) if stored else (LANDING_MARGIN, LENGTH_MARGIN)
+    if not (best['landings'] >= MIN_LANDINGS and best['landings'] >= landing_margin * max(on_chosen, 1)
+            and best['length'] >= length_margin * max(length_chosen, 1.0)):
         return None
     leaders = land.get('leader_families') or {}
     leader_w = width(max(leaders, key=leaders.get)) if leaders else None
@@ -101,6 +107,66 @@ def landed_policy(ex, B, extra_pipe_widths=()):
             'report': {'chosen_pipe_widths': sorted(chosen), 'landed_pipe_pen': best_key,
                        'landings': best['landings'], 'landings_on_chosen': on_chosen,
                        'leader_pen': leader_w, 'method': C.get('family_method')}}
+
+
+def dashed_pens(ex, B):
+    """The pens a sheet may draw its leaders in, the measured leader pen first: every black stroke pen thinner than
+    the pipe pen. The measured one can be wrong - on V-50-1-666340-0112 the leaders that land on nothing vote for
+    0.96 pt, while the leaders to the dashed pipes are drawn in 0.48 pt."""
+    C = B.get('calibration') or {}
+    chosen = [round(float(w), 3) for w in C.get('pipe_widths') or []]
+    pipe = min(chosen or [1e9])
+    first = C.get('leader_width')
+    widths = sorted({round(p.width, 3) for p in ex.paths if p.kind == 's' and p.duplicate_of is None
+                     and (not p.color or max(p.color) <= .25) and 0 < p.width < pipe - .015})
+    pens = [round(first, 3)] if first else []
+    pens += [w for w in widths if not pens or abs(w - pens[0]) > .015]
+    # the pipe pen itself, when only a few leaders chose it: after V-50-1-666340-0112's split-form labels were read,
+    # 7 leaders landing on the dashed 0.48 pt pipes made 0.48 pt the pipe pen, and the leaders became pipe ink too
+    votes = (C.get('landings') or {}).get('votes') or {}
+    landed_on = sum(v['landings'] for k, v in votes.items() if abs(float(k.split('|')[0]) - pipe) <= .015)
+    if len(chosen) == 1 and landed_on < MIN_LANDINGS:
+        pens.append(pipe)
+    return pens
+
+
+def kept_policy(ex, B, extra_pipe_width, leader_width):
+    """The first reading's own pens as a stroke policy, with the dashed strokes filed apart read as pipe ink.
+
+    For a sheet where the leaders contradict nothing - its pipe pen stands - but some pipes are drawn dashed in the
+    leader pen (V-50-1-666340-0111: the only pipes on the sheet are KV2-E13-25/SRN, dashed 0.48 pt, and its four
+    leaders end on them). Every other family keeps the role most of its ink had in the first reading."""
+    from studio.style_vision import inventory
+    from vectorascore.geom import path_length
+    C = B.get('calibration') or {}
+    unit = C.get('u_paper') or 1.0
+    buckets = B.get('buckets') or {}
+    families = []
+    for f in inventory(ex, unit):
+        k = f['key']
+        black = not k['color'] or max(k['color']) <= .25
+        if abs(k['width'] - extra_pipe_width / unit) <= .005 and black:
+            role = 'pipe'
+        elif leader_width is not None and abs(k['width'] - leader_width / unit) <= .005 and black:
+            role = 'leader'      # the pen the leaders to the dashed pipes are drawn in, even if it read as pipe
+        else:
+            ink = {}
+            for p in f['paths']:
+                b = buckets.get(str(p.id), buckets.get(p.id))
+                ink[b] = ink.get(b, 0.0) + path_length(p.items)
+            top = max(ink, key=ink.get) if ink else None
+            if top == 'pipe':
+                role = 'pipe'
+            elif leader_width is not None and abs(k['width'] - leader_width / unit) <= .015 and black:
+                role = 'leader'
+            elif top in ('architecture', 'unknown'):
+                role = top
+            else:
+                role = 'symbol'
+        families.append({'key': k, 'role': role})
+    return {'policy': {'families': families},
+            'report': {'chosen_pipe_widths': sorted(C.get('pipe_widths') or []), 'dashed_pipe_pen': extra_pipe_width,
+                       'leader_pen': leader_width, 'method': C.get('family_method')}}
 
 
 def detect_page(pdf_path, page_number=0, style=None, progress=None, artifact_dir=None, strict_original=False):
@@ -164,9 +230,10 @@ def detect_page(pdf_path, page_number=0, style=None, progress=None, artifact_dir
             with pymupdf.open(clean) as text_doc:
                 rotated_repairs = repair(text_doc[page_number], L)
         shelves = {'widened': 0}
-        recovered = {'recovered': 0}
+        recovered, rejoined = {'recovered': 0}, 0
         if not strict_original:
-            from .text_labels import recover
+            from .text_labels import recover, rejoin
+            L, rejoined = rejoin(L)
             det, L, recovered = recover(clean, page_number, det, L, ex, labels.read_labels,
                                         style_module.text_height(ex)[0])
             from .label_shelves import extend_to_shelves
@@ -205,18 +272,28 @@ def detect_page(pdf_path, page_number=0, style=None, progress=None, artifact_dir
         landed = None if selected.get('stroke_policy') is not None else landed_policy(ex, B)
         dashed = {'pipes': 0}
         if landed is not None and landed['report'].get('leader_pen'):
+            pens = [landed['report']['leader_pen']]
+        elif landed is None and selected.get('stroke_policy') is None:
+            pens = dashed_pens(ex, B)
+        else:
+            pens = []
+        from .dashed_pipes import dashed_paths, leaders_ending_on, file_apart, MIN_LEADERS
+        boxes = [b['rect'] for b in det.get('label_boxes', [])]
+        for pen in pens:
             # pipes drawn dashed in the leader pen, which the sheet's own leaders point at (dashed_pipes.py)
-            from .dashed_pipes import dashed_paths, leaders_ending_on, file_apart
-            pen = landed['report']['leader_pen']
             ids = dashed_paths(ex, pen)
-            hits = leaders_ending_on(ex, ids, [b['rect'] for b in det.get('label_boxes', [])], pen)
-            dashed = {'pipes': len(ids), 'leaders_on_them': hits}
-            if hits >= 3:
+            hits = leaders_ending_on(ex, ids, boxes, pen)
+            if hits > dashed.get('leaders_on_them', -1):
+                dashed = {'pipes': len(ids), 'leaders_on_them': hits, 'leader_pen': pen}
+            if hits >= MIN_LEADERS:
                 ex, apart = file_apart(ex, ids, pen)
                 again = landed_policy(ex, B, extra_pipe_widths=(apart,))
                 if again is not None:
                     landed = again
+                elif landed is None:
+                    landed = kept_policy(ex, B, apart, pen)
                 dashed['pen'] = apart
+                break
         if landed is not None:
             # the matched style was contradicted by the sheet: none of its measures is taken, only the sheet's own
             selected = {'id': 'auto', 'version': 1, 'calibration': {}, 'rules': [], 'calibration_mode': 'auto',
@@ -236,7 +313,7 @@ def detect_page(pdf_path, page_number=0, style=None, progress=None, artifact_dir
                 'association': R, 'timings': timings, 'style': selected, 'style_match': match,
                 'unparsed_labels': unparsed, 'strict_original': strict_original,
                 'rotated_text_repairs': rotated_repairs, 'boxed_leaders': boxed, 'label_shelves': shelves,
-                'dashed_pipes': dashed, 'text_labels': recovered,
+                'dashed_pipes': dashed, 'text_labels': dict(recovered, rejoined=rejoined),
                 'label_ids_from': renumbered, 'declared_systems': declared,
                 'annotations_used': False, 'expert_overrides_used': False}
 

@@ -14,6 +14,7 @@ export function AiUsage({ usage }: { usage?: any }) {
         {" · "}{NUM.format(usage.tokens_out)} {tr("tokens ut")}
         {" · "}{usage.usd == null ? tr("pris okänt") : `$${usage.usd.toFixed(2)}`}</>}
       {none && <> · {tr("ingen AI-kostnad")}</>}
+      {!none && usage.missed_checked > 0 && <> · {tr("kontroll av missade")}: {NUM.format(usage.missed_named)} {tr("rör namngivna, att granska")}</>}
       {usage.fell_back_to_rules && <> · {tr("modellen svarade inte, reglerna läste bladet")}</>}
     </p>
   );
