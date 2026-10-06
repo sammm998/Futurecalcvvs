@@ -25,16 +25,31 @@ def _requests(node, out):
             _requests(value, out)
 
 
+def _completeness(node, out):
+    if isinstance(node, dict):
+        check = node.get('completeness')
+        if isinstance(check, dict) and 'questions' in check:
+            out.append(check)
+        for key, value in node.items():
+            if key != 'completeness':
+                _completeness(value, out)
+    elif isinstance(node, list):
+        for value in node:
+            _completeness(value, out)
+
+
 def read_usage(out_dir, choice):
     choice = choice or ai_models.default()
-    found = []
+    found, checks = [], []
     files = [os.path.join(out_dir, 'source-assignment.json')]
     if not os.path.exists(files[0]):
         files = sorted(glob.glob(os.path.join(out_dir, 'sheets', '*', 'source-assignment.json')))
     for name in files:
         try:
             with open(name, encoding='utf-8') as fh:
-                _requests(json.load(fh), found)
+                record = json.load(fh)
+            _requests(record, found)
+            _completeness(record, checks)
         except (OSError, ValueError):
             continue
     fallbacks = [r['fallback'] for r in found if 'fallback' in r]
@@ -51,4 +66,7 @@ def read_usage(out_dir, choice):
         # a model that was chosen but did not answer: the rules read the sheet instead, and that is said
         'fell_back_to_rules': bool(fallbacks),
         'fallback_reason': (fallbacks[0] or {}).get('reason') if fallbacks else None,
+        # the model's second look for labels the reading missed (engine completeness_check.py)
+        'missed_checked': sum(c.get('questions') or 0 for c in checks),
+        'missed_named': sum(c.get('named') or 0 for c in checks),
     }

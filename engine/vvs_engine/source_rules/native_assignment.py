@@ -203,6 +203,11 @@ def analyze(graphs,native,page,ask,elevations,raw_page,host_reading=None):
     if result['combined']['status']!='COMPLETED':
         why=(result['combined'].get('result') or {}).get('failure_reason') or result['combined'].get('reason')
         raise RuntimeError('Native combined assignment failed: '+result['combined']['status']+(f' ({why})' if why else ''))
+    if ask is not by_rules and not result.get('model_fallback'):
+        # the model also looks for labels the reading missed and the unnamed pipe near them (completeness_check.py)
+        from .completeness_check import check
+        result['completeness']=check(graph,native['association'],native['labels'],result,ask,
+                                     getattr(ask,'model',None) or 'model')
     if ask is by_rules or result.get('model_fallback'):
         # the assignment names its decider after the configured model; the drawing's own evidence decided here
         for part in ('model','combined'):

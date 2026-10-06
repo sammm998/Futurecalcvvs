@@ -114,12 +114,20 @@ def dashed_pens(ex, B):
     the pipe pen. The measured one can be wrong - on V-50-1-666340-0112 the leaders that land on nothing vote for
     0.96 pt, while the leaders to the dashed pipes are drawn in 0.48 pt."""
     C = B.get('calibration') or {}
-    pipe = min([float(w) for w in C.get('pipe_widths') or []] or [1e9])
+    chosen = [round(float(w), 3) for w in C.get('pipe_widths') or []]
+    pipe = min(chosen or [1e9])
     first = C.get('leader_width')
     widths = sorted({round(p.width, 3) for p in ex.paths if p.kind == 's' and p.duplicate_of is None
                      and (not p.color or max(p.color) <= .25) and 0 < p.width < pipe - .015})
     pens = [round(first, 3)] if first else []
-    return pens + [w for w in widths if not pens or abs(w - pens[0]) > .015]
+    pens += [w for w in widths if not pens or abs(w - pens[0]) > .015]
+    # the pipe pen itself, when only a few leaders chose it: after V-50-1-666340-0112's split-form labels were read,
+    # 7 leaders landing on the dashed 0.48 pt pipes made 0.48 pt the pipe pen, and the leaders became pipe ink too
+    votes = (C.get('landings') or {}).get('votes') or {}
+    landed_on = sum(v['landings'] for k, v in votes.items() if abs(float(k.split('|')[0]) - pipe) <= .015)
+    if len(chosen) == 1 and landed_on < MIN_LANDINGS:
+        pens.append(pipe)
+    return pens
 
 
 def kept_policy(ex, B, extra_pipe_width, leader_width):
@@ -139,6 +147,8 @@ def kept_policy(ex, B, extra_pipe_width, leader_width):
         black = not k['color'] or max(k['color']) <= .25
         if abs(k['width'] - extra_pipe_width / unit) <= .005 and black:
             role = 'pipe'
+        elif leader_width is not None and abs(k['width'] - leader_width / unit) <= .005 and black:
+            role = 'leader'      # the pen the leaders to the dashed pipes are drawn in, even if it read as pipe
         else:
             ink = {}
             for p in f['paths']:
