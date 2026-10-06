@@ -125,7 +125,12 @@ def supplement(native, anchors, identities, elevations):
             continue
         existing = labels_by_text.get(designation_text(designation), set())
         covered = {n for label in existing for n in landed_nodes.get(label, [])}
-        lands = [g for g in lands if g['node'] not in covered]
+        if any(g['node'] in covered for g in lands):
+            # the native reading already read this leader - it lands where one of its own labels of this name
+            # lands - and decided where it ends. The host's other contacts are the ticks the leader crosses on its
+            # way, which on W-50-1-A-0122 are the parallel VS1-S13-35 supply and return it passes over; adding them
+            # gave 40 m of the 35 pair the branch's 12.
+            continue
         if not lands:
             continue
         lid = top_label+1; top_label = lid
