@@ -11,7 +11,19 @@ export function pipeColorKey(pipe: PipeColourSource): string {
       ? [`${level.kind || "?"}:${Number(level.value)}:${level.ref || ""}`] : []))].sort();
   return identity + (levels.length ? `|LEVEL:${levels.join(";")}` : "");
 }
+/* One colour per designation on the sheet, none shared - the same rule as the marked PDF (overlays.py
+ * sheet_colors): the sheet's designations sorted, each the next hue a golden angle on, in three lightness steps. */
+let SHEET: Map<string, string> = new Map();
+export function setSheetIdentities(keys: string[]): void {
+  SHEET = new Map();
+  [...new Set(keys)].sort().forEach((k, i) => {
+    const hue = Math.round(((i * 0.381966) % 1) * 360);
+    SHEET.set(k, `hsl(${hue}, 90%, ${[42, 32, 52][i % 3]}%)`);
+  });
+}
 export function identityColor(key: string): string {
+  const fixed = SHEET.get(key);
+  if (fixed) return fixed;
   let h = 2166136261;
   for (const char of colorKey(key)) h = Math.imul(h ^ char.charCodeAt(0), 16777619) >>> 0;
   // Strong, saturated colours: a run and the label that names it must be easy to follow across a busy sheet,

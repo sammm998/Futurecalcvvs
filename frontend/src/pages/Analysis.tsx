@@ -1,3 +1,4 @@
+import { setSheetIdentities } from "../palette";
 import { AiUsage } from "../components/AiUsage";
 import { extension, withPipeExtensions } from "../live/gestures";
 import type { DrawingAction } from "../live/LiveDrawingAgent";
@@ -353,6 +354,9 @@ export default function AnalysisPage() {
    * not runs at all - legend rows, component tags, drawing numbers in the title block. A sheet the reading got
    * all the way through could still show "133 of 190" and read as half-failed. This counts only the names the
    * sheet's own list says are pipes, against the ones the takeoff carries metres for. */
+  // one colour per designation on this sheet, the same as in the marked PDF (palette.ts setSheetIdentities)
+  setSheetIdentities((result.pipes ?? []).filter((p: any) => (p.page ?? page) === (result.page?.page ?? page))
+    .map((p: any) => p.identity).filter(Boolean));
   const nm = c.named_vs_measured ?? {};
   const namedShare: number | null = typeof nm.share === "number" ? nm.share : null;
   const covWarn = namedShare !== null && namedShare < 0.6;
