@@ -6,9 +6,21 @@ import os
 
 NONE = 'none'
 ASTRA = 'gpt-6-astra'
+SOL = 'gpt-6.1-sol'
 OPUS = 'claude-opus-5-5'
-CHOICES = (NONE, ASTRA, OPUS)
-LABELS = {NONE: 'Utan AI', ASTRA: 'GPT-6 Astra', OPUS: 'Claude Opus 5.5'}
+GEMINI = 'gemini-pro'
+CHOICES = (NONE, ASTRA, SOL, OPUS, GEMINI)
+LABELS = {NONE: 'Utan AI', ASTRA: 'GPT-6 Astra', SOL: 'GPT-6.1 Sol', OPUS: 'Claude Opus 5.5', GEMINI: 'Gemini Pro'}
+
+
+def model_id(choice):
+    """The provider's model id for a choice; the OpenAI and Google ids can be set by the operator."""
+    if choice == SOL:
+        return os.environ.get('VVS_SOL_MODEL', SOL)
+    if choice == GEMINI:
+        from .gemini_model import GEMINI_MODEL
+        return GEMINI_MODEL
+    return choice
 
 
 def default():
@@ -19,15 +31,20 @@ def default():
 def available():
     from .source_model import configured as openai_ready
     from .claude_model import configured as claude_ready
-    return {NONE: True, ASTRA: openai_ready(), OPUS: claude_ready()}
+    from .gemini_model import configured as gemini_ready
+    openai = openai_ready()
+    return {NONE: True, ASTRA: openai, SOL: openai, OPUS: claude_ready(), GEMINI: gemini_ready()}
 
 
 def transport(choice):
     """The connection that answers the assignment for `choice`; None reads by the rules."""
-    if choice == ASTRA:
+    if choice in (ASTRA, SOL):
         from .source_model import transport as openai_transport
-        return openai_transport(ASTRA)
+        return openai_transport(model_id(choice))
     if choice == OPUS:
         from .claude_model import transport as claude_transport
         return claude_transport(OPUS)
+    if choice == GEMINI:
+        from .gemini_model import transport as gemini_transport
+        return gemini_transport(model_id(choice))
     return None

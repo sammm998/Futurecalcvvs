@@ -32,3 +32,28 @@ def test_what_the_model_names_is_added_for_review_and_nothing_named_changes(monk
     added = result['combined']['result']['bindings'][-1]
     assert (added['stretch'], added['label'], added['confidence'], added['rule']) == (2, 1, 'low', 'model_completeness')
     assert result['combined']['result']['bindings'][0]['stretch'] == 1
+
+
+def test_unclassified_pipe_is_offered_the_pipe_it_joins_and_the_nearest_labels():
+    A = {'stretches': [
+        {'id': 1, 'points': [[0, 0], [100, 0]], 'length': 100, 'node_a': 10, 'node_b': 11},
+        {'id': 2, 'points': [[100, 0], [200, 0]], 'length': 100, 'node_a': 11, 'node_b': 12},
+        {'id': 3, 'points': [[0, 5000], [100, 5000]], 'length': 100, 'node_a': 20, 'node_b': 21}]}
+    L = [{'id': 0, 'rect': [0, -30, 60, -10], 'text': 'KV1-K1-22', 'designations': [{'raw': 'KV1-K1-22', 'dimension': 22}]}]
+    bindings = [{'id': 0, 'stretch': 1, 'label': 0, 'designation_idx': 0, 'confidence': 'high', 'rule': 'astra_final'}]
+    got = completeness_check.unclassified(A, L, bindings)
+    assert got == {2: [(0, 0, 0.0)]}          # joins named pipe; stretch 3 is too far from any label
+
+
+def test_the_model_may_say_an_unclassified_stretch_is_not_pipe(monkeypatch):
+    A = {'stretches': [
+        {'id': 1, 'points': [[0, 0], [100, 0]], 'length': 100, 'node_a': 10, 'node_b': 11},
+        {'id': 2, 'points': [[100, 0], [200, 0]], 'length': 100, 'node_a': 11, 'node_b': 12}]}
+    L = [{'id': 0, 'rect': [0, -30, 60, -10], 'text': 'KV1-K1-22', 'designations': [{'raw': 'KV1-K1-22', 'dimension': 22}]}]
+    bindings = [{'id': 0, 'stretch': 1, 'label': 0, 'designation_idx': 0, 'confidence': 'high', 'rule': 'astra_final'}]
+    monkeypatch.setattr(final_bind, 'questions', lambda A, R, L: [{'stretch': s['id'], 'candidates': []} for s in A['stretches']])
+    result = {'combined': {'result': {'bindings': bindings}}}
+    ask = lambda qs: [{'stretch': q['stretch'], 'label': None, 'designation_idx': None, 'ambiguous': False} for q in qs]
+    report = completeness_check.check(A, {'bindings': []}, L, result, ask, 'test-model')
+    assert report['unclassified_asked'] == 1 and report['named'] == 0
+    assert len(result['combined']['result']['bindings']) == 1

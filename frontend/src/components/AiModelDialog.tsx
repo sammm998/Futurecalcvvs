@@ -3,7 +3,8 @@ import { api } from "../api";
 import { lastAiModel, registerAiModelAsker, rememberAiModel } from "../aiChoice";
 import { t as tr, trf } from "../i18n";
 
-/* Innan en analys startar: vilken modell avgör rörens beteckningar - ingen, GPT-6 Astra eller Claude Opus 5.5.
+/* Innan en analys startar: vilken modell avgör rörens beteckningar - ingen, GPT-6 Astra, GPT-6.1 Sol, Claude Opus 5.5
+ * eller Gemini Pro.
  * Samma ritning kan läsas en gång med varje, och raden "Läst med …" på analysen visar tokens och pris. En modell
  * servern saknar nyckel till går inte att välja, och det står varför. */
 
@@ -12,7 +13,9 @@ type Choice = { id: string; label: string; available: boolean };
 const NOTES: Record<string, string> = {
   "none": "Ritningens egna belägg avgör. Ingen AI-kostnad.",
   "gpt-6-astra": "OpenAI avgör de rör där beläggen ger flera möjliga beteckningar.",
+  "gpt-6.1-sol": "OpenAI:s billigare modell avgör de rör där beläggen ger flera möjliga beteckningar.",
   "claude-opus-5-5": "Anthropic avgör de rör där beläggen ger flera möjliga beteckningar.",
+  "gemini-pro": "Googles senaste Pro-modell avgör de rör där beläggen ger flera möjliga beteckningar.",
 };
 
 export default function AiModelDialog() {

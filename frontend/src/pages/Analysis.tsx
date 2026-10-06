@@ -662,6 +662,19 @@ export default function AnalysisPage() {
                   + "beteckning namngav ligger grått på ritningen."}
               </p>
             )}
+            {(nm.missed?.length ?? 0) > 0 && (
+              <details className="settings">
+                <summary>{tr("Beteckningar som ritningen skriver men som inte fick meter")} · {nm.missed.length}</summary>
+                <div className="body row" style={{ flexWrap: "wrap", gap: 8 }}>
+                  {nm.missed.map((m: any) => (
+                    <button key={m.name} className="link small" onClick={() => {
+                      const r = m.rects?.[0];
+                      if (r) viewer.current?.zoomTo([r[0] - 40, r[1] - 40, r[2] + 40, r[3] + 40]);
+                    }}>{m.name}{(m.rects?.length ?? 0) > 1 ? ` (${m.rects.length})` : ""}</button>
+                  ))}
+                </div>
+              </details>
+            )}
             {staff && c.unowned_outside_hatch_m != null && <p className="muted small">
               {tr("Oidentifierad rörgeometri utanför skrafferade områden")}: {c.unowned_outside_hatch_m} m.
               {" "}{tr("Oidentifierad rörgeometri inom skrafferade områden")}: {c.unowned_in_hatch_m} m.
