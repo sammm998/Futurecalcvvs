@@ -16,7 +16,6 @@ whether a model answered or not.
 from __future__ import annotations
 
 INF = 10 ** 9
-WEAK = 10 ** 6    # a weak landing ranks after every connected run, before the dimension rule's word
 
 
 def _identity(c) -> str:
@@ -30,9 +29,7 @@ def _distance(c) -> tuple[int, int]:
     for e in c.get('evidence', []):
         kind = e.get('kind')
         if kind == 'leader_landing':
-            # a host contact kept as weak evidence (native_contacts.py) names a stretch only where neither a
-            # landing nor a connected run does
-            best = min(best, (1, WEAK) if e.get('inferred') == 'host_contact_weak' else (0, 0))
+            best = min(best, (0, 0))
         elif kind == 'connected_run':
             best = min(best, (1, len(e.get('via_stretches') or ())))
         elif kind == 'rule_proposal':
