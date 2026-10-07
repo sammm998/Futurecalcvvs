@@ -3,7 +3,7 @@ export const STAGE_LABELS: Record<string, string> = {
   RECONSTRUCTING_TEXT: "Rekonstruerar text", READING_DESIGNATIONS: "Läser beteckningar", FINDING_LEADERS: "Hittar hänvisningslinjer",
   RESOLVING_PIPE_REPRESENTATION: "Tolkar rörrepresentation", ATTACHING_PIPES: "Kopplar rör", BUILDING_TOPOLOGY: "Bygger topologi",
   PIPESTUDIO_EXTRACT: "Kontrollerar originalets linjer", PIPESTUDIO_PROFILE: "Undersöker ritningens utförande",
-  PIPESTUDIO_DETECT: "Söker fler beteckningar", PIPESTUDIO_OCR: "Läser beteckningarnas tecken", PIPESTUDIO_VECTOR_STAGES: "Följer rör och hänvisningar",
+  PIPESTUDIO_DETECT: "Hittar rör och beteckningar", PIPESTUDIO_OCR: "Läser beteckningarnas tecken", PIPESTUDIO_VECTOR_STAGES: "Följer rör och hänvisningar",
   BUILDING_PHYSICAL_PIPES: "Bygger fysiska rör", MEASURING: "Mäter", GENERATING_OVERLAYS: "Skapar markeringar", COMPLETED: "Klar", FAILED: "Misslyckades",
 };
 
@@ -14,8 +14,15 @@ const STATUS_LABELS: Record<string, string> = { COMPLETED: "Klar", FAILED: "Miss
 export function stageText(stage: string): string | null {
   if (!stage) return null;
   const [name, ...rest] = stage.split(" ");
+  // the detector reports each tile it reads ("..._TILE_16_OF_48"): one step, with how far it has come
+  const tile = /^(\w+?)_TILE_(\d+)_OF_(\d+)$/.exec(name);
+  if (tile) {
+    const base = STAGE_LABELS[tile[1]] ?? "Hittar rör och beteckningar";
+    return `${base} · ${tile[2]}/${tile[3]}`;
+  }
   const label = STAGE_LABELS[name];
-  if (!label) return null;
+  // a step we have no word for is still never shown by its internal name
+  if (!label) return name.startsWith("PIPESTUDIO_") ? "Analyserar ritningen" : null;
   return rest.length ? `${label} · ${rest.join(" ")}` : label;
 }
 

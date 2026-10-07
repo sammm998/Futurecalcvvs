@@ -33,6 +33,9 @@ _executor = ThreadPoolExecutor(max_workers=max(1, settings.worker_threads))
 # åt andra hållet håller en trehundrabladig projektläsning mängdningen stilla. Två köer, för det är två sorters
 # arbete som inte konkurrerar om samma sak.
 _reader = ThreadPoolExecutor(max_workers=1, thread_name_prefix="handling")
+# Agenten som arbetar vidare efter en färdig läsning har en egen kö. I mängdningens kö höll den nästa ritning
+# stilla i upp till tjugo minuter, fast läsningen redan var klar och visad.
+_agent = ThreadPoolExecutor(max_workers=1, thread_name_prefix="agent")
 _lock = threading.Lock()
 
 
@@ -240,6 +243,14 @@ def _keep_upright(summary: dict, out_dir: str, pdf_path: str) -> None:
         os.replace(tmp, pdf_path)
 
 
+def _run_agent(job_id: str, out_dir: str, pdf_path: str, ai_model: str | None) -> None:
+    try:
+        from .solver import run_for_job
+        run_for_job(job_id, out_dir, pdf_path, ai_model)
+    except Exception:                                      # noqa: BLE001
+        log.exception("Agenten kunde inte köras efter analysen")
+
+
 def run_job(job_id: str) -> None:
     from vvs_engine import rules as engine_rules
     from .analysis_worker import analyze_isolated
@@ -328,11 +339,7 @@ def run_job(job_id: str) -> None:
                  finished_at=dt.datetime.now(dt.timezone.utc), summary=done)
         # With a model chosen, the agent works on what the reading's own checks left open. The reading is complete
         # and shown already; what the agent changes arrives as corrections marked as its own.
-        try:
-            from .solver import run_for_job
-            run_for_job(job_id, out_dir, pdf_path, ai_model)
-        except Exception:                                  # noqa: BLE001
-            log.exception("Agenten kunde inte köras efter analysen")
+        _agent.submit(_run_agent, job_id, out_dir, pdf_path, ai_model)
     except UnsupportedInputError as e:
         # not a defect: the PDF carries no vector drawing, so there is nothing to read
         _set(job_id, status="FAILED", stage="FAILED", finished_at=dt.datetime.now(dt.timezone.utc),

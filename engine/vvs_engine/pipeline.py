@@ -1664,7 +1664,11 @@ def analyze_page(page: RawPage, progress: Callable[[str], None] | None = None, o
     native_merge = None
     if source_detector is not None:
         from .source_rules.native_bridge import merge_detection
-        native = source_detector(page.source_path, page.info.index, progress=progress)
+        # the lettering this reading already built from the glyphs: the detector reads those label boxes from it
+        # instead of rasterising and OCR-ing the same strokes again
+        known_text = [{"text": r.text, "bbox": [round(v, 2) for v in r.bbox], "angle": round(r.angle, 1)}
+                      for r in vtext.rows if not r.unknown_chars and r.text.strip()]
+        native = source_detector(page.source_path, page.info.index, progress=progress, known_text=known_text)
         from .source_rules.host_label_repair import repair as repair_label_sizes
         label_sizes = repair_label_sizes(native.get('labels') or [], designations)
         from .source_rules.unattested_codes import set_aside as set_aside_misread_codes

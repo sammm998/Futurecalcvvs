@@ -1,3 +1,4 @@
+import { stageText } from "../components/Status";
 import { Fragment, useEffect, useState } from "react";
 import { t as tr, locale } from "../i18n";
 import { Link, useParams } from "react-router-dom";
@@ -485,7 +486,7 @@ export default function ProjectAnalysisPage() {
           {run.status === "FAILED"
             ? <><pre className="error">{run.error}</pre><DiskFullHelp error={run.error} /></>
             : <>
-              <p className="muted" style={{ marginTop: 0 }}>{run.stage}</p>
+              <p className="muted" style={{ marginTop: 0 }}>{stageText(run.stage) || run.stage}</p>
               <div className="bar"><span style={{ width: `${Math.round((run.progress || 0) * 100)}%` }} /></div>
             </>}
         </div>

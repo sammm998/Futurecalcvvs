@@ -339,7 +339,7 @@ export default function AnalysisPage() {
         <div className="head">
           <div>
             <h1>{tr("Läser ritningen")}</h1>
-            <p className="lead">{stageText(job.stage) || job.stage}</p>
+            <p className="lead">{stageText(job.stage) || "Analyserar ritningen"}</p>
           </div>
           <div className="row">
             <button onClick={() => setLearn(true)}>{tr("Lär mig om VVS")}</button>
