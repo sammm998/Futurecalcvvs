@@ -16,6 +16,21 @@ const M = (v: number | null | undefined, noScale: boolean) => (noScale || v == n
 
 export const riserCount = (r: any, source: string) => (source === "labels" ? r.riser_count_from_labels : r.riser_count) ?? 0;
 
+export const SLAB_RISER_M = 1.0;
+
+/** Risers on a row split by kind: a storey each, or a metre up through the slab to a radiator. The engine proposes
+    the split (riser_slab_count) and the reader may change it; an older reading marks the whole row by its height. */
+export function riserSplit(r: any, risers: number): { storey: number; slab: number } {
+  const proposed = r.riser_slab_count ?? (r.riser_height_m != null ? risers : 0);
+  const slab = Math.max(0, Math.min(Number(proposed) || 0, risers));
+  return { storey: risers - slab, slab };
+}
+
+export function riserMetres(r: any, risers: number, floorHeight: number): number {
+  const { storey, slab } = riserSplit(r, risers);
+  return storey * floorHeight + slab * SLAB_RISER_M;
+}
+
 export function withFloorHeight(rows: any[], floorHeight: number | null, includeHatched = false, riserSource = "labels",
                                 includeDeclared = true): any[] {
   // vertical metres are never assumed by the engine; with a user-given floor height each riser counts height metres.
@@ -28,26 +43,30 @@ export function withFloorHeight(rows: any[], floorHeight: number | null, include
   return rows.map((r) => {
     const risers = riserCount(r, riserSource);
     const known = r.vertical_m !== "UNKNOWN" ? Number(r.vertical_m) : 0;
-    // a radiator connection rises through the slab, about a metre: the engine marks such rows with their own height
-    const each = floorHeight ? Number(r.riser_height_m ?? floorHeight) : null;
+    // a radiator connection rises through the slab, about a metre; the others a storey
     // Med en höjd satt är en rad utan stigare en rad utan vertikal: 0 m, inte "okänt". Okänt är den bara när
     // ingen höjd är satt, och då vet läsningen verkligen inte hur högt bladets stigare går.
-    const v = each && risers > 0 ? known + risers * each : (r.vertical_m === "UNKNOWN" ? (each ? 0 : null) : known);
+    const v = floorHeight && risers > 0 ? known + riserMetres(r, risers, floorHeight)
+      : (r.vertical_m === "UNKNOWN" ? (floorHeight ? 0 : null) : known);
     const declared = Number(r.declared_m ?? 0);
     const h = Math.max(0, r.confirmed_horizontal_m - (includeDeclared ? 0 : declared))
       + (includeHatched ? Number(r.in_hatched_area_m ?? 0) : 0);
-    return { ...r, risers_calc: risers, horizontal_calc: h, vertical_calc: v, total_calc: h + (v ?? 0) };
+    const split = riserSplit(r, risers);
+    return { ...r, risers_calc: risers, risers_storey: split.storey, risers_slab: split.slab,
+             horizontal_calc: h, vertical_calc: v, total_calc: h + (v ?? 0) };
   });
 }
 
 export default function QuantityTable({ rows, selected, onSelect, floorHeight, includeHatched, onIncludeHatched, riserSource,
-  includeDeclared = true, onIncludeDeclared, pipes = [], onPipeClick, meterPerPt, selectedPipe = null }: {
+  includeDeclared = true, onIncludeDeclared, pipes = [], onPipeClick, meterPerPt, selectedPipe = null, onRiserSplit }: {
     rows: any[]; selected: string | null; onSelect: (key: string | null) => void; floorHeight: number | null;
     includeHatched: boolean; onIncludeHatched: (v: boolean) => void; riserSource: string;
     includeDeclared?: boolean; onIncludeDeclared?: (v: boolean) => void;
     pipes?: any[]; onPipeClick?: (p: any) => void; meterPerPt?: number | null;
     /** The pipe picked on the sheet: its designation opens and its own run is marked and brought into view. */
-    selectedPipe?: string | null }) {
+    selectedPipe?: string | null;
+    /** The reader says how many of a row's risers go through the slab (a metre) rather than a storey. */
+    onRiserSplit?: (row: any, slab: number) => void }) {
   const [q, setQ] = useState("");
   const [open, setOpen] = useState<string | null>(null);
   const runs = useMemo(() => pipeRuns(pipes), [pipes]);
@@ -143,9 +162,8 @@ export default function QuantityTable({ rows, selected, onSelect, floorHeight, i
                     {/* a height the reader typed is an assumption about the building, not something the sheet
                         says: the metre is shown, and marked for what it is */}
                     {floorHeight && r.risers_calc > 0 && (
-                      <span className="assumed" title={r.riser_height_m != null
-                      ? `Antaget: ${r.risers_calc} radiatoranslutningar upp genom bjälklag × ${String(r.riser_height_m).replace(".", ",")} m. Ritningen anger ingen höjd.`
-                      : `Antaget: ${r.risers_calc} stigare × ${String(floorHeight).replace(".", ",")} m våningshöjd. Ritningen anger ingen höjd.`}> ant.</span>
+                      <span className="assumed" title={`Antaget: ${r.risers_storey} stigare × ${String(floorHeight).replace(".", ",")} m våningshöjd`
+                        + ` och ${r.risers_slab} upp genom bjälklag × ${String(SLAB_RISER_M).replace(".", ",")} m. Ritningen anger ingen höjd.`}> ant.</span>
                     )}
                   </>}</td>
               <td className="num strong">{M(r.total_calc, noScale)}
@@ -159,7 +177,20 @@ export default function QuantityTable({ rows, selected, onSelect, floorHeight, i
                 )}</td>
               <td className="num">{!noScale && r.ambiguous_m > 0 ? r.ambiguous_m.toFixed(2) : "–"}</td>
               <td className="num">{!noScale && (r.in_hatched_area_m ?? 0) > 0 ? Number(r.in_hatched_area_m).toFixed(2) : "–"}</td>
-              <td className="num" title={`Ritade stigarsymboler: ${r.riser_count ?? 0} · etiketter med dimension på raden under: ${r.riser_count_from_labels ?? 0}`}>{r.risers_calc > 0 ? r.risers_calc : "–"}</td>
+              <td className="num" title={`Ritade stigarsymboler: ${r.riser_count ?? 0} · etiketter med dimension på raden under: ${r.riser_count_from_labels ?? 0}`}>
+                {r.risers_calc > 0 ? r.risers_calc : "–"}
+                {/* Bladet ritar en stigare genom bjälklaget (1 m till radiatorn) och en hel våning likadant; hur
+                    många av radens som är vilket säger läsaren, och det sparas som en rättelse. */}
+                {r.risers_calc > 0 && onRiserSplit && (
+                  <span className="assumed" onClick={(e) => e.stopPropagation()}
+                    title={tr("Hur många av stigarna som går genom bjälklaget (1 m) i stället för en våning")}>
+                    {" "}varav bjälklag{" "}
+                    <input type="number" min={0} max={r.risers_calc} value={r.risers_slab} style={{ width: 44 }}
+                      onChange={(e) => { const n = Math.max(0, Math.min(r.risers_calc, Math.round(Number(e.target.value) || 0)));
+                        if (n !== r.risers_slab) onRiserSplit(r, n); }} />
+                  </span>
+                )}
+              </td>
               <td><span className={`badge ${r.state === "CONFIRMED" ? "ok" : r.state === "AMBIGUOUS" || r.state === "RISER_LABELS_ONLY" || r.state === "IN_HATCHED_AREA" ? "warn" : "bad"}`}>{STATE_LABELS[r.state] ?? r.state}</span></td>
             </tr>,
             ...(open === identityKey(r)
