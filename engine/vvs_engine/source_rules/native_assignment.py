@@ -22,7 +22,7 @@ def identity(d):
 
 def _on(rule):
     """Whether a rule after the assignment runs: VVS_RULES_OFF=twin,terminal,... switches rules off, so each one's
-    worth can be measured against the facit takeoffs (engine/tools/facit_gap.py)."""
+    worth can be measured with the rule switched off."""
     import os
     return rule not in {r.strip() for r in os.environ.get('VVS_RULES_OFF', '').split(',') if r.strip()}
 
