@@ -1664,7 +1664,11 @@ def analyze_page(page: RawPage, progress: Callable[[str], None] | None = None, o
     native_merge = None
     if source_detector is not None:
         from .source_rules.native_bridge import merge_detection
-        native = source_detector(page.source_path, page.info.index, progress=progress)
+        # the lettering this reading already built from the glyphs: the detector reads those label boxes from it
+        # instead of rasterising and OCR-ing the same strokes again
+        known_text = [{"text": r.text, "bbox": [round(v, 2) for v in r.bbox], "angle": round(r.angle, 1)}
+                      for r in vtext.rows if not r.unknown_chars and r.text.strip()]
+        native = source_detector(page.source_path, page.info.index, progress=progress, known_text=known_text)
         from .source_rules.host_label_repair import repair as repair_label_sizes
         label_sizes = repair_label_sizes(native.get('labels') or [], designations)
         from .source_rules.unattested_codes import set_aside as set_aside_misread_codes
@@ -1733,7 +1737,17 @@ def analyze_page(page: RawPage, progress: Callable[[str], None] | None = None, o
             unknown_codes=unknown_codes))
 
     scale = discover_scale(page, lines)
-    if known_scale is not None and scale.state in ("NONE", "CONFLICT"):
+    if scale.meters_per_pt is None:
+        # nothing on the sheet states its size: measure it on the pipes, whose labels say how wide they are
+        from .measure.scale import ScaleResult, is_schematic, pipe_scale, scale_from_pipes
+        widths = pipe_scale(page, anchors)
+        if widths is not None:
+            scale = scale_from_pipes(widths, scale.reason)
+        elif is_schematic(lines):
+            # a flow or principle diagram is drawn without a scale on purpose: its lines say what connects to
+            # what, not how long anything is
+            scale = ScaleResult(None, "none", scale.state, scale.evidence, "schematic_not_to_scale")
+    if known_scale is not None and scale.state in ("NONE", "CONFLICT") and scale.meters_per_pt is None:
         # the rest of the set agreed about how big it is, and this sheet's own stamp did not settle it
         scale = scale_from_the_set(known_scale, f"ritningsomgången är enig; bladets eget besked: {scale.reason}",
                                    known_scale_pages)
@@ -1828,11 +1842,12 @@ def analyze_page(page: RawPage, progress: Callable[[str], None] | None = None, o
               "VERIFIED": "verifierad - utskriven skala och skalstock säger samma sak",
               "STATED": "tagen ur den utskrivna skalan", "BAR_ONLY": "tagen ur skalstocken; ingen utskriven skala",
               "DIMENSIONS_ONLY": "tagen ur bladets måttsättning; ingen utskriven skala",
+              "FROM_PIPES": "mätt på rören - deras beteckningar säger hur breda de är; ingen utskriven skala",
               "CONFLICT": "utskriven skala och skalstock säger emot varandra", "NONE": "gick inte att fastställa"}
         film.note("MEASURING",
                   f"Skalan: {sv.get(scale.state, scale.state.lower())}"
                   + (f", {scale.meters_per_pt:.6f} m per punkt." if scale.meters_per_pt else ".")
-                  + ("" if scale.state in ("VERIFIED", "STATED", "BAR_ONLY", "FROM_THE_SET", "DIMENSIONS_ONLY")
+                  + ("" if scale.state in ("VERIFIED", "STATED", "BAR_ONLY", "FROM_THE_SET", "DIMENSIONS_ONLY", "FROM_PIPES")
                      else " Utan säker skala mäts ingenting."))
     elevations = _elevations(blocks, anchors)
     # read the sheet again by the other routes, put the answers side by side, and let a second route add what the

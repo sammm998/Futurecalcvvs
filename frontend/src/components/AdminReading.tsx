@@ -1,3 +1,4 @@
+import { stageText } from "./Status";
 import { Fragment, useEffect, useState } from "react";
 import { t as tr, locale } from "../i18n";
 import { api } from "../api";
@@ -64,7 +65,7 @@ export function Readings() {
                   <td className="muted">{r.user}</td>
                   <td>{r.status === "DONE" ? <span className="badge ok small">klar</span>
                     : r.status === "FAILED" ? <span className="badge warn small" title={r.error}>fel</span>
-                      : <span className="badge small">{r.stage}</span>}</td>
+                      : <span className="badge small">{stageText(r.stage) || r.stage}</span>}</td>
                   <td className="num muted">{r.seconds ? `${r.seconds} s` : "–"}</td>
                   <td className="num">{r.names_with_metres ?? "–"}/{r.names ?? "–"}</td>
                   <td className="num"><b className={(r.coverage ?? 1) < 0.6 ? "warntext" : ""}>{pct(r.coverage)}</b></td>

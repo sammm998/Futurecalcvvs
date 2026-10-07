@@ -52,7 +52,7 @@ def test_model_memory_options_and_session_restored_on_failure(monkeypatch):
         assert providers == ['CPUExecutionProvider']
         assert sess_options.enable_cpu_mem_arena is False
         assert sess_options.enable_mem_pattern is False
-        assert sess_options.intra_op_num_threads == 1
+        assert 1 <= sess_options.intra_op_num_threads <= 2
         assert sess_options.inter_op_num_threads == 1
         result = SimpleNamespace(get_modelmeta=lambda: SimpleNamespace(
             custom_metadata_map={'1':'type2_label','0':'Label_Box'}))

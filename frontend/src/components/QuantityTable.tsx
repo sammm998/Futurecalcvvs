@@ -6,7 +6,7 @@ import { pipeRuns, runRows } from "../runs";
 import { t as tr } from "../i18n";
 
 const STATE_LABELS: Record<string, string> = { CONFIRMED: tr("BEKRÄFTAD"), AMBIGUOUS: tr("TVETYDIG"), NO_SCALE: tr("INGEN SKALA"),
-  SCALE_UNSETTLED: "OAVGJORD SKALA", SCALE_FROM_THE_SET: "SKALA UR OMGÅNGEN", SCALE_GIVEN_BY_HAND: "ANGIVEN SKALA",
+  SCALE_UNSETTLED: "OAVGJORD SKALA", SCALE_FROM_THE_SET: "SKALA UR OMGÅNGEN", SCALE_FROM_PIPES: "SKALA MÄTT PÅ RÖREN", SCALE_MEASURED: "SKALA MÄTT PÅ BLADET", SCALE_GIVEN_BY_HAND: "ANGIVEN SKALA",
   UNSUPPORTED_STYLE: tr("EJ STÖDD STIL"), RISER_LABELS_ONLY: tr("ENDAST STIGARE"), IN_HATCHED_AREA: tr("I SKRAFFERAD YTA") };
 
 /* En rad utan skala har ingen meter - och noll är inte samma sak som okänt. Tabellen skrev 0,00 i varje

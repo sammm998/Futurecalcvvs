@@ -218,3 +218,39 @@ def foresla_rita_ror_fran_vektorer(m: DrawingModel, segment_id=None, beteckning:
                            meters=meters, lines=points, segment_ids=ids, reason=skal or None, source="agent")]
     return _offer(forslag, f"Lägger {meters:.2f} m till {target} ({len(ids)} segment, "
                            f"{sum(math.dist((x0, y0), (x1, y1)) for x0, y0, x1, y1 in lines) * m.meters_per_pt - meters:.2f} m var redan mätt).")
+
+
+@tool("foresla_skala",
+      "Bestäm bladets skala när den saknas: ange två punkter på bladet och den verkliga längden mellan dem i mm, "
+      "från något vars storlek ritningen anger - ett mått i måttsättningen, ett rör ritat med båda kanterna "
+      "(beteckningens dimension är ytterdiametern), ett rutnät med angivna avstånd. Ge helst två belägg. Motorn "
+      "räknar skalan, rundar till närmaste standardskala och räknar om alla rader.",
+      {"matningar": {"type": "array", "description": "Lista av {a: [x, y], b: [x, y], mm: tal, vad: text}.",
+                     "items": {"type": "object"}, "required": True},
+       "skal": {"type": "string", "description": "Vad på ritningen måtten är tagna på.", "required": True}},
+      writes=True)
+def foresla_skala(m: DrawingModel, matningar=None, skal: str = "") -> dict:
+    from ..measure.scale import MM_PER_PT, PLAN_RATIOS, snap_ratio
+    from .edits import _correction, _offer, _refuse
+    vals = []
+    for x in (matningar or []):
+        try:
+            a, b, mm = x["a"], x["b"], float(x["mm"])
+            d = math.dist((float(a[0]), float(a[1])), (float(b[0]), float(b[1])))
+        except (KeyError, TypeError, ValueError, IndexError):
+            return _refuse("varje mätning ska vara {a: [x, y], b: [x, y], mm: tal}")
+        if d < 2 or mm <= 0:
+            return _refuse("en mätning är för kort för att säga något")
+        vals.append(mm / 1000.0 / d)
+    if not vals:
+        return _refuse("inga mätningar angavs")
+    if max(vals) / min(vals) - 1 > 0.05:
+        return _refuse("mätningarna säger olika skalor (mer än 5 % isär); mät igen på något säkrare",
+                       skalor=[f"1:{round(v * 1000 / MM_PER_PT)}" for v in vals])
+    mpp, ratio = snap_ratio(sorted(vals)[len(vals) // 2])
+    if ratio is None or not PLAN_RATIOS[0] <= ratio <= PLAN_RATIOS[1]:
+        return _refuse(f"mätningen ger 1:{round(mpp * 1000 / MM_PER_PT)}, som ingen planritning är ritad i")
+    forslag = [_correction("scale", "*", 0.0, f"skalan 1:{ratio}, mätt på bladet",
+                           meters_per_pdf_point=mpp, ratio=ratio, measurements=matningar, reason=skal or None,
+                           source="agent")]
+    return _offer(forslag, f"Skalan blir 1:{ratio} ({len(vals)} mätningar). Alla rader räknas om ur sina punkter.")

@@ -12,6 +12,13 @@ from ..pdf.extract import RawPage
 from ..text.model import TextRow, project, row_axes
 
 MM_PER_PT = 25.4 / 72.0
+SCHEMATIC_RE = re.compile(r"(?i)^\s*(FLÖDES|FLODES|PRINCIP|SYSTEM|FUNKTIONS)\s*-?\s*SCHEMA\b")
+
+
+def is_schematic(lines) -> bool:
+    """The sheet names itself a flow or principle diagram: a row that begins with it, as a stamp's title does - not
+    a note on a plan that refers to one ("SE FLÖDESSCHEMA V-50-...")."""
+    return any(SCHEMATIC_RE.search(ln.text) for ln in lines)
 # The denominator has to end where the number ends. Without the boundary "1:10000" matches its first four
 # digits and reads as 1:1000, which is not a refusal to understand an unsupported scale - it is a tenfold
 # error stated as confidently as a correct reading.
@@ -606,3 +613,104 @@ def _find_scale_bar(page: RawPage, lines: list[TextRow]) -> ScaleEvidence | None
         if best is None or len(vals) > best.detail["n_labels"]:
             best = cand
     return best
+
+
+# ---------------------------------------------------------------- the scale measured on the pipes themselves
+
+STANDARD_RATIOS = (10, 20, 25, 50, 75, 100, 200, 250, 400, 500, 1000)
+SNAP_TOL = 0.05          # a measured ratio this close to a standard one is that one
+PIPE_AGREE = 0.08        # pipes whose measured scales lie this close agree
+PIPE_MIN = 3             # agreeing pipes needed...
+PIPE_MIN_SIZES = 2       # ...of at least this many different sizes (a pair of single lines a fixed gap apart
+                         # gives the same gap whatever the size, and so a different scale for every size)
+PIPE_REACH = 4.0         # pt: the leader's contact lies on one edge; the other edge is searched from here
+PIPE_GAP = (0.6, 25.0)   # pt: how far apart the two edges of a drawn pipe can be
+PLAN_RATIOS = (20, 500)  # the ratios a plan or a detail is drawn in
+
+
+def snap_ratio(mpp: float) -> tuple[float, int | None]:
+    """A measured scale, moved to the standard ratio it lies within a few per cent of, and that ratio."""
+    ratio = mpp * 1000.0 / MM_PER_PT
+    best = min(STANDARD_RATIOS, key=lambda r: abs(ratio / r - 1))
+    if abs(ratio / best - 1) <= SNAP_TOL:
+        return best * MM_PER_PT / 1000.0, best
+    return mpp, None
+
+
+def pipe_scale(page: RawPage, anchors) -> ScaleEvidence | None:
+    """The scale read off the pipes: a pipe drawn with both its edges is drawn as wide as it is.
+
+    A Swedish designation states the pipe's outer diameter in millimetres (VS1-S13-22: 22 mm steel, S2-P5-110:
+    110 mm plastic). Where a label's leader lands on a pipe drawn with two parallel edges, the gap between them
+    in PDF points is that many millimetres on the building, and the two give the scale. One pipe is one
+    measurement; a scale is taken only when several pipes of different sizes agree, and it is moved to the
+    standard ratio it lies next to (1:50, 1:100 ...)."""
+    from collections import defaultdict
+    from ..pipes.representation import family_key
+    by_family: dict[str, list] = defaultdict(list)
+    for p in page.paths:
+        if p.kind == "s" and p.segs:
+            fk = family_key(p)
+            for s in p.segs:
+                if s.length > 2.0:
+                    by_family[fk].append(s)
+    found = []
+    for a in anchors:
+        if not a.dn or not a.contacts:
+            continue
+        for c in a.contacts:
+            if c.kind not in ("end", "crossing_tick", "end_tick"):
+                continue
+            segs = by_family.get(c.family) or []
+            own = min(segs, key=lambda s: _pt_seg(c.point, s), default=None)
+            if own is None or _pt_seg(c.point, own) > PIPE_REACH:
+                continue
+            ux, uy = (own.x1 - own.x0) / own.length, (own.y1 - own.y0) / own.length
+            gaps = []
+            for s in segs:
+                if s is own or abs((s.x1 - s.x0) * ux + (s.y1 - s.y0) * uy) / s.length < 0.995:
+                    continue
+                # the other edge runs alongside the contact: the contact projects onto it
+                t = ((c.point[0] - s.x0) * (s.x1 - s.x0) + (c.point[1] - s.y0) * (s.y1 - s.y0)) / (s.length ** 2)
+                if not 0.0 <= t <= 1.0:
+                    continue
+                gap = abs((s.x0 - own.x0) * uy - (s.y0 - own.y0) * ux)
+                if PIPE_GAP[0] <= gap <= PIPE_GAP[1]:
+                    gaps.append(gap)
+            if gaps:
+                gap = min(gaps)
+                found.append((a.dn / 1000.0 / gap, a.dn, gap, a.designation_display))
+            break
+    if len(found) < PIPE_MIN:
+        return None
+    best = None
+    for v, *_ in found:
+        group = [f for f in found if abs(f[0] / v - 1) <= PIPE_AGREE]
+        if len({f[1] for f in group}) >= PIPE_MIN_SIZES and len(group) >= PIPE_MIN and (best is None or len(group) > len(best)):
+            best = group
+    if best is None:
+        return None
+    vals = sorted(f[0] for f in best)
+    mpp, ratio = snap_ratio(vals[len(vals) // 2])
+    # A sheet drawn in single lines has no pipe width to measure, and the gap between two pipes laid side by side
+    # can still agree with itself (W-50-1-A-0122: 12 and 16 a pair's width apart read 1:4). A plan is drawn in
+    # one of the standard ratios; a measurement that does not land on one is not the scale.
+    if ratio is None or not PLAN_RATIOS[0] <= ratio <= PLAN_RATIOS[1]:
+        return None
+    return ScaleEvidence(kind="pipe_widths", text=f"{len(best)} rör mätta", bbox=[0, 0, 0, 0], value=mpp,
+                         detail={"pipes": [{"designation": f[3], "dn": f[1], "gap_pt": round(f[2], 2)} for f in best[:12]],
+                                 "agreeing": len(best), "measured": len(found), "standard_ratio": ratio})
+
+
+def _pt_seg(p, s) -> float:
+    dx, dy = s.x1 - s.x0, s.y1 - s.y0
+    L2 = dx * dx + dy * dy
+    t = 0.0 if L2 == 0 else max(0.0, min(1.0, ((p[0] - s.x0) * dx + (p[1] - s.y0) * dy) / L2))
+    return math.hypot(p[0] - (s.x0 + t * dx), p[1] - (s.y0 + t * dy))
+
+
+def scale_from_pipes(ev: ScaleEvidence, sheet_said: str) -> ScaleResult:
+    r = ev.detail.get("standard_ratio")
+    why = (f"mätt på {ev.detail['agreeing']} rör med båda kanterna ritade"
+           + (f", rundat till 1:{r}" if r else "") + f"; bladets eget besked: {sheet_said}")
+    return ScaleResult(meters_per_pt=ev.value, scope="page", state="FROM_PIPES", evidence=[ev], reason=why)

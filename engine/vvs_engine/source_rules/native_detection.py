@@ -169,7 +169,69 @@ def kept_policy(ex, B, extra_pipe_width, leader_width):
                        'leader_pen': leader_width, 'method': C.get('family_method')}}
 
 
-def detect_page(pdf_path, page_number=0, style=None, progress=None, artifact_dir=None, strict_original=False):
+KNOWN_COVER = 0.6        # the rows read from the vector glyphs must span this share of a label box's height and width
+
+
+def read_labels_known(labels, clean, det, page_number, known_text):
+    """The label boxes read, with tesseract only where the drawing's own vector text did not already say it.
+
+    On a sheet whose lettering is drawn as strokes, the host reading has already built every row of text from the
+    glyphs before the native detector runs, and OCR then reads the same lettering again from a raster - several
+    passes per box, the slowest step of the whole reading (101 of 230 s on W-50-1-A-0123). A box whose vector rows
+    span it and parse to designations that all carry a size is taken from those rows. Anything else - a box the
+    rows do not cover, a row without a size, nothing read at all - goes to the OCR exactly as before.
+    """
+    boxes = det.get('label_boxes', [])
+    if not known_text or not boxes:
+        return labels.read_labels(clean, det, page_no=page_number)
+    import pymupdf
+    from pipe_types import stroke_bars
+    from vectorascore import vvs
+    known, rest = {}, []
+    for b in boxes:
+        x0, y0, x1, y1 = b['rect']
+        rows = [r for r in known_text
+                if x0 - 1 <= (r['bbox'][0] + r['bbox'][2]) / 2 <= x1 + 1 and y0 - 1 <= (r['bbox'][1] + r['bbox'][3]) / 2 <= y1 + 1
+                and r['text'].strip()]
+        # only lettering written left to right: which row of a turned label comes first is the OCR's to say
+        if not rows or any(abs(r.get('angle') or 0) > 1 for r in rows):
+            rest.append(b)
+            continue
+        rows.sort(key=lambda r: r['bbox'][1])
+        ux0, uy0 = min(r['bbox'][0] for r in rows), min(r['bbox'][1] for r in rows)
+        ux1, uy1 = max(r['bbox'][2] for r in rows), max(r['bbox'][3] for r in rows)
+        if (ux1 - ux0) < KNOWN_COVER * (x1 - x0) or (uy1 - uy0) < KNOWN_COVER * (y1 - y0):
+            rest.append(b)
+            continue
+        texts = [r['text'].strip() for r in rows]
+        des, level, unknown = vvs.parse_block(texts)
+        des = [vvs.sanitize_dimension(d) for d in des]
+        if not des or not all(d.get('dimension') and d.get('system') for d in des) or unknown:
+            rest.append(b)
+            continue
+        known[b['id']] = (b, rows, texts, des, level, unknown)
+    out = {r['id']: r for r in (labels.read_labels(clean, dict(det, label_boxes=rest), page_no=page_number) if rest else [])}
+    if known:
+        with pymupdf.open(clean) as doc:
+            page = doc[page_number]
+            for bid, (b, rows, texts, des, level, unknown) in known.items():
+                trip = [(t, pymupdf.Rect(*r['bbox']), 100.0) for t, r in zip(texts, rows)]
+                bars = stroke_bars(page, b['rect'], trip)
+                out[bid] = {'id': b['id'], 'rect': b['rect'], 'score': b['score'], 'text': '\n'.join(texts),
+                            'src': 'vector_text', 'cls': b.get('cls'), 'in_wall': False,
+                            'valid': labels.label_valid(des, b['score']),
+                            'usable': any(d.get('dimension') for d in des),
+                            'rows': [{'text': t, 'rect': [round(v, 2) for v in r['bbox']], 'conf': 100.0}
+                                     for t, r in zip(texts, rows)],
+                            'designations': des, 'level': level, 'unknown_rows': unknown, 'stroke_bars': bars,
+                            'stroke_notation': {'over': any(x['side'] == 'over' for x in bars),
+                                                'under': any(x['side'] == 'under' for x in bars)} if bars else None,
+                            'layer_system': None}
+    return [out[b['id']] for b in boxes if b['id'] in out]
+
+
+def detect_page(pdf_path, page_number=0, style=None, progress=None, artifact_dir=None, strict_original=False,
+                known_text=None):
     import pymupdf
     from ..pdf.extract import _inventory_annotations, _set_markup_aside
     extract, profile, detect, labels, style_module, vector_stages = load_runtime()
@@ -223,7 +285,7 @@ def detect_page(pdf_path, page_number=0, style=None, progress=None, artifact_dir
             boxed = dict(boxed, reordered=reordered)
         P = stage('profile', lambda: profile.profile(ex))
         det = labels.text_label_boxes(ex, det, text_height=style_module.text_height(ex)[0])
-        L = stage('ocr', lambda: labels.read_labels(clean, det, page_no=page_number))
+        L = stage('ocr', lambda: read_labels_known(labels, clean, det, page_number, known_text))
         rotated_repairs = []
         if not strict_original:
             from .rotated_labels import repair

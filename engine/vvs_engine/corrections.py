@@ -14,7 +14,7 @@ from __future__ import annotations
 import math
 from typing import Any
 
-KINDS = ("extend", "draw", "erase", "retag", "quantity", "confirm", "riser_height")
+KINDS = ("extend", "draw", "erase", "retag", "quantity", "confirm", "riser_height", "scale")
 
 
 def _length_m(points: list[list[float]], meters_per_pt: float) -> float:
@@ -70,6 +70,26 @@ def apply(quantities: list[dict], corrections: list[dict], meters_per_pt: float 
         kind, name, p = c.get("kind"), c.get("designation"), c.get("payload") or {}
         if kind not in KINDS:
             log.append({"id": c.get("id"), "kind": kind, "applied": False, "why": "okänd typ"})
+            continue
+        if kind == "scale":
+            # The sheet's scale, measured by someone - a person or the agent - on something of known size. Every
+            # row is measured again from its drawn length in points; none is called confirmed on it.
+            mpp_new = p.get("meters_per_pdf_point")
+            if not isinstance(mpp_new, (int, float)) or not 0 < mpp_new < 1:
+                log.append({"id": c.get("id"), "kind": kind, "applied": False, "why": "skalan saknas eller är orimlig"})
+                continue
+            for r in rows.values():
+                pts = r.get("horizontal_pdf_units")
+                if pts is None:
+                    continue
+                r["confirmed_horizontal_m"] = round(float(pts) * mpp_new, 3)
+                r["ambiguous_m"] = round(float(r.get("ambiguous_pdf_units") or 0.0) * mpp_new, 3)
+                r["confirmed_total_m"] = round(r["confirmed_horizontal_m"] + (r.get("confirmed_vertical_m") or 0.0), 3)
+                if r.get("state") in ("NO_SCALE", "CONFIRMED", "SCALE_UNSETTLED"):
+                    r["state"] = "SCALE_MEASURED"
+                r["corrected"] = True
+            log.append({"id": c.get("id"), "kind": kind, "applied": True, "delta_m": 0.0,
+                        "meters_per_pdf_point": mpp_new, "note": c.get("note")})
             continue
         if not name:
             log.append({"id": c.get("id"), "kind": kind, "applied": False, "why": "beteckning saknas"})

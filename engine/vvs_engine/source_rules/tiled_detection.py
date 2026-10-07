@@ -48,7 +48,8 @@ def bounded_model():
     options = ort.SessionOptions()
     options.enable_cpu_mem_arena = False
     options.enable_mem_pattern = False
-    options.intra_op_num_threads = 1
+    # two threads: the tiles are the second slowest step of a reading, and two stay inside the service's memory
+    options.intra_op_num_threads = max(1, min(int(os.environ.get('VVS_DETECT_THREADS', '2')), os.cpu_count() or 1))
     options.inter_op_num_threads = 1
     options.log_severity_level = 3
     session = ort.InferenceSession(pipe_ai.CONFIG['model_path'], sess_options=options,
@@ -88,12 +89,34 @@ def _detect_tiles(pdf_path, page_no, classes, provider, *, progress=None):
         page = doc[page_no]
         width, height = math.ceil(page.rect.width * scale), math.ceil(page.rect.height * scale)
         xs, ys = tile_starts(width, size, overlap), tile_starts(height, size, overlap)
+        # a tile with no ink in it has no label in it: it is not rendered or put to the model
+        # widened a little: a straight line has a rectangle with no height, and an empty rectangle meets nothing
+        ink = [pymupdf.Rect(r.x0 - .5, r.y0 - .5, r.x1 + .5, r.y1 + .5)
+               for r in [d['rect'] for d in page.get_drawings() if d.get('rect') is not None]
+               + [pymupdf.Rect(b[:4]) for b in page.get_text('blocks')]]
+        cell = 256.0
+        grid = {}
+        for r in ink:
+            for gx in range(int(r.x0 // cell), int(r.x1 // cell) + 1):
+                for gy in range(int(r.y0 // cell), int(r.y1 // cell) + 1):
+                    grid.setdefault((gx, gy), []).append(r)
+
+        def inked(clip):
+            for gx in range(int(clip.x0 // cell), int(clip.x1 // cell) + 1):
+                for gy in range(int(clip.y0 // cell), int(clip.y1 // cell) + 1):
+                    if any(r.intersects(clip) for r in grid.get((gx, gy), ())):
+                        return True
+            return False
+        skipped = 0
         for row, y in enumerate(ys):
             for col, x in enumerate(xs):
                 if progress:
                     progress(f'PIPESTUDIO_DETECT_TILE_{row * len(xs) + col + 1}_OF_{len(xs) * len(ys)}')
                 clip = pymupdf.Rect(x / scale, y / scale, min(x + size, width) / scale,
                                     min(y + size, height) / scale) & page.rect
+                if not inked(clip):
+                    skipped += 1
+                    continue
                 pix = page.get_pixmap(matrix=pymupdf.Matrix(scale, scale), clip=clip,
                                       colorspace=pymupdf.csRGB, alpha=False)
                 image = np.frombuffer(pix.samples_mv, np.uint8).reshape(pix.height, pix.width, 3)
@@ -127,4 +150,4 @@ def _detect_tiles(pdf_path, page_no, classes, provider, *, progress=None):
             'ml_joins': [], 'provider': provider,
             'raster_strategy': {'mode': 'overlapping_tiles', 'tile_px': size,
                                 'overlap_px': overlap, 'dpi': scale * 72,
-                                'tiles': len(xs) * len(ys)}}
+                                'tiles': len(xs) * len(ys), 'empty_tiles_skipped': skipped}}
