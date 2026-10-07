@@ -14,7 +14,7 @@ from __future__ import annotations
 import math
 from typing import Any
 
-KINDS = ("extend", "draw", "erase", "retag", "quantity", "confirm")
+KINDS = ("extend", "draw", "erase", "retag", "quantity", "confirm", "riser_height")
 
 
 def _length_m(points: list[list[float]], meters_per_pt: float) -> float:
@@ -154,6 +154,25 @@ def apply(quantities: list[dict], corrections: list[dict], meters_per_pt: float 
             r["confirmed_total_m"] = round(r["confirmed_horizontal_m"] + (r.get("confirmed_vertical_m") or 0.0), 3)
             log.append({"id": c.get("id"), "kind": kind, "designation": name, "applied": True,
                         "delta_m": 0.0, "confirmed_m": round(before - r["review_m"], 3), "note": c.get("note")})
+            continue
+        elif kind == "riser_height":
+            # How many of a row's risers go up through the slab (a metre) rather than a storey. The sheet draws
+            # both the same way; which is which is the reader's to say. It moves no horizontal metre.
+            if not keys_named(name):
+                log.append({"id": c.get("id"), "kind": kind, "designation": name, "applied": False,
+                            "why": f"{name} har inga stigare att fördela"})
+                continue
+            r = row(name)
+            n = max(int(r.get("riser_count") or 0), int(r.get("riser_count_from_labels") or 0))
+            slab = p.get("slab")
+            if not isinstance(slab, (int, float)) or slab < 0:
+                log.append({"id": c.get("id"), "kind": kind, "designation": name, "applied": False,
+                            "why": "antalet stigare genom bjälklag saknas"})
+                continue
+            r["riser_slab_count"] = min(int(slab), n)
+            r["corrected"] = True
+            log.append({"id": c.get("id"), "kind": kind, "designation": name, "applied": True, "delta_m": 0.0,
+                        "riser_slab_count": r["riser_slab_count"], "note": c.get("note")})
             continue
         elif kind == "quantity":
             r = row(name)

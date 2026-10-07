@@ -12,7 +12,7 @@ import DiskFullHelp from "../components/DiskFullHelp";
 import AnalysisCompletionReveal from "../components/AnalysisCompletionReveal";
 import DrawingTo3DTransition from "../components/DrawingTo3DTransition";
 import PdfViewer, { Drawn, EditKind, InkVerdict, Layer, ViewerHandle } from "../components/PdfViewer";
-import QuantityTable, { withFloorHeight, identityKey } from "../components/QuantityTable";
+import QuantityTable, { withFloorHeight, identityKey, riserMetres } from "../components/QuantityTable";
 import AnalysisFilm from "../components/AnalysisFilm";
 import LearnWizard from "../components/LearnWizard";
 import Boundary from "../components/Boundary";
@@ -442,7 +442,7 @@ export default function AnalysisPage() {
             quantities: withFloorHeight(result.quantities, floorH, includeHatched, riserSource, includeDeclared).map((r: any) => ({
               designation: r.designation, dn: r.dn, state: r.state, labels: r.label_count, runs: r.physical_pipe_count,
               horizontal_m: Math.round(r.horizontal_calc * 100) / 100,
-              risers: r.risers_calc, metres_per_riser: r.riser_height_m ?? floorH,
+              risers: r.risers_calc, risers_through_slab: r.risers_slab, metres_per_riser: floorH,
               vertical_m: r.vertical_calc == null ? null : Math.round(r.vertical_calc * 100) / 100,
               total_m: Math.round(r.total_calc * 100) / 100,
               review_m: r.review_m, ambiguous_m: r.ambiguous_m })),
@@ -686,6 +686,7 @@ export default function AnalysisPage() {
               const FLAG_TEXT: Record<string, string> = {
                 dimension_change_without_fitting: "dimensionen byts där två rör möts, utan etikett eller reducering",
                 system_change_along_run: "systemet byts längs samma stråk, utan etikett",
+                material_change_through_junction: "materialet byts rakt genom ett T-rör, utan etikett",
                 named_without_dimension: "rör med namn men utan dimension",
               };
               return (
@@ -737,7 +738,7 @@ export default function AnalysisPage() {
                             {/* the stacks the sheets state, and the metres they become once a floor height is given */}
                             <td className="num">{docRisers(r) || <span className="muted">–</span>}</td>
                             <td className="num">{(() => {
-                              const v = r.confirmed_vertical_m + (floorH ? docRisers(r) * Number(r.riser_height_m ?? floorH) : 0);
+                              const v = r.confirmed_vertical_m + (floorH ? riserMetres(r, docRisers(r), floorH) : 0);
                               return v ? v.toFixed(2) : <span className="muted">–</span>;
                             })()}</td>
                             <td className="num">{r.physical_pipe_count}</td>
@@ -780,6 +781,11 @@ export default function AnalysisPage() {
             <QuantityTable rows={result.quantities} selected={selIdent} onSelect={onIdentityPick} floorHeight={floorH}
               pipes={result.pipes} meterPerPt={result.scale?.meters_per_pdf_point ?? null} onPipeClick={onPipeClick}
               selectedPipe={selPipe?.physical_pipe_id ?? null}
+              onRiserSplit={job?.drawing_id ? async (r: any, slab: number) => {
+                await api.addCorrection(job.drawing_id, { kind: 'riser_height', designation: r.designation, page,
+                  payload: { slab }, note: `${slab} av ${r.risers_calc} stigare genom bjälklag`, job_id: id });
+                setCorrections(await api.corrections(job.drawing_id)); setResult(await api.result(id!, page));
+              } : undefined}
               includeHatched={includeHatched} onIncludeHatched={(v) => { setIncludeHatched(v); try { localStorage.setItem("vvs.includeHatched", v ? "1" : "0"); } catch { /* private window: the setting just does not persist */ } }}
               includeDeclared={includeDeclared} onIncludeDeclared={(v) => { setIncludeDeclared(v); try { localStorage.setItem("vvs.includeDeclared", v ? "1" : "0"); } catch { /* privat läge: valet gäller bara den här sessionen */ } }}
               riserSource={riserSource} />

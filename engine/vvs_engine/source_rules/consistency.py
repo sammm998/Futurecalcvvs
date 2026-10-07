@@ -6,7 +6,10 @@ stop at, and mark it for review; they never change a name or a metre:
   dimension_change_without_fitting  the same line changes size where two of its runs simply meet end to end,
                                     with no label landing there to say the size changes;
   system_change_along_run           one pen's run changes system where two runs meet end to end, unlabelled;
-  named_without_dimension           a run carries a pipe name without a size, so it has no row of its own.
+  named_without_dimension           a run carries a pipe name without a size, so it has no row of its own;
+  material_change_through_junction  a run goes straight through a tee and comes out another material of the same
+                                    system (a tap connection line read on into the distribution line it left),
+                                    with no label at the tee to say so.
 
 The model, where one was chosen, is shown the flags afterwards and may dismiss one (model_review in
 native_assignment); a dismissed flag is kept, with its reason, but no longer marks the run red.
@@ -29,6 +32,7 @@ REVIEW_SCHEMA = {'type': 'object', 'properties': {'verdicts': {'type': 'array', 
     'required': ['verdicts'], 'additionalProperties': False}
 
 LANDING_REACH = 6.0      # pt: a label landing this close to the meeting point explains the change
+STRAIGHT_DEG = 15.0      # degrees: two runs leaving a tee this close to opposite directions are one run through it
 
 
 def _line(identity):
@@ -84,6 +88,34 @@ def check(graphs, pipes, landings) -> list[dict]:
             for p in (a, b):
                 if kind not in p.flags:
                     p.flags.append(kind)
+    def axis(fk, q, n):
+        sg = graphs[fk].prims[q].seg
+        far = (sg.x1, sg.y1) if math.hypot(sg.x0 - n.x, sg.y0 - n.y) < math.hypot(sg.x1 - n.x, sg.y1 - n.y) else (sg.x0, sg.y0)
+        return math.atan2(far[1] - n.y, far[0] - n.x)
+
+    for fk, g in graphs.items():
+        for nid, n in g.nodes.items():
+            prims = [q for q in n.prims if (fk, q) in owner]
+            if len(n.prims) < 3 or len(prims) < 2 or labelled(n.x, n.y):
+                continue
+            for i, qa in enumerate(prims):
+                for qb in prims[i + 1:]:
+                    a, b = owner[(fk, qa)], owner[(fk, qb)]
+                    if a is b or _system(a.identity) != _system(b.identity) or _line(a.identity) == _line(b.identity):
+                        continue
+                    turn = abs((axis(fk, qa, n) - axis(fk, qb, n) + math.pi) % (2 * math.pi) - math.pi)
+                    if turn < math.radians(180 - STRAIGHT_DEG):
+                        continue          # the two leave the tee at an angle: a branch, not one run
+                    kind = 'material_change_through_junction'
+                    key = (kind, min(a.physical_pipe_id, b.physical_pipe_id), max(a.physical_pipe_id, b.physical_pipe_id))
+                    if key in seen:
+                        continue
+                    seen.add(key)
+                    flags.append({'flag': kind, 'pipes': [a.physical_pipe_id, b.physical_pipe_id],
+                                  'designations': [a.identity.display, b.identity.display], 'at': [round(n.x, 1), round(n.y, 1)]})
+                    for p in (a, b):
+                        if kind not in p.flags:
+                            p.flags.append(kind)
     for p in pipes:
         if p.identity.dn is None and 'named_without_dimension' not in p.flags:
             p.flags.append('named_without_dimension')

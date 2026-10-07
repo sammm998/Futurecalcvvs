@@ -379,6 +379,9 @@ def aggregate(measures: list[PipeMeasure], ambiguous_pt: dict[str, float], mpp: 
         h = slab_riser_height(r)
         if h is not None:
             r["riser_height_m"] = h      # what one riser counts on this row; absent means the storey height
+        # how many of the row's risers go through the slab (a metre each) rather than a storey: the default is the
+        # row's own kind, and the reader splits a row where the sheet has both
+        r["riser_slab_count"] = max(r["riser_count"], r["riser_count_from_labels"]) if h is not None else 0
         out.append(r)
     return out
 

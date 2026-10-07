@@ -452,6 +452,7 @@ def document_quantities(sheets: list[dict]) -> dict[str, Any]:
             r["sheets"].append(sh.get("page"))
             if q.get("riser_height_m") is not None:
                 r["riser_height_m"] = q["riser_height_m"]
+            r["riser_slab_count"] = r.get("riser_slab_count", 0) + int(q.get("riser_slab_count") or 0)
             # the runs behind the row, sheet by sheet: a set's figure has to lead back to the ink like a sheet's
             r["pipe_ids"].extend(q.get("pipe_ids") or [])
             # both riser readings travel with the row: the takeoff chooses between them, and a rollup that

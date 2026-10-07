@@ -7,10 +7,11 @@ import json
 import os
 
 from openpyxl import Workbook
+from vvs_engine.measure.measure import SLAB_RISER_M
 from openpyxl.styles import Font
 from openpyxl.utils import get_column_letter
 
-HEADERS = ["Beteckning", "DN", "Beteckningar på ritningen", "Sammanhängande rörsträckor", "Horisontellt m", "Vertikalt m", "Vertikalt ursprung", "Totalt m", "Tvetydigt m", "Varav enligt bladets tabell m", "I skrafferat område, ej i mängden m", "Andra kanten av dubbellinje m", "Stigare (symboler)", "Stigare (etiketter)", "Status", "Varav behöver granskas m"]
+HEADERS = ["Beteckning", "DN", "Beteckningar på ritningen", "Sammanhängande rörsträckor", "Horisontellt m", "Vertikalt m", "Vertikalt ursprung", "Totalt m", "Tvetydigt m", "Varav enligt bladets tabell m", "I skrafferat område, ej i mängden m", "Andra kanten av dubbellinje m", "Stigare (symboler)", "Stigare (etiketter)", "Status", "Varav behöver granskas m", "Varav stigare genom bjälklag"]
 
 
 def _rows(result_dir: str, floor_height: float | None = None, include_hatched: bool = False,
@@ -56,18 +57,26 @@ def _rows(result_dir: str, floor_height: float | None = None, include_hatched: b
             # below - and the export has to count the same ones or it states a different quantity than they saw.
             risers = int((r.get("riser_count_from_labels") if riser_source == "labels"
                           else r.get("riser_count")) or 0)
-            # a radiator connection through the slab is a metre, not a storey: the engine says so on the row
-            each = float(r.get("riser_height_m") or floor_height)
+            # A radiator connection through the slab is a metre, not a storey. How many of the row's risers are
+            # that kind the engine proposes (riser_slab_count) and the reader may change; an older reading only
+            # marks the whole row with its height.
+            slab = r.get("riser_slab_count")
+            if slab is None:
+                slab = risers if r.get("riser_height_m") is not None else 0
+            slab = min(int(slab), risers)
+            storey = risers - slab
+            r["risers_storey"], r["risers_slab"] = storey, slab
             if risers == 0 and r["vertical_m"] == "UNKNOWN":
                 # med en höjd satt är en rad utan stigare en rad utan vertikal, inte en med okänd
                 r["vertical_m"] = 0.0
                 r["vertical_source"] = "INGA STIGARE"
             if risers > 0:
                 known = 0.0 if r["vertical_m"] == "UNKNOWN" else float(r["vertical_m"])
-                r["vertical_m"] = round(known + risers * each, 3)
+                r["vertical_m"] = round(known + storey * floor_height + slab * SLAB_RISER_M, 3)
                 r["confirmed_total_m"] = round(r["confirmed_horizontal_m"] + r["vertical_m"], 3)
-                r["vertical_source"] = (f"ANTAGET ({risers} stigare x {each:g} m)" if known == 0.0
-                                        else f"MÄTT + ANTAGET ({risers} stigare x {each:g} m)")
+                parts = " + ".join(t for t in (f"{storey} stigare x {floor_height:g} m" if storey else "",
+                                               f"{slab} genom bjälklag x {SLAB_RISER_M:g} m" if slab else "") if t)
+                r["vertical_source"] = (f"ANTAGET ({parts})" if known == 0.0 else f"MÄTT + ANTAGET ({parts})")
     return rows
 
 
@@ -106,7 +115,8 @@ def to_xlsx(result_dir: str, floor_height: float | None = None, include_hatched:
                    _fmt(r["vertical_m"]) if r["vertical_m"] == "UNKNOWN" else round(r["vertical_m"], 2),
                    r["vertical_source"], round(r["confirmed_total_m"], 2),
                    round(r["ambiguous_m"], 2), round(r.get("declared_m", 0.0), 2), round(r.get("in_hatched_area_m", 0.0), 2), round(r.get("double_line_m", 0.0), 2), r.get("riser_count", 0),
-                   r.get("riser_count_from_labels", 0), r["state"], round(float(r.get("review_m") or 0), 2)])
+                   r.get("riser_count_from_labels", 0), r["state"], round(float(r.get("review_m") or 0), 2),
+                   r.get("risers_slab", r.get("riser_slab_count", 0))])
     for i, _ in enumerate(HEADERS, 1):
         ws.column_dimensions[get_column_letter(i)].width = 20
     # Det mängdaren själv ritade in, på ett eget blad. Aldrig i samma tabell som läsningen: de två svarar på
@@ -135,5 +145,6 @@ def to_csv(result_dir: str, floor_height: float | None = None, include_hatched: 
                     _fmt(r["vertical_m"]) if r["vertical_m"] == "UNKNOWN" else f"{r['vertical_m']:.2f}",
                     r["vertical_source"], f"{r['confirmed_total_m']:.2f}",
                     f"{r['ambiguous_m']:.2f}", f"{r.get('declared_m', 0.0):.2f}", f"{r.get('in_hatched_area_m', 0.0):.2f}", f"{r.get('double_line_m', 0.0):.2f}", r.get("riser_count", 0),
-                    r.get("riser_count_from_labels", 0), r["state"], round(float(r.get("review_m") or 0), 2)])
+                    r.get("riser_count_from_labels", 0), r["state"], round(float(r.get("review_m") or 0), 2),
+                   r.get("risers_slab", r.get("riser_slab_count", 0))])
     return buf.getvalue()
