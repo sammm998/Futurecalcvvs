@@ -591,6 +591,9 @@ def _a_connection_piece_is_only_the_end(graphs,states,landed=None):
 TWIN_OFFSET_PT=(3.0,20.0)   # how far apart the two lines of a pair are drawn
 TWIN_RUN_PT=60.0            # how long two lines must run side by side to be one pair, not a riser past a main
 TWIN_MAX_RATIO=1.6     # the larger size at most this much the smaller: neighbours in the size series
+# Off: measured on the reference sheets it lifts W-50-1-A-0123 by 4.0 points and drops W-50-1-A-0233 by 3.6, where
+# a 15 line labelled once runs beside a 12 that the takeoff gives its own size
+TWIN_LABELLED_LINE=False
 # names a line got from somewhere other than a label of its own: the second reading, a run carried on, a guess
 TWIN_BORROWED={'host_reading_where_the_native_graph_named_nothing','continues_the_connected_pipe',
                'host_reading_single_candidate','straight_through_the_junction','pipestudio_tentative_best_reading'}
@@ -677,10 +680,10 @@ def _twins_carry_one_size(graphs,states):
         # branches' 12 laid along the 35 (W-50-1-A-0123). Where the borrowed size is a branch size far below the
         # labelled one, the line the label itself named gives the pair its size. Neighbouring sizes (12 beside
         # 15 on W-50-1-A-0233) can be a pair drawn in two sizes, and are left to the rule below.
-        if own(j) and not own(k) and a.dn is not None and b.dn>TWIN_MAX_RATIO*a.dn:
+        if TWIN_LABELLED_LINE and own(j) and not own(k) and a.dn is not None and b.dn>TWIN_MAX_RATIO*a.dn:
             change.append((k,b,'twin_line_takes_the_labelled_line'))
             continue
-        if own(k) and not own(j):
+        if TWIN_LABELLED_LINE and own(k) and not own(j):
             continue
         # only neighbouring sizes (22/28, 28/35): a split label reads one size off. A branch's 12 on a 35 or 42
         # main pair is the branch label reaching the main, not the pair's size (W-50-1-A-0123: +5.3 points
