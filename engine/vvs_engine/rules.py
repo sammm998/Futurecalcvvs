@@ -283,6 +283,11 @@ RULES: tuple[Rule, ...] = (
          "Står dimensionen på raden under beteckningen namnger etiketten en stigare. Den här regeln avgör om "
          "etiketten DESSUTOM får ge sträckan under sig vågräta meter, eller om den bara räknar en stigare.",
          "", False, None, None, "rows", True),
+    Rule("pipeline.TAP_RISER_RINGS", G_RISER, "Liten ring vid rörände = stigare till tappställe",
+         "En liten ring (under 4 pt) där ett tunt rör slutar, utan att något rör går igenom den, är stigaren upp "
+         "till ett tappställe. Somliga mängdförteckningar räknar de stigarna, andra inte - stäng av regeln där "
+         "de inte ska räknas.",
+         "", True, None, None, None, True),
     Rule("cli.SET_SCALE_MIN", G_SCALE, "Handlingen är enig om sin skala",
          "Hur många blad som måste ha fastställt samma skala innan omgången räknas som enig och lånar ut den "
          "till ett blad vars egen stämpel inte avgjorde något.",

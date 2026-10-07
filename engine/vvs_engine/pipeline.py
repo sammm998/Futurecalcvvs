@@ -1968,6 +1968,12 @@ def _risers_from_dn_rows(designations, anchors, leaders, identities) -> dict[str
     return labelled
 
 
+# a small ring (under 4 pt) at the very end of a run, with nothing passing through it, is the riser up to a tap
+TAP_RISER_RINGS = True
+TAP_RING_MAX = 4.5    # pt: larger is a riser mark of its own family
+TAP_RING_PIPES = 2    # designations ending at one tap ring: a cold and a hot connection at most
+
+
 def _riser_symbols(page: RawPage, ann_layers, glyph_pids, graphs, ownership, anchors, identities) -> dict[str, list[dict]]:
     """Risers (vertical pipes) are drawn as closed marks (circle / circle-cross) that a pipe run ends at or that
     a label points at. Concentric marks form one riser. The riser's designation is the label pointing at it
@@ -2047,11 +2053,15 @@ def _riser_symbols(page: RawPage, ann_layers, glyph_pids, graphs, ownership, anc
         for pid, q in g.prims.items():
             idx.insert(pid, q.seg.bbox())
         prim_idx[fk] = idx
+    tap_rings = _rules.value("pipeline.TAP_RISER_RINGS", TAP_RISER_RINGS)
     for i, grp in enumerate(groups):
-        if i in counted or grp["fam"] not in riser_fams or grp["size"] < 4.0:
+        small = grp["size"] < 4.0
+        if i in counted or (small and not tap_rings) or (not small and grp["fam"] not in riser_fams):
+            continue
+        if small and grp["size"] > TAP_RING_MAX:
             continue
         cx, cy = grp["center"]; R = grp["size"] / 2 + 1.5
-        best = None
+        near = []   # (ends here, dn, distance, identity, family)
         for fk in sorted(graphs):
             g = graphs[fk]
             for pid in sorted(set(prim_idx[fk].query_point(cx, cy, R))):
@@ -2063,12 +2073,20 @@ def _riser_symbols(page: RawPage, ann_layers, glyph_pids, graphs, ownership, anc
                 if st.state != "CONFIRMED" or st.identity is None:
                     continue
                 at_end = any(_dist((n.x, n.y), (cx, cy)) <= R and n.degree == 1 for n in (g.nodes[k] for k in g.prim_nodes[pid]))
-                if best is None or d < best[0]:
-                    best = (d, st.identity, fk, "pipe_end" if at_end else "on_pipe")
-        if best is None:
+                near.append((at_end, st.identity.dn if st.identity.dn is not None else 10 ** 6, d, st.identity, fk))
+        if not near:
             continue
+        ending = [c for c in near if c[0]]
+        if small:
+            # a tap riser: a small ring that a thin run ends at, and nothing passes through it - a dot on a run
+            # that goes on is a connection point, not a riser
+            if len(ending) != len(near) or len({c[3].key for c in ending}) > TAP_RING_PIPES:
+                continue
+        # the riser belongs to the run that ends at the mark, not one that passes it; where several end there, the
+        # smallest: the branch rises, the main it leaves stays on the floor
+        _, _, _, ident, fk = min(ending, key=lambda c: (c[1], c[2])) if ending else min(near, key=lambda c: c[2])
+        src = "tap_ring" if small else ("pipe_end" if ending else "on_pipe")
         counted.add(i)
-        _, ident, fk, src = best
         out[ident.key].append({"designation": ident.display, "dn": ident.dn, "point": [round(cx, 2), round(cy, 2)],
                                "symbol": grp["pids"][0], "source": src, "family": fk})
     return dict(out)

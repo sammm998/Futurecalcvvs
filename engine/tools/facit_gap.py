@@ -82,6 +82,29 @@ def gap(pdf, run_dir):
     return out, rules
 
 
+def facit_risers(pdf):
+    """Risers the facit counted: one polygon each, by designation. A tap riser is counted without the word VERTIKAL
+    in the subject, so every polygon is one."""
+    out = collections.Counter()
+    for a in pymupdf.open(pdf)[0].annots():
+        subject = a.info.get("subject") or ""
+        if a.type[1] == "Polygon" and subject.strip():
+            out[norm(re.split(r"(?i)\s+(vertikal|upp\b)", subject)[0])] += 1
+    return out
+
+
+def our_risers(run_dir):
+    with open(f"{run_dir}/quantities.json", encoding="utf-8") as fh:
+        risers = json.load(fh).get("risers") or {}
+    return collections.Counter(norm(r["designation"]).replace("(L)", "") for lst in risers.values() for r in lst)
+
+
+def riser_gap(pdf, run_dir):
+    """(facit, ours, off): risers per sheet and the sum over designations of how far the counts are apart."""
+    f, o = facit_risers(pdf), our_risers(run_dir)
+    return sum(f.values()), sum(o.values()), sum(abs(f[k] - o[k]) for k in set(f) | set(o))
+
+
 def main(args):
     total = collections.Counter()
     rules_all = collections.defaultdict(collections.Counter)
@@ -91,11 +114,15 @@ def main(args):
         for e, c in rules.items():
             rules_all[e].update(c)
         f = out["facit"] or 1
+        rf, ro, off = riser_gap(pdf, run_dir)
+        total.update({"risers_facit": rf, "risers_ours": ro, "risers_off": off})
         print(f"{run_dir}: rätt {100 * out['right'] / f:5.1f} %  fel DN {100 * out['wrong_dn'] / f:4.1f} %  "
-              f"fel system {100 * out['wrong_system'] / f:4.1f} %  missad {100 * out['missed'] / f:4.1f} %")
+              f"fel system {100 * out['wrong_system'] / f:4.1f} %  missad {100 * out['missed'] / f:4.1f} %  "
+              f"stigare facit {rf} vi {ro} fel {off}")
     f = total["facit"] or 1
     print(f"TOTALT: rätt {100 * total['right'] / f:.1f} %  fel DN {100 * total['wrong_dn'] / f:.1f} %  "
-          f"fel system {100 * total['wrong_system'] / f:.1f} %  missad {100 * total['missed'] / f:.1f} %")
+          f"fel system {100 * total['wrong_system'] / f:.1f} %  missad {100 * total['missed'] / f:.1f} %  "
+          f"stigare facit {total['risers_facit']} vi {total['risers_ours']} fel {total['risers_off']}")
     for e, c in sorted(rules_all.items(), key=lambda kv: -sum(kv[1].values())):
         t = sum(c.values()) or 1
         print(f"  {e:56} {t / 1000:6.1f}k pt  rätt {100 * c['right'] / t:5.1f} %  fel {100 * c['wrong'] / t:5.1f} %  "
