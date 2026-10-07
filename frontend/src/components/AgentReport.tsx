@@ -24,6 +24,7 @@ export function AgentReport({ agent }: { agent?: any }) {
             {tr("Blad")} {s.page + 1}: {tr(STATUS[s.status] ?? s.status)} · {s.problems?.length ?? 0} {tr("problem")}
             {" · "}{s.calls?.length ?? 0} {tr("verktygsanrop")} · {s.code?.length ?? 0} {tr("kodkörningar")}
             {" · "}{NUM.format(s.tokens_in ?? 0)} / {NUM.format(s.tokens_out ?? 0)} tokens
+            {s.recipes_used > 0 && <> · {s.recipes_used} {tr("tidigare lösningar provade")}</>}
           </div>
           {s.problems?.length > 0 && (
             <ol style={{ margin: "4px 0 4px 18px" }}>

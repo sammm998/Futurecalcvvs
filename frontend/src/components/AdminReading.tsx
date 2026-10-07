@@ -308,3 +308,57 @@ export function RulesMoved() {
     </>
   );
 }
+
+
+/* Agentens recept: vad som fungerat, per konto, och om personen lät rättelserna stå. Härifrån väljs vad som är värt
+ * att skriva om till en regel i motorn - och den regeln går genom korpusspärren innan den gäller alla. */
+export function AgentRecipes() {
+  const [d, setD] = useState<any>(null);
+  const [err, setErr] = useState("");
+  const [open, setOpen] = useState<any>(null);
+  useEffect(() => { api.adm("agent-recipes").then(setD).catch((e) => setErr(e.message)); }, []);
+  if (err) return <p className="error">{err}</p>;
+  if (!d) return <p className="muted">{tr("Laddar…")}</p>;
+  const types = Object.entries(d.by_problem ?? {}) as [string, any][];
+  return (
+    <>
+      <div className="card">
+        <h3 style={{ marginTop: 0 }}>{tr("Per problemtyp")}</h3>
+        {types.length ? (
+          <table className="table">
+            <thead><tr><th>{tr("Problem")}</th><th className="num">{tr("Håller")}</th><th className="num">{tr("Ångrade")}</th><th className="num">{tr("Använda")}</th></tr></thead>
+            <tbody>{types.map(([t, v]) => (
+              <tr key={t}><td>{t}</td><td className="num">{v.kept}</td><td className="num">{v.rejected}</td><td className="num">{v.uses}</td></tr>
+            ))}</tbody>
+          </table>
+        ) : <p className="muted">{tr("Agenten har inte sparat några recept än.")}</p>}
+        <p className="muted small">
+          Ett recept som håller används igen av agenten på samma kontos ritningar. Det blir en regel för alla ritningar
+          först när någon skrivit om det till motorkod och korpusspärren (engine/tools/corpus.py gate) visat att inget
+          blad blir sämre.
+        </p>
+      </div>
+      <div className="card">
+        <table className="table">
+          <thead><tr><th>{tr("Skapat")}</th><th>{tr("Konto")}</th><th>{tr("Problem")}</th><th>{tr("Läge")}</th>
+            <th className="num">{tr("Kod")}</th><th className="num">{tr("Rättelser")}</th><th className="num">{tr("Använt")}</th></tr></thead>
+          <tbody>{(d.recipes ?? []).map((r: any) => (
+            <tr key={r.id} onClick={() => api.adm(`agent-recipes/${r.id}`).then(setOpen)} style={{ cursor: "pointer" }}>
+              <td className="muted">{r.created_at.slice(0, 10)}</td><td>{r.user}</td><td>{(r.problem_types ?? []).join(", ")}</td>
+              <td><span className={`badge small ${r.state === "kept" ? "ok" : "warn"}`}>{r.state === "kept" ? tr("håller") : tr("ångrat")}</span></td>
+              <td className="num">{r.code_runs}</td><td className="num">{r.corrections}</td><td className="num">{r.uses}</td>
+            </tr>
+          ))}</tbody>
+        </table>
+      </div>
+      {open && (
+        <div className="card">
+          <h3 style={{ marginTop: 0 }}>{tr("Recept")} {open.id}</h3>
+          <p className="muted">{(open.tools ?? []).join(" → ")}</p>
+          {open.report && <pre style={{ whiteSpace: "pre-wrap" }}>{open.report}</pre>}
+          {(open.code ?? []).map((c: string, i: number) => <pre key={i} style={{ maxHeight: 260, overflow: "auto", fontSize: 11 }}>{c}</pre>)}
+        </div>
+      )}
+    </>
+  );
+}

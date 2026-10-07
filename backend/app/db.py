@@ -158,6 +158,31 @@ class Correction(Base):
     created_at: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True), default=_now)
 
 
+class AgentRecipe(Base):
+    """A way the solving agent settled a problem on one of an account's drawings, kept to try first next time.
+
+    What it holds is the agent's own working - the problems it was given, the code it ran, the tools it called -
+    and the corrections it recorded. Whether the recipe is any good is not stored but read off those corrections
+    each time: kept while the person leaves them standing, dropped the moment one is undone. A recipe is shown
+    to the agent on the same account's later drawings and nowhere else; it becomes a rule of the engine only
+    through a developer and the corpus gate.
+    """
+    __tablename__ = "agent_recipes"
+    id: Mapped[str] = mapped_column(String(32), primary_key=True, default=_uuid)
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id"), index=True)
+    drawing_id: Mapped[str] = mapped_column(ForeignKey("drawings.id"), index=True)
+    job_id: Mapped[str | None] = mapped_column(ForeignKey("analysis_jobs.id"), nullable=True)
+    page: Mapped[int] = mapped_column(Integer, default=0)
+    problem_types: Mapped[list] = mapped_column(JSON, default=list)
+    problems: Mapped[list] = mapped_column(JSON, default=list)
+    code: Mapped[list] = mapped_column(JSON, default=list)          # the code runs that worked, in order
+    tools: Mapped[list] = mapped_column(JSON, default=list)         # the tool names called, in order
+    correction_ids: Mapped[list] = mapped_column(JSON, default=list)
+    report: Mapped[str | None] = mapped_column(Text, nullable=True)
+    uses: Mapped[int] = mapped_column(Integer, default=0)
+    created_at: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True), default=_now)
+
+
 class RuleSetting(Base):
     """A rule a person changed, and what they changed it to.
 

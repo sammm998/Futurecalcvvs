@@ -3,7 +3,7 @@ import { t as tr, locale, num as exakt } from "../i18n";
 import { api } from "../api";
 import { Accounts, Content, Crm, Experiments, Heatmap, Partners } from "../components/AdminBusiness";
 import { Messages, Pricing } from "../components/AdminPricing";
-import { Corrections, Learning, Readings, RulesMoved } from "../components/AdminReading";
+import { AgentRecipes, Corrections, Learning, Readings, RulesMoved } from "../components/AdminReading";
 import { RulesCatalogue } from "../components/AdminRules";
 import { Assumptions } from "../components/AdminSettings";
 import { SystemHealth } from "../components/AdminSystem";
@@ -20,7 +20,7 @@ import { SystemHealth } from "../components/AdminSystem";
  * läser härnäst, och den som flyttar den ska stå för det med namn, skäl och bild.
  */
 
-type Section = "overblick" | "lasningar" | "rattelser" | "inlarning" | "regler" | "antaganden"
+type Section = "overblick" | "lasningar" | "rattelser" | "inlarning" | "recept" | "regler" | "antaganden"
   | "konton" | "priser" | "partners" | "crm" | "meddelanden" | "innehall" | "prov" | "heatmap" | "system";
 
 const SECTIONS: { id: Section; label: string; group: string; lead: string }[] = [
@@ -28,6 +28,7 @@ const SECTIONS: { id: Section; label: string; group: string; lead: string }[] = 
   { id: "lasningar", label: "Läsningar", group: "Läsningen", lead: "Varje blad som lästs: hur långt läsningen kom och hur lång tid det tog." },
   { id: "rattelser", label: "Rättelser", group: "Läsningen", lead: "Vad kunderna rättat, efter slag. En rättelse är ett påstående om att läsningen hade fel." },
   { id: "inlarning", label: "Inlärning", group: "Läsningen", lead: "Vad rättelserna lärt: sex nycklar, aldrig träning, alltid spårbart till en person och ett blad." },
+  { id: "recept", label: "Agentens recept", group: "Läsningen", lead: "Lösningar agenten hittat och som personen lät stå. Används igen på samma konto; blir regel i motorn först efter korpusspärren." },
   { id: "regler", label: "Regler", group: "Läsningen", lead: "Varje gräns läsningen använder, med skäl och figur. En flyttad regel gäller nästa läsning, för alla." },
   { id: "antaganden", label: "Antaganden", group: "Läsningen", lead: "Hur det lästa räknas ihop till en mängd: våningshöjd, stigare, skrafferade ytor." },
   { id: "konton", label: "Konton", group: "Företaget", lead: "Kontona, deras planer och vad de betalar. Ingenting här når läsningen." },
@@ -276,6 +277,7 @@ export default function AdminPage() {
           {sec === "lasningar" && <Readings />}
           {sec === "rattelser" && <Corrections />}
           {sec === "inlarning" && <Learning />}
+          {sec === "recept" && <AgentRecipes />}
           {sec === "regler" && <RulesSection />}
           {sec === "antaganden" && <Assumptions />}
           {sec === "konton" && <Accounts />}
