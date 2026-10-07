@@ -126,22 +126,20 @@ def supplement(native, anchors, identities, elevations):
         if not lands:
             rejected += 1
             continue
-        if len(lands) > max(MAX_LANDINGS, anchor.multiplier or 1):
-            # a leader that crosses more lines than a pair is not telling which of them it names: on
-            # W-50-1-A-0122 the VS1-S13-12/W leaders cross the parallel supply and return pairs, five or six ticks
-            # each, and every crossing read as the branch's size laid on the 35 main
-            rejected += 1
-            continue
         existing = labels_by_text.get(designation_text(designation), set())
         covered = {n for label in existing for n in landed_nodes.get(label, [])}
-        if any(g['node'] in covered for g in lands):
-            # the native reading already read this leader - it lands where one of its own labels of this name
-            # lands - and decided where it ends. The host's other contacts are the ticks the leader crosses on its
-            # way, which on W-50-1-A-0122 are the parallel VS1-S13-35 supply and return it passes over; adding them
-            # gave 40 m of the 35 pair the branch's 12.
-            continue
+        weak = len(lands) > max(MAX_LANDINGS, anchor.multiplier or 1) or any(g['node'] in covered for g in lands)
+        lands = [g for g in lands if g['node'] not in covered]
         if not lands:
             continue
+        if weak:
+            # A leader the native reading already read (it lands where one of its own labels of this name lands),
+            # or one that crosses more lines than a pair: its other contacts may be the ticks it passes on its way
+            # (W-50-1-A-0122: VS1-S13-12/W leaders across the parallel VS1-S13-35 supply and return, five or six
+            # contacts each). They are kept, but weak: the rules name a stretch by them only where nothing
+            # stronger does (rule_answer.py), so they fill a gap and never overrule (A0111 needs them there).
+            for g in lands:
+                g['inferred'] = 'host_contact_weak'
         lid = top_label+1; top_label = lid
         levels = [vvs.parse_level(e['text']) for e in elevations.get(anchor.anchor_id,[])]
         levels = [e for e in levels if e]

@@ -20,6 +20,13 @@ def identity(d):
     return identity_from_text(name,d['dimension'],system,None)
 
 
+def _on(rule):
+    """Whether a rule after the assignment runs: VVS_RULES_OFF=twin,terminal,... switches rules off, so each one's
+    worth can be measured against the facit takeoffs (engine/tools/facit_gap.py)."""
+    import os
+    return rule not in {r.strip() for r in os.environ.get('VVS_RULES_OFF', '').split(',') if r.strip()}
+
+
 def project(graphs, native, result, page, elevations, host_reading=None):
     from .swedish import label_facts, lookup, designation_text
     A,L,R=native['graph'],native['labels'],native['association']
@@ -96,7 +103,7 @@ def project(graphs, native, result, page, elevations, host_reading=None):
     if host_reading is not None:
         host=host_reading(graphs).prim_states
         for fk,family in states.items():
-            if fk not in native_pens:
+            if fk not in native_pens or not _on('host_fill'):
                 continue
             for pid,state in family.items():
                 if (fk,pid) in set_aside:
@@ -138,10 +145,11 @@ def project(graphs, native, result, page, elevations, host_reading=None):
     # same one; where it joins two different pipes it is a junction the drawing does not settle, and it stays
     # unnamed. Only ink in the same pen counts as joined: across pens, on the reference sheets, it mostly reached
     # walls and fittings. Measured there, the same-pen pieces were named right on all of their length.
-    continued=_settle_unowned(graphs,states,set_aside,host if host_reading is not None else None,native_pens)
+    continued=(_settle_unowned(graphs,states,set_aside,host if host_reading is not None else None,native_pens)
+               if _on('settle') else {})
     landed=_landed_labels(graphs,A,R,labels)
-    continued['same_line_larger_on_both_sides']=_undo_a_smaller_size_between_larger(graphs,states,landed)
-    continued['connection_piece_is_only_the_end']=_a_connection_piece_is_only_the_end(graphs,states,landed)
+    continued['same_line_larger_on_both_sides']=_undo_a_smaller_size_between_larger(graphs,states,landed) if _on('larger') else 0
+    continued['connection_piece_is_only_the_end']=_a_connection_piece_is_only_the_end(graphs,states,landed) if _on('connection') else 0
     # Native joining points and VG/CL landings delimit measurement sections.
     native_points={(round(n['x'],2),round(n['y'],2)) for n in A['nodes']}
     local_levels=defaultdict(list)
@@ -157,9 +165,9 @@ def project(graphs, native, result, page, elevations, host_reading=None):
             node=nodes.get(landing.get('node'))
             if node is not None:
                 local_levels[(round(node['x'],2),round(node['y'],2))].append((label,aid))
-    continued['gravity_walk_lower_invert']=_walk_gravity_runs(graphs,states,local_levels)
-    continued['terminal_label_owns_its_stretch']=_terminal_label_owns_its_stretch(graphs,states,A,R,labels)
-    continued['twin_lines_carry_one_size']=_twins_carry_one_size(graphs,states)
+    continued['gravity_walk_lower_invert']=_walk_gravity_runs(graphs,states,local_levels) if _on('gravity') else 0
+    continued['terminal_label_owns_its_stretch']=_terminal_label_owns_its_stretch(graphs,states,A,R,labels) if _on('terminal') else 0
+    continued['twin_lines_carry_one_size']=_twins_carry_one_size(graphs,states) if _on('twin') else 0
     continued['gravity_walk_stats']=dict(STATS)
     pipes=[]
     for fk,g in graphs.items():
