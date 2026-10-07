@@ -573,6 +573,7 @@ def _a_connection_piece_is_only_the_end(graphs,states,landed=None):
 
 TWIN_OFFSET_PT=(3.0,20.0)   # how far apart the two lines of a pair are drawn
 TWIN_RUN_PT=60.0            # how long two lines must run side by side to be one pair, not a riser past a main
+TWIN_MAX_RATIO=1.6     # the larger size at most this much the smaller: neighbours in the size series
 PARALLEL_COS=0.995
 
 
@@ -646,7 +647,10 @@ def _twins_carry_one_size(graphs,states):
     change=[]
     for k,j in partner.items():
         a,b=items[k][6],items[j][6]
-        if a.dn>b.dn and together[(line_key(k),line_key(j))]>=TWIN_RUN_PT:
+        # only neighbouring sizes (22/28, 28/35): a split label reads one size off. A branch's 12 on a 35 or 42
+        # main pair is the branch label reaching the main, not the pair's size (W-50-1-A-0123: +5.3 points
+        # without the rule there, while A0233 and A0223 need it for their 22/28 pairs)
+        if a.dn>b.dn and a.dn<=TWIN_MAX_RATIO*b.dn and together[(line_key(k),line_key(j))]>=TWIN_RUN_PT:
             change.append((k,b))
     for k,b in change:
         fk,pid=items[k][0],items[k][1]
@@ -838,6 +842,10 @@ def _terminal_label_owns_its_stretch(graphs,states,A,R,labels):
                 continue
             if GRAVITY_SYSTEM.match(_line_of(st.identity)):
                 continue                      # a gravity run's sizes are the invert walk's to settle
+            from .systems import permits_unlabelled_twin
+            if permits_unlabelled_twin(st.identity.system):
+                continue                      # a two-line system's end is a radiator's connection, labelled where
+                                              # it leaves the pair: on A0111 the rule put 12 on 19 m of the VS1 main
             system=st.identity.system
             rows=[identity(d) for lb in hit for d in (lb.get('designations') or []) if d.get('dimension')]
             rows=[r for r in rows if r.system==system]
@@ -846,6 +854,9 @@ def _terminal_label_owns_its_stretch(graphs,states,A,R,labels):
             want=rows[0]
             if want==st.identity:
                 continue
+            if want.dn is not None and st.identity.dn is not None and want.dn>st.identity.dn:
+                continue                      # a connection is never larger than the pipe it leaves (a K5-28 drop
+                                              # labelled at its joint does not name the X7-25 branch, W-50-1-A-0332)
             chain=[first];node=end;pid=first
             while True:
                 a,b=g.prim_nodes[pid];node=b if a==node else a
