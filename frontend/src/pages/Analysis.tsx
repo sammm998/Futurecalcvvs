@@ -1,5 +1,6 @@
 import { setSheetIdentities } from "../palette";
 import { AiUsage } from "../components/AiUsage";
+import { AgentReport } from "../components/AgentReport";
 import { extension, withPipeExtensions } from "../live/gestures";
 import type { DrawingAction } from "../live/LiveDrawingAgent";
 import SourceAssignment from "../components/SourceAssignment";
@@ -174,7 +175,7 @@ export default function AnalysisPage() {
   const viewer = useRef<ViewerHandle>(null);
 
   useEffect(() => {
-    let t: any; let loaded = false; let active = true;
+    let t: any; let loaded = false; let active = true; let agentSeen = -1;
     setJob(null); setResult(null); setPdf(null); setErr(""); setActionErr(""); setPage(0);
     setSelPipe(null); setSelIdent(null); setWhy(null); setDrawing(null);
     setCorrections([]); setArtifacts([]); setMarkups([]);
@@ -191,6 +192,15 @@ export default function AnalysisPage() {
             if (!active) return;
             loaded = true; setResult(r); setPage(r.page?.page ?? r.pages?.[0] ?? 0);
             setPdf(b); setArtifacts(arts); setDrawing(dr); setCorrections(corr);
+          }
+          // Agenten arbetar vidare efter att läsningen är klar: så länge den gör det hämtas jobbet igen, och när den
+          // lagt in rättelser räknas mängden om med dem.
+          const agent = j.summary?.agent;
+          if (agent?.status === "RUNNING") { agentSeen = (agent.sheets ?? []).length; t = setTimeout(poll, 4000); }
+          else if (agentSeen >= 0) {
+            agentSeen = -1;
+            const [r2, corr2] = await Promise.all([api.result(id!), api.corrections(j.drawing_id).catch(() => [])]);
+            if (active) { setResult(r2); setCorrections(corr2); }
           }
         } else if (j.status !== "FAILED") t = setTimeout(poll, 1500);
       } catch (e: any) { if (active) setErr(e.message); }
@@ -611,6 +621,7 @@ export default function AnalysisPage() {
               }}>{tr("Analysera ritningen")}</button>
             </div>
             <AiUsage usage={job?.summary?.ai_usage} />
+            <AgentReport agent={job?.summary?.agent} />
             {staff && <AnalysisQuality quality={result.quality} />}
             {actionErr && <p className="error" role="alert">{actionErr}</p>}
             {job?.motor?.foraldrad && (

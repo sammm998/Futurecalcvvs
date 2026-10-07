@@ -339,3 +339,4 @@ def writes(name: str) -> bool:
 # so one import of this module is the whole contract. It sits at the bottom because `edits` builds on `tool`,
 # `_num` and `_set` above it - by this line they exist, so the loop closes.
 from . import edits as _edits  # noqa: E402,F401  (registers the writing tools)
+from . import raw_tools as _raw_tools  # noqa: E402,F401  (registers the tools over the drawn ink and the agent's own code)

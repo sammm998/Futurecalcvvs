@@ -326,6 +326,13 @@ def run_job(job_id: str) -> None:
             _settle_credits(job_id)
             _set(job_id, status="COMPLETED", stage="COMPLETED", progress=1.0,
                  finished_at=dt.datetime.now(dt.timezone.utc), summary=done)
+        # With a model chosen, the agent works on what the reading's own checks left open. The reading is complete
+        # and shown already; what the agent changes arrives as corrections marked as its own.
+        try:
+            from .solver import run_for_job
+            run_for_job(job_id, out_dir, pdf_path, ai_model)
+        except Exception:                                  # noqa: BLE001
+            log.exception("Agenten kunde inte köras efter analysen")
     except UnsupportedInputError as e:
         # not a defect: the PDF carries no vector drawing, so there is nothing to read
         _set(job_id, status="FAILED", stage="FAILED", finished_at=dt.datetime.now(dt.timezone.utc),
