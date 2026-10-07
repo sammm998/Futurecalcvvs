@@ -27,9 +27,26 @@ def _on(rule):
     return rule not in {r.strip() for r in os.environ.get('VVS_RULES_OFF', '').split(',') if r.strip()}
 
 
+def _dump(A,L,R,result,page):
+    """The native reading as it stood before projection, for diagnosis: VVS_NATIVE_DUMP=<dir> writes it there."""
+    import json,os
+    where=os.environ.get('VVS_NATIVE_DUMP')
+    if not where:
+        return
+    os.makedirs(where,exist_ok=True)
+    keep=lambda d,ks:{k:d.get(k) for k in ks}
+    with open(os.path.join(where,f'native-{page}.json'),'w',encoding='utf-8') as fh:
+        json.dump({'nodes':[keep(n,('id','x','y','kind','stretches')) for n in A['nodes']],
+                   'stretches':[keep(s,('id','node_a','node_b','points','layer','line_type','in_wall')) for s in A['stretches']],
+                   'labels':[dict(keep(l,('id','text','rect','valid','in_wall')),designations=[d.get('raw') for d in l.get('designations',[])]) for l in L],
+                   'leaders':[keep(ld,('id','label','anchor','points','landings','forked','swapped_with')) for ld in R.get('leaders',[])],
+                   'assignments':(result or {}).get('assignments')},fh,default=str)
+
+
 def project(graphs, native, result, page, elevations, host_reading=None):
     from .swedish import label_facts, lookup, designation_text
     A,L,R=native['graph'],native['labels'],native['association']
+    _dump(A,L,R,result,page)
     labels={l['id']:l for l in L};stretches={s['id']:s for s in A['stretches']}
     mapped=native['_host_paths']
     by_path=defaultdict(list)
@@ -574,6 +591,9 @@ def _a_connection_piece_is_only_the_end(graphs,states,landed=None):
 TWIN_OFFSET_PT=(3.0,20.0)   # how far apart the two lines of a pair are drawn
 TWIN_RUN_PT=60.0            # how long two lines must run side by side to be one pair, not a riser past a main
 TWIN_MAX_RATIO=1.6     # the larger size at most this much the smaller: neighbours in the size series
+# names a line got from somewhere other than a label of its own: the second reading, a run carried on, a guess
+TWIN_BORROWED={'host_reading_where_the_native_graph_named_nothing','continues_the_connected_pipe',
+               'host_reading_single_candidate','straight_through_the_junction','pipestudio_tentative_best_reading'}
 PARALLEL_COS=0.995
 
 
@@ -644,19 +664,33 @@ def _twins_carry_one_size(graphs,states):
     together=Counter()
     for k,j in partner.items():
         together[(line_key(k),line_key(j))]+=items[k][5]
+    def own(k):
+        fk,pid=items[k][0],items[k][1]
+        return states[fk][pid].reason not in TWIN_BORROWED
     change=[]
     for k,j in partner.items():
         a,b=items[k][6],items[j][6]
+        if a.key==b.key or together[(line_key(k),line_key(j))]<TWIN_RUN_PT:
+            continue
+        # A pair labelled once: the label's leader lands on one of the two lines and the other was named from
+        # elsewhere - the second reading or a run carried on from a branch, which on a radiator main is the
+        # branches' 12 laid along the 35 (W-50-1-A-0123). The line the label itself named gives the pair its size.
+        if own(j) and not own(k):
+            change.append((k,b,'twin_line_takes_the_labelled_line'))
+            continue
+        if own(k) and not own(j):
+            continue
         # only neighbouring sizes (22/28, 28/35): a split label reads one size off. A branch's 12 on a 35 or 42
         # main pair is the branch label reaching the main, not the pair's size (W-50-1-A-0123: +5.3 points
         # without the rule there, while A0233 and A0223 need it for their 22/28 pairs)
-        if a.dn>b.dn and a.dn<=TWIN_MAX_RATIO*b.dn and together[(line_key(k),line_key(j))]>=TWIN_RUN_PT:
-            change.append((k,b))
-    for k,b in change:
+        if a.dn>b.dn and a.dn<=TWIN_MAX_RATIO*b.dn:
+            change.append((k,b,'twin_lines_carry_one_size'))
+    for k,b,why in change:
         fk,pid=items[k][0],items[k][1]
         s=states[fk][pid]
-        s.identity=b;s.reason='twin_lines_carry_one_size'
-        s.evidence=list(s.evidence or [])+['size:the_pair_reads_the_smaller']
+        s.identity=b;s.reason=why
+        s.evidence=list(s.evidence or [])+['size:the_pair_reads_the_smaller' if why=='twin_lines_carry_one_size'
+                                           else 'size:the_pair_reads_its_labelled_line']
     return len(change)
 
 
