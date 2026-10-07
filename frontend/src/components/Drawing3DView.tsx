@@ -846,7 +846,7 @@ export default function Drawing3DView({ result, title, onClose, controlRef, draw
           <span className="muted small">
             {model.stats.walls} väggdelar · {model.stats.pipes} rörsträckor · {model.stats.metres} m
             {result.manualExtensions > 0 && <> · {result.manualExtensions} sparade förlängningar</>}
-            {model.scaled ? "" : " · bladet saknar skala, måtten är ritningens punkter"}
+            {model.scaled ? "" : " · bladet saknar skala: visas i antagen skala 1:50, inga meter räknas"}
           </span>
         </div>
         <button className="secondary small" onClick={() => { setWalking(false); onClose(); }}>{tr("Tillbaka till 2D")}</button>

@@ -70,3 +70,21 @@ def test_a_designation_not_on_the_sheet_cannot_be_drawn():
     assert out["tillstand"] == "AVBOJD" and not out["forslag"]
     out = T.run("foresla_rita_ror_fran_vektorer", m, {"segment_id": ["made_up"], "beteckning": "VS1-S13-22", "skal": ""})
     assert out["tillstand"] == "AVBOJD"
+
+
+def test_the_agent_measures_the_scale_and_every_row_is_measured_again():
+    from vvs_engine.agent import tools as T
+    from vvs_engine.corrections import apply
+    from vvs_engine.measure.scale import MM_PER_PT
+    m = Sheet()
+    pt_per_m = 1000 / (100 * MM_PER_PT)          # 1:100
+    out = T.run("foresla_skala", m, {"matningar": [{"a": [0, 0], "b": [4.2 * pt_per_m, 0], "mm": 4200},
+                                                   {"a": [0, 0], "b": [0, 0.9 * pt_per_m], "mm": 900}], "skal": "mått"})
+    [c] = out["forslag"]
+    assert c["kind"] == "scale" and c["payload"]["ratio"] == 100
+    rows = [{"designation": "S2-P5-110", "dn": 110, "horizontal_pdf_units": 2 * pt_per_m, "confirmed_horizontal_m": 0.0,
+             "state": "NO_SCALE"}]
+    q = apply(rows, [{"kind": "scale", "designation": "*", "payload": c["payload"]}], None)["quantities"][0]
+    assert abs(q["confirmed_horizontal_m"] - 2.0) < 0.01 and q["state"] == "SCALE_MEASURED"
+    bad = T.run("foresla_skala", m, {"matningar": [{"a": [0, 0], "b": [10, 0], "mm": 4200}], "skal": ""})
+    assert bad["tillstand"] == "AVBOJD"          # 1:1190 is no plan's ratio

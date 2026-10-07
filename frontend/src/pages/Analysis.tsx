@@ -649,9 +649,13 @@ export default function AnalysisPage() {
             {noScale ? (
               <>
                 <p className="badge bad">
-                  {`Bladets skala är inte fastställd${nm.scale_reason ? ` (${nm.scale_reason})` : ""}, så ingen sträcka `
-                    + "kan ges i meter. Läsningen hittade rören - de ligger ritade på bladet - men ett mått kräver "
-                    + "att någon vet vad bladet är ritat i. Skriv in skalan här, så läses bladet om under den."}
+                  {nm.scale_reason === "schematic_not_to_scale"
+                    ? "Det här bladet är ett schema (flödes- eller principschema). Ett schema ritas inte i skala: linjerna "
+                      + "visar vad som hänger ihop, inte hur långt något är, så rörlängder kan inte mätas här. Mängda rören "
+                      + "på planritningarna. Beteckningarna och komponenterna på schemat är lästa och kan räknas."
+                    : "Bladets skala står inte på bladet och kunde inte mätas fram ur rören, så ingen sträcka kan ges i "
+                      + "meter. Systemet letar efter skaltext, skalstock, måttsättning och rör ritade med båda kanterna "
+                      + "(beteckningens dimension är rörets bredd). Skriv in skalan här, så läses bladet om under den."}
                 </p>
                 <div className="row" style={{ gap: 8, alignItems: "center", margin: "10px 0 4px" }}>
                   <label className="small muted" htmlFor="skala">Skala 1:</label>

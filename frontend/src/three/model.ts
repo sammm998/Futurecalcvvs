@@ -157,7 +157,6 @@ function polylinesOf(p: any): number[][][] {
 }
 
 const JOIN_GAP_M = 0.4;     // luckan i ett streckat rör, i meter: streckens mellanrum är några centimeter
-const JOIN_GAP_PT = 12;     // ...och i bladets punkter när skalan saknas
 
 /**
  * Ett streckat rör är ritat som ett streck i taget, och läsningen lämnar varje streck som en egen bit. Byggd bit
@@ -194,10 +193,16 @@ export function joinedRuns(polys: number[][][], gap: number): number[][][] {
  * `wallLimit` håller väggarna på ett antal som ritas snabbt även på ett stort blad; de längsta tas först, för
  * det är de som bär byggnadens form.
  */
+/** Meter per PDF-punkt i 1:50: skalan modellen visas i när bladet inte har någon. */
+export const DISPLAY_MPP = (50 * 25.4) / 72 / 1000;
+
 export function buildModel(result: Result, opts: { floorHeight?: number; wallLimit?: number } = {}): BuildingModel {
   const mpp = result?.scale?.meters_per_pdf_point ?? 0;
   const scaled = !!mpp && mpp > 0;
-  const k = scaled ? mpp : 1;                       // utan skala är en punkt en enhet
+  // Utan skala byggs modellen i en antagen skala, 1:50, bara för att den ska gå att se: med en punkt som en
+  // meter blev bladet två kilometer brett med väggar på tre meter, och golvbilden ett flimmer. Inga meter
+  // räknas på den - mängden säger fortfarande att skalan saknas.
+  const k = scaled ? mpp : DISPLAY_MPP;
   const floorHeight = opts.floorHeight ?? 2.7;
   const wallLimit = opts.wallLimit ?? 1400;
 
@@ -223,7 +228,7 @@ export function buildModel(result: Result, opts: { floorHeight?: number; wallLim
 
   // En vägg kortare än en halv meter är ingen vägg: det är skraffering, en måttpil, en dörrslagning eller en
   // bokstav ritad med streck. De byggs inte, för de säger ingenting om huset och skymmer det som gör det.
-  const minWall = scaled ? 0.5 / k : 20;
+  const minWall = 0.5 / k;
 
   // ---- utsträckning: det som byggs, så modellen hamnar centrerad ---------------------------------------
   let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
@@ -280,7 +285,7 @@ export function buildModel(result: Result, opts: { floorHeight?: number; wallLim
     if (metres <= 0) return;
     pipes.push({
       id, designation: des, dn, system: (des.match(/^[A-ZÅÄÖ]+\d*/) ?? [""])[0],
-      path, radius: scaled ? pipeRadius(dn) : 0.6,
+      path, radius: pipeRadius(dn),
       // stackarna hör till beteckningen och inte till varje sträcka; de delas ut nedan, på den längsta
       risers: 0,
       color: identityColor(key || des), meters: metres, inWall,
@@ -291,7 +296,7 @@ export function buildModel(result: Result, opts: { floorHeight?: number; wallLim
     const dn: number | null = p.dn ?? (typeof p.identity === "object" ? p.identity?.dn : null) ?? null;
     const key = pipeColorKey({ ...p, identity: typeof p.identity === "string" ? p.identity : undefined, designation: des, dn });
     let n = 0;
-    for (const poly of joinedRuns(polylinesOf(p), scaled ? JOIN_GAP_M / k : JOIN_GAP_PT)) push(`${p.physical_pipe_id ?? p.id ?? pipes.length}-${n++}`, des, dn, poly, false, key);
+    for (const poly of joinedRuns(polylinesOf(p), JOIN_GAP_M / k)) push(`${p.physical_pipe_id ?? p.id ?? pipes.length}-${n++}`, des, dn, poly, false, key);
   }
   // Bitarna som går genom en vägg är ritade rör som mängden räknar för sig; utan dem har varje rör hål där
   // väggarna står, och byggnaden ser ut att sakna installation just där den behöver den.
