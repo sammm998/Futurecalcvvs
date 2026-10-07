@@ -116,9 +116,25 @@ PALETTE = [(0.05, 0.6, 0.1), (0.0, 0.35, 0.9), (0.85, 0.1, 0.1), (0.55, 0.0, 0.7
            (0.3, 0.3, 0.9), (0.6, 0.35, 0.1), (0.9, 0.0, 0.5), (0.1, 0.45, 0.3), (0.5, 0.5, 0.0), (0.45, 0.75, 0.0)]
 
 
-def identity_color(key: str):
-    """Deterministic colour per designation+DN. The hash is the one the viewer uses, so a pipe keeps its colour
-    between the screen and the exported marked PDF."""
+def sheet_colors(keys) -> dict:
+    """One colour per designation on the sheet, none shared: the designations sorted, each given the next hue a
+    golden angle on, in three lightness steps. The viewer (palette.ts sheetColors) does the same over the same
+    keys, so a pipe has one colour on the screen and in the marked PDF. A colour drawn from a hash over a small
+    palette gave two designations the same orange on one sheet (W-50-1-A-0122: S2-P5-75, VS1-S13-12/W and
+    VVC1-X7-32/W), and the sheet could not be checked by eye."""
+    import colorsys
+    out = {}
+    for i, k in enumerate(sorted(set(keys))):
+        hue = (i * 0.381966) % 1.0
+        light = (0.42, 0.32, 0.52)[i % 3]
+        out[k] = colorsys.hls_to_rgb(hue, light, 0.9)
+    return out
+
+
+def identity_color(key: str, colors: dict | None = None):
+    """The sheet's colour for a designation+DN, or a deterministic one when the sheet's list is not at hand."""
+    if colors and key in colors:
+        return colors[key]
     h = 0
     for ch in key:
         h = (h * 31 + ord(ch)) & 0xFFFFFFFF
@@ -127,8 +143,9 @@ def identity_color(key: str):
 
 def _draw_production(page, shape, pa):
     from ..profile.hatch import inside_hatch
+    colors = sheet_colors(m.pipe.identity.key for m in pa.measures)
     for m in pa.measures:
-        col = identity_color(m.pipe.identity.key)
+        col = identity_color(m.pipe.identity.key, colors)
         g = pa.graphs[m.pipe.family]
         inside, outside = [], []
         for pid in m.pipe.prim_ids:
@@ -145,7 +162,7 @@ def _draw_production(page, shape, pa):
     for m in pa.measures:
         seen.setdefault(m.pipe.identity.key, m.pipe.identity.display + (f" DN{m.pipe.identity.dn}" if m.pipe.identity.dn is not None else ""))
     for key, label in sorted(seen.items()):
-        shape.draw_line(_pt(page, 8, y), _pt(page, 28, y)); shape.finish(color=identity_color(key), width=2.4)
+        shape.draw_line(_pt(page, 8, y), _pt(page, 28, y)); shape.finish(color=identity_color(key, colors), width=2.4)
         shape.insert_text(_pt(page, 31, y + 1.5), label, fontsize=4.5, color=(0, 0, 0))
         y += 7
     shape.draw_line(_pt(page, 8, y), _pt(page, 28, y)); shape.finish(color=COLORS["unowned"], width=2.4, dashes="[3 2] 0")

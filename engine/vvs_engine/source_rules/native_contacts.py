@@ -10,6 +10,9 @@ from .swedish import designation_text
 from .pipestudio import vvs
 
 
+MAX_LANDINGS = 2     # a host leader's contacts that land on more lines than this (or its count, 3x) name none
+
+
 def supplement(native, anchors, identities, elevations):
     A, L, R = native['graph'], native['labels'], native['association']
     mapped = native.get('_host_paths', {})
@@ -125,8 +128,13 @@ def supplement(native, anchors, identities, elevations):
             continue
         existing = labels_by_text.get(designation_text(designation), set())
         covered = {n for label in existing for n in landed_nodes.get(label, [])}
-        lands = [g for g in lands if g['node'] not in covered]
-        if not lands:
+        if len(lands) > max(MAX_LANDINGS, anchor.multiplier or 1) or any(g['node'] in covered for g in lands):
+            # A leader the native reading already read (it lands where one of its own labels of this name lands),
+            # or one that crosses more lines than a pair: its other contacts are the ticks it passes on its way
+            # (W-50-1-A-0122: VS1-S13-12/W leaders across the parallel VS1-S13-35 supply and return, five or six
+            # contacts each, and every crossing read as the branch's size laid on the 35 main). Kept even as weak
+            # evidence they cut the connected runs the main's own label reaches its pipe by, so they are left out.
+            rejected += 1
             continue
         lid = top_label+1; top_label = lid
         levels = [vvs.parse_level(e['text']) for e in elevations.get(anchor.anchor_id,[])]
