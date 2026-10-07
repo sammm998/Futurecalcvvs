@@ -686,6 +686,7 @@ export default function AnalysisPage() {
               const FLAG_TEXT: Record<string, string> = {
                 dimension_change_without_fitting: "dimensionen byts där två rör möts, utan etikett eller reducering",
                 system_change_along_run: "systemet byts längs samma stråk, utan etikett",
+                material_change_through_junction: "materialet byts rakt genom ett T-rör, utan etikett",
                 named_without_dimension: "rör med namn men utan dimension",
               };
               return (

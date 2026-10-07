@@ -674,8 +674,10 @@ def _twins_carry_one_size(graphs,states):
             continue
         # A pair labelled once: the label's leader lands on one of the two lines and the other was named from
         # elsewhere - the second reading or a run carried on from a branch, which on a radiator main is the
-        # branches' 12 laid along the 35 (W-50-1-A-0123). The line the label itself named gives the pair its size.
-        if own(j) and not own(k):
+        # branches' 12 laid along the 35 (W-50-1-A-0123). Where the borrowed size is a branch size far below the
+        # labelled one, the line the label itself named gives the pair its size. Neighbouring sizes (12 beside
+        # 15 on W-50-1-A-0233) can be a pair drawn in two sizes, and are left to the rule below.
+        if own(j) and not own(k) and a.dn is not None and b.dn>TWIN_MAX_RATIO*a.dn:
             change.append((k,b,'twin_line_takes_the_labelled_line'))
             continue
         if own(k) and not own(j):

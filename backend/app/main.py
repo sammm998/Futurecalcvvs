@@ -79,6 +79,27 @@ async def _lifespan(_app: FastAPI):
 
 
 app = FastAPI(title=settings.app_name, version="0.1.0", lifespan=_lifespan)
+
+
+@app.exception_handler(Exception)
+async def _unexpected(request: Request, exc: Exception):
+    """Ett oväntat fel svarar med vad som hände, inte med ett tomt "Fel 500".
+
+    En full disk och en resultatfil som skrevs halvt (när disken tog slut mitt i en analys) är de vanligaste, och
+    båda går att göra något åt - men bara om den som ser felet får veta vilket det är. Felet loggas i sin helhet;
+    till webbläsaren går orsaken i en mening."""
+    import errno
+    import logging
+    logging.getLogger("vvs").exception("Oväntat fel i %s %s", request.method, request.url.path)
+    if isinstance(exc, OSError) and exc.errno == errno.ENOSPC:
+        why = ("Disken där ritningar och resultat sparas är full. Rensa under Admin -> System eller utöka volymen "
+               "i Railway, och försök igen.")
+    elif isinstance(exc, (ValueError, UnicodeDecodeError)) and "/result" in request.url.path:
+        why = ("En resultatfil för den här analysen är trasig (troligen skrevs den när disken var full). "
+               "Kör analysen igen.")
+    else:
+        why = f"Serverfel: {type(exc).__name__}: {str(exc)[:200]}"
+    return JSONResponse(status_code=500, content={"detail": why})
 app.add_middleware(CORSMiddleware, allow_origins=[o.strip() for o in settings.cors_origins.split(",")], allow_credentials=True,
                    allow_methods=["*"], allow_headers=["*"])
 
