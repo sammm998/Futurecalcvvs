@@ -19,6 +19,8 @@ Om flera beteckningar delar samma färg blir resultatet "osäkert" - lös det ge
 ge varje beteckning en unik färg i overlayn (eller exportera segment->beteckning som JSON).
 
 Kör:  python3 facit_compare.py --facit-pdf F.pdf --facit-xlsx F.xlsx --our-xlsx m.xlsx --our-pdf mk.pdf --out ut/
+eller, med analysens egen export segment -> beteckning (G2, exakt i stället för via färger):
+      python3 facit_compare.py --facit-pdf F.pdf --facit-xlsx F.xlsx --our-run <analyskatalog> --out ut/
 """
 import argparse, collections, math, os, re, subprocess, sys
 import numpy as np
@@ -143,6 +145,26 @@ def read_our_overlay(path, legend_names):
     return page, legend, strokes
 
 
+def read_our_run(run, floor_height=2.8):
+    """Mängder och segment ur analysens egna filer: quantities.json och physical-pipes.json (G2)."""
+    import json
+    q = json.load(open(os.path.join(run, 'quantities.json')))
+    out = collections.defaultdict(lambda: {'h': 0.0, 'n': 0.0, 'v': 0.0, 'hatch': 0.0})
+    for r in q['rows']:
+        k = key(r['designation'])
+        n = float(r.get('riser_count') or 0)
+        out[k]['h'] += float(r.get('confirmed_horizontal_m') or 0)
+        out[k]['n'] += n
+        out[k]['v'] += n * float(r.get('riser_height_m') or floor_height)
+        out[k]['hatch'] += float(r.get('in_hatched_area_m') or 0)
+    pipes = json.load(open(os.path.join(run, 'physical-pipes.json')))['physical_pipes']
+    strokes = []
+    for p in pipes:
+        for line in p['geometry']:
+            strokes += [(p['designation'], x, y) for x, y, _ in sample([(float(a), float(b)) for a, b in line])]
+    return out, strokes
+
+
 def fit_transform(mb, polys, tree):
     W, H = mb[2] - mb[0], mb[3] - mb[1]
     cands = {
@@ -160,24 +182,34 @@ def fit_transform(mb, polys, tree):
 # ---------------------------------------------------------------- huvud
 def main():
     ap = argparse.ArgumentParser()
-    for a in ('facit-pdf', 'facit-xlsx', 'our-xlsx', 'our-pdf', 'out'):
+    for a in ('facit-pdf', 'facit-xlsx', 'out'):
         ap.add_argument('--' + a, required=True)
+    ap.add_argument('--our-xlsx'); ap.add_argument('--our-pdf')
+    ap.add_argument('--our-run', help='analyskatalog med quantities.json och physical-pipes.json (ersätter xlsx/pdf)')
     ap.add_argument('--name', default=None)
     A = ap.parse_args()
     os.makedirs(A.out, exist_ok=True)
     name = A.name or re.sub(r'^[0-9a-f]{8}-', '', os.path.splitext(os.path.basename(A.facit_pdf))[0])
 
     F = read_facit_xlsx(A.facit_xlsx)
-    O, legend_names = read_our_xlsx(A.our_xlsx)
     mb, polys, risers = read_facit_geometry(A.facit_pdf)
-    page, legend, strokes = read_our_overlay(A.our_pdf, legend_names)
+    if A.our_run:
+        O, strokes = read_our_run(A.our_run)
+        col2names = collections.defaultdict(list)
+        for d, _, _ in strokes:
+            col2names[d] = [d]          # varje "färg" är beteckningen själv: inga delade färger
+        background = None
+    else:
+        O, legend_names = read_our_xlsx(A.our_xlsx)
+        page, legend, strokes = read_our_overlay(A.our_pdf, legend_names)
+        col2names = collections.defaultdict(list)
+        for n, c in legend.items():
+            col2names[c].append(n)
+        background = A.our_pdf
     tree = cKDTree([(x, y) for _, x, y in strokes])
     T = fit_transform(mb, polys, tree)
     polys = [(s, [T(x, y) for x, y in p]) for s, p in polys]
     risers = [(s, T(*c)) for s, c in risers]
-    col2names = collections.defaultdict(list)
-    for n, c in legend.items():
-        col2names[c].append(n)
 
     def classify(subj, x, y):
         L = key(subj)
@@ -235,7 +267,11 @@ def main():
     # ---- bild
     R = 110; s = R / 72
     base = os.path.join(A.out, f'_{name}_base')
-    subprocess.run(['pdftoppm', '-r', str(R), '-png', '-singlefile', A.our_pdf, base], check=True)
+    try:
+        subprocess.run(['pdftoppm', '-r', str(R), '-png', '-singlefile', background or A.facit_pdf, base], check=True)
+    except FileNotFoundError:            # utan poppler: PyMuPDF ritar sidan
+        import pymupdf
+        pymupdf.open(background or A.facit_pdf)[0].get_pixmap(dpi=R, annots=False).save(base + '.png')
     im = Image.open(base + '.png').convert('L').convert('RGB')
     im = Image.blend(im, Image.new('RGB', im.size, 'white'), 0.6)
     d = ImageDraw.Draw(im)
