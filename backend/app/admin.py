@@ -851,3 +851,43 @@ def academy(admin: User = Depends(current_admin), db: Session = Depends(get_db))
                       "stuck_at": dict(v["steps"].most_common(6))}
                      for k, v in sorted(by_course.items())],
             "people": len({p.user_id for p, _ in rows})}
+
+
+@router.get("/agent-recipes")
+def agent_recipes(admin: User = Depends(current_admin), db: Session = Depends(get_db)):
+    """Agentens recept över alla konton: vilka som håller (personen lät rättelserna stå) och hur ofta de använts.
+
+    Härifrån väljer en utvecklare vad som är värt att bli en regel i motorn. Ett recept blir aldrig en regel av
+    sig självt: det skrivs om till motorkod och går genom korpusspärren (engine/tools/corpus.py gate), så att en
+    lösning som höll på en ritning inte gör tio andra sämre."""
+    from .db import AgentRecipe
+    from .solver import recipe_state
+    users = {u.id: u.email for u in db.query(User).all()}
+    out = []
+    for rec in db.query(AgentRecipe).order_by(AgentRecipe.created_at.desc()).limit(500).all():
+        out.append({"id": rec.id, "user": users.get(rec.user_id), "drawing_id": rec.drawing_id, "page": rec.page,
+                    "problem_types": rec.problem_types, "state": recipe_state(db, rec), "uses": rec.uses,
+                    "code_runs": len(rec.code or []), "corrections": len(rec.correction_ids or []),
+                    "created_at": rec.created_at.isoformat()})
+    by_type: dict[str, dict] = defaultdict(lambda: {"kept": 0, "rejected": 0, "uses": 0})
+    for r in out:
+        for t in r["problem_types"] or []:
+            by_type[t][r["state"]] += 1
+            by_type[t]["uses"] += r["uses"] or 0
+    return {"recipes": out, "by_problem": dict(by_type)}
+
+
+@router.get("/agent-recipes/{recipe_id}")
+def agent_recipe(recipe_id: str, admin: User = Depends(current_admin), db: Session = Depends(get_db)):
+    """Ett recept i sin helhet - problemen, koden, verktygen, rättelserna - för den som ska göra det till en regel."""
+    from .db import AgentRecipe, Correction
+    from .solver import recipe_state
+    rec = db.get(AgentRecipe, recipe_id)
+    if rec is None:
+        raise HTTPException(404, "Receptet finns inte")
+    corr = db.query(Correction).filter(Correction.id.in_(rec.correction_ids or [""])).all()
+    return {"id": rec.id, "state": recipe_state(db, rec), "problems": rec.problems, "code": rec.code,
+            "tools": rec.tools, "report": rec.report, "uses": rec.uses, "drawing_id": rec.drawing_id,
+            "page": rec.page, "job_id": rec.job_id,
+            "corrections": [{"id": c.id, "kind": c.kind, "designation": c.designation, "payload": c.payload,
+                             "undone": c.undone} for c in corr]}

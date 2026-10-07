@@ -107,7 +107,7 @@ def _clip(obj: Any) -> str:
 
 
 def solve(result_dir: str, page: int, pdf_path: str, choice: str, turns=None, clock=time.monotonic,
-          model=None) -> dict:
+          model=None, recipes_for=None) -> dict:
     """Run the agent over one sheet. Returns {"problems", "corrections", "report", "calls", "code", "usage",
     "status"}. `turns` is the model adapter (solver_transport.turns); None means no model, and nothing runs."""
     from vvs_engine.agent import tools as T
@@ -139,6 +139,12 @@ def solve(result_dir: str, page: int, pdf_path: str, choice: str, turns=None, cl
     task = ("Problem på bladet (sida %d):\n" % page) + "\n".join(
         f"{p['nr']}. [{p['typ']}] {p['text']}" + (f" Plats: {p.get('bbox') or p.get('plats')}" if p.get('bbox') or p.get('plats') else "")
         for p in todo)
+    # What worked before on this account's drawings, for problems of the same kinds: shown first, to try and
+    # adapt. A recipe is the agent's earlier working, not an answer - the drawing in front of it still decides.
+    used = recipes_for({p["typ"] for p in todo}) if recipes_for else []
+    if used:
+        task += "\n\n" + recipes_text(used)
+    report["recipes_used"] = [r["id"] for r in used]
     new: list[dict] = [{"kind": "task", "text": task}]
     start = clock()
     report["status"] = "RUNNING"
@@ -202,7 +208,12 @@ def run_for_job(job_id: str, out_dir: str, pdf_path: str, choice: str | None) ->
         for c in db.query(Correction).filter(Correction.drawing_id == job.drawing_id, Correction.job_id != job_id,
                                              Correction.undone == False, Correction.note.like("agent:%")).all():  # noqa: E712
             c.undone = True
+            # marked as set aside by the new reading, not undone by a person: the recipe behind it still stands
+            c.payload = {**(c.payload or {}), "set_aside_by_rereading": True}
         db.commit()
+    with SessionLocal() as db:
+        job = db.get(AnalysisJob, job_id)
+        owner = db.get(Project, db.get(Drawing, job.drawing_id).project_id).owner_id
     began = time.monotonic()
     for pg in sheets:
         if time.monotonic() - began > MAX_JOB_SECONDS:
@@ -216,7 +227,7 @@ def run_for_job(job_id: str, out_dir: str, pdf_path: str, choice: str | None) ->
             job.summary = summary
             db.commit()
         try:
-            r = solve(out_dir, pg, pdf_path, choice)
+            r = solve(out_dir, pg, pdf_path, choice, recipes_for=lambda types: kept_recipes(owner, types))
         except Exception as exc:                          # noqa: BLE001
             log.exception("Agenten föll på blad %s", pg)
             r = {"status": "FAILED", "report": f"{type(exc).__name__}", "problems": [], "corrections": [],
@@ -233,7 +244,9 @@ def run_for_job(job_id: str, out_dir: str, pdf_path: str, choice: str | None) ->
                 db.add(c)
                 db.flush()
                 ids.append(c.id)
+            save_recipe(db, project.owner_id, drawing.id, job_id, pg, r, ids)
             accounts.append({"page": pg, "status": r["status"], "problems": r["problems"], "report": r["report"],
+                             "recipes_used": len(r.get("recipes_used") or []),
                              "corrections": ids, "calls": r["calls"][-60:],
                              "code": [{"kod": c["kod"][:4000], "ok": c["ok"], "fel": c.get("fel")} for c in r["code"]],
                              "tokens_in": sum(u.get("tokens_in") or 0 for u in r["usage"]),
@@ -249,3 +262,73 @@ def run_for_job(job_id: str, out_dir: str, pdf_path: str, choice: str | None) ->
                             "corrections": sum(len(a["corrections"]) for a in accounts)}
         job.summary = summary
         db.commit()
+
+
+
+# ---------------------------------------------------------------- recipes: what worked, kept per account
+
+MAX_RECIPES = 5            # earlier solutions shown to the agent on one sheet
+RECIPE_CODE_CHARS = 1500   # ...each code run cut to this, so the task stays readable
+
+
+def save_recipe(db, user_id: str, drawing_id: str, job_id: str, page: int, r: dict, correction_ids: list[str]) -> None:
+    """Keep the agent's working on one sheet when it recorded something: the problems, the code that ran, the
+    tools it called and the corrections it made. Whether it was right is read off those corrections later."""
+    from .db import AgentRecipe
+    if not correction_ids:
+        return
+    db.add(AgentRecipe(user_id=user_id, drawing_id=drawing_id, job_id=job_id, page=page,
+                       problem_types=sorted({p["typ"] for p in r.get("problems") or []}),
+                       problems=[{"typ": p["typ"], "text": p["text"]} for p in (r.get("problems") or [])][:25],
+                       code=[c["kod"][:6000] for c in (r.get("code") or []) if c.get("ok")][:10],
+                       tools=[c["namn"] for c in (r.get("calls") or []) if c.get("ok")][:60],
+                       correction_ids=list(correction_ids), report=(r.get("report") or "")[:4000]))
+    for rid in r.get("recipes_used") or []:
+        rec = db.get(AgentRecipe, rid)
+        if rec is not None:
+            rec.uses = (rec.uses or 0) + 1
+
+
+def recipe_state(db, rec) -> str:
+    """kept: every correction it made still stands, or was only set aside because the drawing was read again.
+    rejected: a person undid one, or they are gone altogether."""
+    from .db import Correction
+    ids = rec.correction_ids or []
+    rows = db.query(Correction).filter(Correction.id.in_(ids or [""])).all()
+    if not ids or len(rows) < len(ids):
+        return "rejected"
+    if any(c.undone and not (c.payload or {}).get("set_aside_by_rereading") for c in rows):
+        return "rejected"
+    return "kept"
+
+
+def kept_recipes(user_id: str, types: set[str]) -> list[dict]:
+    """The account's kept recipes for problems of these kinds, newest and most used first."""
+    from .db import AgentRecipe, SessionLocal
+    with SessionLocal() as db:
+        recs = (db.query(AgentRecipe).filter(AgentRecipe.user_id == user_id)
+                .order_by(AgentRecipe.created_at.desc()).limit(60).all())
+        out = []
+        for rec in recs:
+            if not set(rec.problem_types or []) & set(types):
+                continue
+            if recipe_state(db, rec) != "kept":
+                continue
+            out.append({"id": rec.id, "problem_types": rec.problem_types, "code": rec.code or [],
+                        "tools": rec.tools or [], "report": rec.report or "", "uses": rec.uses or 0})
+        out.sort(key=lambda r: -r["uses"])
+        return out[:MAX_RECIPES]
+
+
+def recipes_text(recipes: list[dict]) -> str:
+    lines = ["Lösningar som fungerat på tidigare ritningar i samma konto (personen lät rättelserna stå). Prova "
+             "samma angreppssätt först och anpassa det till det här bladets koordinater och pennor; följ alltid "
+             "det ritningen visar."]
+    for i, r in enumerate(recipes, start=1):
+        lines.append(f"\nRecept {i} (problem: {', '.join(r['problem_types'])}; använt {r['uses']} gånger)")
+        lines.append("Verktyg i ordning: " + " → ".join(dict.fromkeys(r["tools"])))
+        for c in r["code"][:3]:
+            lines.append("Kod:\n" + c[:RECIPE_CODE_CHARS])
+        if r["report"]:
+            lines.append("Rapport: " + r["report"][:600])
+    return "\n".join(lines)

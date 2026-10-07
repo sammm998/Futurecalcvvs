@@ -88,3 +88,19 @@ def test_the_agent_measures_the_scale_and_every_row_is_measured_again():
     assert abs(q["confirmed_horizontal_m"] - 2.0) < 0.01 and q["state"] == "SCALE_MEASURED"
     bad = T.run("foresla_skala", m, {"matningar": [{"a": [0, 0], "b": [10, 0], "mm": 4200}], "skal": ""})
     assert bad["tillstand"] == "AVBOJD"          # 1:1190 is no plan's ratio
+
+
+def test_kept_recipes_for_the_same_kind_of_problem_are_shown_first():
+    seen = {}
+
+    class Once:
+        def turn(self, new):
+            seen["task"] = new[0]["text"]
+            return {"text": "klart", "calls": [], "usage": {}}
+    recipe = {"id": "r1", "problem_types": ["beteckning_utan_ror"], "code": ["result = [s['id'] for s in segs]"],
+              "tools": ["kor_python", "foresla_rita_ror_fran_vektorer"], "report": "1. LÖST", "uses": 3}
+    asked = []
+    r = solver.solve("/nonexistent", 0, None, "x", turns=Once(), model=Sheet(),
+                     recipes_for=lambda types: asked.append(types) or [recipe])
+    assert "beteckning_utan_ror" in asked[0] and r["recipes_used"] == ["r1"]
+    assert "Recept 1" in seen["task"] and "result = [s['id'] for s in segs]" in seen["task"]

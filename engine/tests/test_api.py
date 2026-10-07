@@ -1375,3 +1375,37 @@ def test_live_session_is_owned_private_and_requires_completed_job(client, source
     monkeypatch.setattr(live_agent, 'create_session', failed)
     r = client.post(url, headers=owner)
     assert r.status_code == 502 and 'private-key' not in r.text
+
+
+def test_agent_recipes_are_kept_while_their_corrections_stand(client, source_api_pdf):
+    """A solution the agent recorded is offered again on the account's later drawings while the person lets its
+    corrections stand, and never once one is undone; a correction set aside by a new reading does not count."""
+    r = client.post("/api/auth/register", json={"email": "recept@example.com", "password": "hemligt1"}).json()
+    H = {"Authorization": f"Bearer {r['access_token']}"}
+    p = client.post("/api/projects", json={"name": "R", "description": ""}, headers=H).json()
+    with open(source_api_pdf, "rb") as fh:
+        d = client.post(f"/api/projects/{p['id']}/drawings", files={"file": ("r.pdf", fh, "application/pdf")}, headers=H).json()
+    from app.db import AgentRecipe, Correction, Project, SessionLocal
+    from app.solver import kept_recipes, recipes_text, save_recipe
+    with SessionLocal() as db:
+        owner = db.get(Project, p["id"]).owner_id
+        c = Correction(drawing_id=d["id"], user_id=owner, kind="draw", designation="VS1-S13-22",
+                       payload={"meters": 2.0, "source": "agent"}, situation={}, note="agent: 2 m")
+        db.add(c); db.flush()
+        save_recipe(db, owner, d["id"], None, 0, {"problems": [{"typ": "beteckning_utan_ror", "text": "x"}],
+                    "code": [{"kod": "result = len(segs)", "ok": True}], "calls": [{"namn": "kor_python", "ok": True}],
+                    "report": "1. LÖST"}, [c.id])
+        db.commit()
+        cid = c.id
+    got = kept_recipes(owner, {"beteckning_utan_ror"})
+    assert len(got) == 1 and got[0]["code"] == ["result = len(segs)"]
+    assert "result = len(segs)" in recipes_text(got)
+    assert kept_recipes(owner, {"skala"}) == []                     # another kind of problem: not offered
+    with SessionLocal() as db:                                       # set aside by a new reading: still kept
+        c = db.get(Correction, cid); c.undone = True; c.payload = {**c.payload, "set_aside_by_rereading": True}; db.commit()
+    assert len(kept_recipes(owner, {"beteckning_utan_ror"})) == 1
+    with SessionLocal() as db:                                       # the person undid it: no longer offered
+        c = db.get(Correction, cid); c.payload = {"meters": 2.0}; db.commit()
+    assert kept_recipes(owner, {"beteckning_utan_ror"}) == []
+    with SessionLocal() as db:
+        assert db.query(AgentRecipe).count() >= 1
