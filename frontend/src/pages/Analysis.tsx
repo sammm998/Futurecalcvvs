@@ -5,7 +5,7 @@ import { extension, withPipeExtensions } from "../live/gestures";
 import type { DrawingAction } from "../live/LiveDrawingAgent";
 import SourceAssignment from "../components/SourceAssignment";
 import { Suspense, lazy, useEffect, useMemo, useRef, useState } from "react";
-import { num, t as tr } from "../i18n";
+import { num, t as tr, trf } from "../i18n";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { api } from "../api";
 import { pipeRuns } from "../runs";
@@ -326,6 +326,9 @@ export default function AnalysisPage() {
   }, [panel]);
 
   const dl = async (path: string, name: string) => { const b = await api.fetchBlob(path); const a = document.createElement("a"); a.href = URL.createObjectURL(b); a.download = name; a.click(); };
+  // the drawing's own name on every file, as the server names them: ten sheets exported are ten files, not
+  // mangder.xlsx, mangder (1).xlsx, mangder (2).xlsx
+  const fileBase = (drawing?.filename ?? "ritning").replace(/\.pdf$/i, "");
 
   if (err) return <main><p className="error">{err}</p></main>;
   if (!job) return <main>{tr("Laddar…")}</main>;
@@ -384,9 +387,9 @@ export default function AnalysisPage() {
   const viewtabs = (
     <div className="viewtabs">
       <button className={view === "forklaring" ? "active" : ""} onClick={() => setView("forklaring")}>
-        Förklaringslista{result.legend?.entries?.length ? ` (${result.legend.entries.length})` : ""}
+        {tr("Förklaringslista")}{result.legend?.entries?.length ? ` (${result.legend.entries.length})` : ""}
       </button>
-      <button className={view === "analys" ? "active" : ""} onClick={() => setView("analys")}>Analys</button>
+      <button className={view === "analys" ? "active" : ""} onClick={() => setView("analys")}>{tr("Analys")}</button>
       <button className={view === "resonemang" ? "active" : ""} onClick={() => setView("resonemang")}>{tr("Agenternas resonemang")}</button>
       <span className="spacer" />
       <StatusBadge job={job} />
@@ -536,26 +539,26 @@ export default function AnalysisPage() {
           <span className="seg zoomseg">
             <button onClick={() => viewer.current?.zoomOut()} title={tr("Zooma ut")}>−</button>
             <button onClick={() => viewer.current?.zoomIn()} title={tr("Zooma in")}>+</button>
-            <button onClick={() => viewer.current?.fitPage()} title={tr("Hela sidan")}>Sida</button>
-            <button onClick={() => viewer.current?.fitWidth()} title={tr("Full bredd")}>Bredd</button>
+            <button onClick={() => viewer.current?.fitPage()} title={tr("Hela sidan")}>{tr("Sida")}</button>
+            <button onClick={() => viewer.current?.fitWidth()} title={tr("Full bredd")}>{tr("Bredd")}</button>
           </span>
           <button className="secondary small" onClick={() => viewer.current?.fullscreen()}>{tr("Helskärm")}</button>
           <button className="small d3-open" title={tr("Res ritningen till en byggnad")}
             onClick={() => { setRising(true); setShow3d(true); }}>{tr("Visa i 3D")}</button>
-          <button className="secondary small" onClick={() => setLiveAgent(true)}>Samtalsagent</button>
+          <button className="secondary small" onClick={() => setLiveAgent(true)}>{tr("Samtalsagent")}</button>
           {sheetBusy && <span className="muted small">{tr("Läser bladet…")}</span>}
           {nPages > 1 && <select value={page} disabled={sheetBusy} onChange={(e) => {
             // the selected run belongs to the page it was found on; carrying it across would put its ends,
             // and any correction dragged from them, on geometry that is not it
             setPage(Number(e.target.value)); setSelPipe(null); setWhy(null);
-          }}>{(result.pages ?? [page]).map((i: number) => <option key={i} value={i}>Sida {i + 1}</option>)}</select>}
+          }}>{(result.pages ?? [page]).map((i: number) => <option key={i} value={i}>{trf("Sida {0}", i + 1)}</option>)}</select>}
           {result.skipped_pages?.length > 0 && <span className="badge warn" title={result.skipped_pages.map((p: any) => `${p.page + 1}: ${p.mode}`).join(", ")}>
             {tr("Blad utan analys")}: {result.skipped_pages.map((p: any) => p.page + 1).join(", ")}
           </span>}
           <span className="spacer" />
           <div className="layerpop">
             <button className={`secondary small${layersOpen ? " on" : ""}`} onClick={() => setLayersOpen(!layersOpen)}>
-              Lager · {(Object.keys(LAYER_LABELS) as Layer[]).filter((l) => layers[l]).length}
+              {tr("Lager")} · {(Object.keys(LAYER_LABELS) as Layer[]).filter((l) => layers[l]).length}
             </button>
             {layersOpen && (
               <div className="pop" onMouseLeave={() => setLayersOpen(false)}>
@@ -605,7 +608,7 @@ export default function AnalysisPage() {
           <button className={tab === "rattelser" ? "active" : ""} onClick={() => setTab("rattelser")}>
             Rätta{corrections.filter((c: any) => !c.undone).length ? ` (${corrections.filter((c: any) => !c.undone).length})` : ""}
           </button>
-          <button className={tab === "markera" ? "active" : ""} onClick={() => setTab("markera")}>Markera</button>
+          <button className={tab === "markera" ? "active" : ""} onClick={() => setTab("markera")}>{tr("Markera")}</button>
           <button className={tab === "oversikt" ? "active" : ""} onClick={() => setTab("oversikt")}>{tr("Översikt")}</button>
           <button className={tab === "artefakter" ? "active" : ""} onClick={() => setTab("artefakter")}>Export</button>
           <Link className="tabs-cta" to={`/jobs/${id}/kalkyl`} title={tr("Kalkylera mängderna: material, normtid, pris och anbud")}>{tr("Kalkylera →")}</Link>
@@ -662,10 +665,12 @@ export default function AnalysisPage() {
             {staff && markup && (
               <p className={`badge${markup.removed ? "" : " warn"}`}>
                 {markup.removed
-                  ? `Bladet innehåller ${markup.n} PDF-annoteringar från ${Object.keys(markup.authors ?? {}).join(", ") || "okänd källa"}`
-                    + `${markup.ink_m ? ` med ${markup.ink_m} m markerade linjer` : ""}. Annoteringarna ingår inte i mängden. `
-                    + "Ritningens ursprungliga text och geometri analyseras separat."
-                  : `Bladet bär ${markup.n} markeringar som inte gick att lyfta av: ${markup.why}.`}
+                  ? (markup.ink_m
+                    ? trf("Bladet innehåller {0} PDF-annoteringar från {1} med {2} m markerade linjer. Annoteringarna ingår inte i mängden. Ritningens ursprungliga text och geometri analyseras separat.",
+                          markup.n, Object.keys(markup.authors ?? {}).join(", ") || tr("okänd källa"), markup.ink_m)
+                    : trf("Bladet innehåller {0} PDF-annoteringar från {1}. Annoteringarna ingår inte i mängden. Ritningens ursprungliga text och geometri analyseras separat.",
+                          markup.n, Object.keys(markup.authors ?? {}).join(", ") || tr("okänd källa")))
+                  : trf("Bladet bär {0} markeringar som inte gick att lyfta av: {1}.", markup.n, markup.why)}
               </p>
             )}
             {noScale ? (
@@ -799,8 +804,8 @@ export default function AnalysisPage() {
                 came for. They are still one click away, and the summary line says what they are set to. */}
             <details className="settings">
               <summary>
-                Antaganden <span className="muted">· våningshöjd {floorHeight ? `${floorHeight} m` : "ej satt"} · stigare ur
-                  {riserSource === "labels" ? " etiketter" : " ritade symboler"}</span>
+                {tr("Antaganden")} <span className="muted">· {trf("våningshöjd {0}", floorHeight ? `${floorHeight} m` : tr("ej satt"))} ·{" "}
+                  {riserSource === "labels" ? tr("stigare ur etiketter") : tr("stigare ur ritade symboler")}</span>
               </summary>
               <div className="body">
                 <label>Våningshöjd för stigare (m)
@@ -979,13 +984,13 @@ export default function AnalysisPage() {
           <div className="card">
             <h4>Export</h4>
             <div className="row">
-              <button onClick={() => dl(api.exportUrl(id!, "pdf"), "markerad.pdf")}>{tr("Markerad PDF")}</button>
-              <button onClick={() => dl(api.exportUrl(id!, "control"), "kontroll.pdf")}
+              <button onClick={() => dl(api.exportUrl(id!, "pdf"), `${fileBase}-markerad.pdf`)}>{tr("Markerad PDF")}</button>
+              <button onClick={() => dl(api.exportUrl(id!, "control"), `${fileBase}-kontroll.pdf`)}
                 title={tr("Varje mätt rör i grönt (egen etikett), gult (härlett) eller rött (att granska), med beteckning och meter")}>{tr("Kontrollritning")}</button>
-              <button onClick={() => dl(api.exportUrl(id!, "xlsx") + (exportQuery ? `?${exportQuery}` : ""), "mangder.xlsx")}>Excel</button>
-              <button onClick={() => dl(api.exportUrl(id!, "csv") + (exportQuery ? `?${exportQuery}` : ""), "mangder.csv")}>CSV</button>
-              <button onClick={() => dl(api.exportUrl(id!, "json"), "quantities.json")}>JSON</button>
-              <button onClick={() => dl(api.exportUrl(id!, "report"), "analysrapport.md")}>Analysrapport</button>
+              <button onClick={() => dl(api.exportUrl(id!, "xlsx") + (exportQuery ? `?${exportQuery}` : ""), `${fileBase}-mangder.xlsx`)}>Excel</button>
+              <button onClick={() => dl(api.exportUrl(id!, "csv") + (exportQuery ? `?${exportQuery}` : ""), `${fileBase}-mangder.csv`)}>CSV</button>
+              <button onClick={() => dl(api.exportUrl(id!, "json"), `${fileBase}-quantities.json`)}>JSON</button>
+              <button onClick={() => dl(api.exportUrl(id!, "report"), `${fileBase}-analysrapport.md`)}>Analysrapport</button>
             </div>
             <h4>Artefakter</h4>
             <table><tbody>{artifacts.map((a) => <tr key={a.name}><td><a href="#" onClick={(e) => { e.preventDefault(); dl(api.artifactUrl(id!, a.name), a.name); }}>{a.name}</a></td><td className="num muted">{(a.size / 1024).toFixed(0)} kB</td></tr>)}</tbody></table>

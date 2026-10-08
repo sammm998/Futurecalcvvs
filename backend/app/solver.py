@@ -68,8 +68,17 @@ def problems(m) -> list[dict]:
     labels = {}
     for d in m.designations:
         labels.setdefault((d.get("display_text") or d.get("text") or "").strip(), d.get("bbox"))
-    for name in (cov.get("missed") or []) + (cov.get("without_metres") or []):
-        out.append({"typ": "beteckning_utan_ror", "beteckning": name, "bbox": labels.get(name),
+    # A sheet whose lettering is text writes each missed name with where it stands ({name, rects}); a sheet read
+    # from its strokes writes the bare name. The same name is in both lists - once as missed, once as without
+    # metres - and is one problem.
+    seen: set[str] = set()
+    for item in (cov.get("missed") or []) + (cov.get("without_metres") or []):
+        name = item.get("name") if isinstance(item, dict) else item
+        if not name or name in seen:
+            continue
+        seen.add(name)
+        rects = (item.get("rects") or []) if isinstance(item, dict) else []
+        out.append({"typ": "beteckning_utan_ror", "beteckning": name, "bbox": labels.get(name) or (rects[0] if rects else None),
                     "text": f"Beteckningen {name} står på bladet men har inget rör i mängden."})
     # drawn pipe ink nobody named, gathered into clusters on a coarse grid so one long run is one problem
     cells: dict[tuple, dict] = {}

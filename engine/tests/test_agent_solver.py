@@ -58,6 +58,24 @@ def test_the_agent_draws_missed_pipe_from_the_ink_and_never_counts_measured_ink_
     assert c["payload"]["source"] == "agent" and len(r["code"]) == 1 and r["code"][0]["ok"]
 
 
+def test_a_sheet_whose_lettering_is_text_names_its_missed_pipes_with_their_place():
+    """The reading writes a text-layer sheet's missed names as {name, rects}, and the same name again among those
+    without metres: one problem, placed where the sheet writes it - never a crash on the shape."""
+    class TextSheet(Sheet):
+        def _gather(self, name, key):
+            if name == "reading-coverage.json":
+                return [{"page": 0, "missed": [{"name": "VS1-S13-22", "rects": [[101, 91, 141, 99]]}],
+                         "without_metres": ["VS1-S13-22"]}]
+            return []
+
+    class Unparsed(TextSheet):          # the host's parse did not take the label: the place comes from the text
+        designations = []
+    named = [p for p in solver.problems(Unparsed()) if p["typ"] == "beteckning_utan_ror"]
+    assert [(p["beteckning"], p["bbox"]) for p in named] == [("VS1-S13-22", [101, 91, 141, 99])]
+    r = solver.solve("/nonexistent", 0, None, "x", turns=FakeModel(), model=TextSheet())
+    assert r["status"] == "DONE" and [c["designation"] for c in r["corrections"]] == ["VS1-S13-22"]
+
+
 def test_no_model_or_nothing_open_runs_nothing():
     assert solver.solve("/nonexistent", 0, None, "x", turns=None, model=type("Clean", (Sheet,), {
         "_gather": lambda self, n, k: [], "inventory": []})())["status"] == "NOTHING_TO_DO"

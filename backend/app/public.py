@@ -103,10 +103,13 @@ def post_events(body: EventsIn, request: Request, db: Session = Depends(get_db))
 
 @router.get("/content/{slug}")
 def published(slug: str, db: Session = Depends(get_db)):
-    """Den publicerade texten för en sida. Ett utkast syns aldrig här."""
+    """Den publicerade texten för en sida. Ett utkast syns aldrig här.
+
+    Ingen publicerad text är inget fel: sidan visar då sin inbyggda. Svaret är därför `null`, inte 404 - en 404
+    stod som ett fel i webbläsarens konsol hos varje besökare på en sida som fungerade precis som den skulle."""
     c = db.query(Content).filter(Content.slug == slug, Content.published.is_(True)).first()
     if c is None:
-        raise HTTPException(404, "Sidan finns inte")
+        return None
     return {"slug": c.slug, "title": c.title, "body": c.body,
             "updated_at": c.updated_at.isoformat() if c.updated_at else None}
 

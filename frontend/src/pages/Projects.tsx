@@ -41,20 +41,20 @@ export default function Projects() {
           <h1>Projekt</h1>
           <p className="lead">{tr("Mängder ur ritningen, med belägg för varje meter")}</p>
         </div>
-        <button onClick={() => setOpen(!open)}>{open ? "Avbryt" : "+ Nytt projekt"}</button>
+        <button onClick={() => setOpen(!open)}>{open ? tr("Avbryt") : tr("+ Nytt projekt")}</button>
       </div>
 
       {open && (
         <form className="card" style={{ marginTop: 28, maxWidth: 560 }} onSubmit={create}>
           <div className="field">
-            <label htmlFor="p-name">Projektnamn</label>
+            <label htmlFor="p-name">{tr("Projektnamn")}</label>
             <input id="p-name" value={name} onChange={(e) => setName(e.target.value)} placeholder={tr("Kv. Badhuset, etapp 2")} required autoFocus />
           </div>
           <div className="field">
-            <label htmlFor="p-desc">Beskrivning</label>
-            <input id="p-desc" value={desc} onChange={(e) => setDesc(e.target.value)} placeholder="Valfritt" />
+            <label htmlFor="p-desc">{tr("Beskrivning")}</label>
+            <input id="p-desc" value={desc} onChange={(e) => setDesc(e.target.value)} placeholder={tr("Valfritt")} />
           </div>
-          <button type="submit" disabled={busy}>{busy ? "Skapar…" : "Skapa projekt"}</button>
+          <button type="submit" disabled={busy}>{busy ? tr("Skapar…") : tr("Skapa projekt")}</button>
         </form>
       )}
 

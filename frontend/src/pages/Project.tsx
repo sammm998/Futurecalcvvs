@@ -87,7 +87,7 @@ export default function ProjectPage() {
           <input type="file" accept="application/pdf,.pdf" multiple disabled={busy} ref={fileRef} id="pdf" className="file"
             onChange={(e) => { const files = e.target.files; setPicked(files?.length === 1 ? files[0].name : files?.length ? trf("{0} PDF-filer valda", files.length) : ""); }} />
           <label className="pick" htmlFor="pdf">{picked || "Välj PDF…"}</label>
-          <button onClick={upload} disabled={busy || !picked}>{busy ? "Laddar upp…" : "Ladda upp"}</button>
+          <button onClick={upload} disabled={busy || !picked}>{busy ? tr("Laddar upp…") : tr("Ladda upp")}</button>
           {/* En ritning i taget svarar med meter. Hela handlingen svarar med vad den består av. */}
           <Link to={`/projects/${project.id}/analys`}><button className="secondary">{tr("Analysera projektet")}</button></Link>
         </div>
@@ -114,8 +114,8 @@ export default function ProjectPage() {
             <div>
               <Link className="ttl" to={`/drawings/${d.id}`}>{d.filename.replace(/\.pdf$/i, "")}</Link>
               <div className="sub">
-                {d.n_pages} {d.n_pages === 1 ? "sida" : "sidor"} · {fileSize(d.size_bytes)}
-                {d.latest_job && <> · senast <Link to={`/jobs/${d.latest_job.id}`}>{DATE.format(new Date(d.latest_job.created_at))}</Link></>}
+                {d.n_pages} {d.n_pages === 1 ? tr("sida") : tr("sidor")} · {fileSize(d.size_bytes)}
+                {d.latest_job && <> · {tr("senast")} <Link to={`/jobs/${d.latest_job.id}`}>{DATE.format(new Date(d.latest_job.created_at))}</Link></>}
               </div>
             </div>
             <div className="meta">
@@ -125,7 +125,7 @@ export default function ProjectPage() {
                 setErr("");
                 try { const j = await api.analyze(d.id); window.location.href = `/jobs/${j.id}`; }
                 catch (ex: any) { setErr(/402/.test(ex.message) ? `${ex.message.replace(/\s*\(402\)$/, "")} Fyll på under Credits.` : ex.message); }
-              }}>Analysera</button>
+              }}>{tr("Analysera")}</button>
             </div>
           </Tilted>
         ))}
