@@ -46,7 +46,10 @@ def runs(run_dir):
 
 
 def gap(pdf, run_dir):
-    """({right, wrong_dn, wrong_system, missed, facit}, {rule: {right, wrong, outside}}) in points."""
+    """({right, wrong_dn, wrong_system, missed, facit, outside}, {rule: {right, wrong, outside}}) in points.
+
+    `outside` is what the reading measured where the facit has no pipe, each measured line counted once - the
+    per-rule table counts a line once for every rule that named it."""
     fac = facit_lines(pdf)
     ours = runs(run_dir)
     out = collections.Counter()
@@ -75,6 +78,7 @@ def gap(pdf, run_dir):
         r = line.intersection(unary_union(same)).length if same else 0.0
         rest = line.difference(unary_union(same)) if same else line
         w = rest.intersection(unary_union(other)).length if other else 0.0
+        out["outside"] += max(0.0, line.length - r - w)
         for e in evidence:
             rules[e]["right"] += r
             rules[e]["wrong"] += w
@@ -118,10 +122,11 @@ def main(args):
         total.update({"risers_facit": rf, "risers_ours": ro, "risers_off": off})
         print(f"{run_dir}: rätt {100 * out['right'] / f:5.1f} %  fel DN {100 * out['wrong_dn'] / f:4.1f} %  "
               f"fel system {100 * out['wrong_system'] / f:4.1f} %  missad {100 * out['missed'] / f:4.1f} %  "
-              f"stigare facit {rf} vi {ro} fel {off}")
+              f"utanför facit {100 * out['outside'] / f:4.1f} %  stigare facit {rf} vi {ro} fel {off}")
     f = total["facit"] or 1
     print(f"TOTALT: rätt {100 * total['right'] / f:.1f} %  fel DN {100 * total['wrong_dn'] / f:.1f} %  "
           f"fel system {100 * total['wrong_system'] / f:.1f} %  missad {100 * total['missed'] / f:.1f} %  "
+          f"utanför facit {100 * total['outside'] / f:.1f} %  "
           f"stigare facit {total['risers_facit']} vi {total['risers_ours']} fel {total['risers_off']}")
     for e, c in sorted(rules_all.items(), key=lambda kv: -sum(kv[1].values())):
         t = sum(c.values()) or 1

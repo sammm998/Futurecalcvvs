@@ -42,6 +42,7 @@ from .measure.measure import SETTLED_SCALE, PipeMeasure, aggregate, measure_pipe
 from .pipes.ownership import (Identity, OwnershipResult, complete_identities, identity_of, propagate, DECLARED_RUN_MAX_M)
 from .pipes.frontier import end_evidence, frontiers_of, summary as frontier_summary
 from .film import Film
+from .handling import reads_as_a_drawing_number
 from .routes import apply_routes, cross_check, review, run_routes
 
 from . import rules as _rules
@@ -1122,9 +1123,19 @@ def analyze_page(page: RawPage, progress: Callable[[str], None] | None = None, o
     # samma form som en rörbeteckning, och formen kan inte skilja dem åt. Räknas de som rörnamn drar de dessutom
     # ned bladets etikettäckning och kan få hela läsningen att förkastas.
     unknown_codes = _unknown_to_the_legend(legend, designations)
+    # a sheet read from pixels (raster/): every run on it is reviewed, and its scale must be measured on the sheet
+    from_image = (page.input_class or {}).get("read_as") == "raster"
+    # A drawing number names a sheet, never a pipe. It has a pipe label's shape - `V-50-1-A0111` opens with a
+    # letter and carries a number where a size would stand - and on a page read from pixels the title block's
+    # ruled cells come out as lines running on from under it, so the sheet's own number was read as a pipe the
+    # length of its title block. It is told apart the way the set's handling reads it (`handling.py`): a
+    # discipline letter on its own, a two-digit group and at least one part more - a shape no pipe label has, from
+    # `S13-12` to `VS1-S13-15/W`. On a vector sheet the title block's cells are drawn apart from its text and the
+    # number has reached no line on any sheet read; that reading is left as it is.
+    sheet_numbers = {d.did for d in designations if reads_as_a_drawing_number(d.text)} if from_image else set()
     pipe_labels = {d.did for d in designations
                    if legend.names_a_pipe(d) and (d.text or "").upper() not in legend.components()
-                   and d.did not in unknown_codes and not legend.holds(d.bbox)}
+                   and d.did not in unknown_codes and d.did not in sheet_numbers and not legend.holds(d.bbox)}
     spelled_out = layer_system_tokens(page)      # the system names the file writes on layers of its own
 
     named_systems = {d.system_token for d in designations if d.did in pipe_labels}
@@ -1552,7 +1563,12 @@ def analyze_page(page: RawPage, progress: Callable[[str], None] | None = None, o
     pass1 = (leaders, pipe_families, graphs, anchors, contact_stats)
     if os.environ.get("VVS_DEBUG_PASS"):
         print(f"[reach] pass1 placed {len(_reached(anchors))}/{len(pipe_labels)} pipe labels, fams={sorted(pipe_families)}", file=sys.stderr)
-    if ann_layers:
+    # A page read from pixels is read once. The second reading tests a hypothesis about the sheet's pens - which of
+    # them write and which draw - and a scan cannot answer it: its pens are widths measured in pixels, and the one pen
+    # a sheet draws its leaders with comes out as two or three widths that the building's thin lines share. Withholding
+    # the widths the first reading's leaders were measured at took the leaders measured at the others away with the
+    # building, and their labels were left without a line to any pipe.
+    if ann_layers and not from_image:
         # a vector family accepted as pipe geometry in pass 1 is never an annotation family (an underline bar that
         # happens to share the pipes' stroke class must not remove the pipes)
         #
@@ -1635,6 +1651,13 @@ def analyze_page(page: RawPage, progress: Callable[[str], None] | None = None, o
             leaders, pipe_families, graphs, anchors, contact_stats = pass2
             ann_layers = keep
     else:
+        if ann_layers:
+            if film:
+                film.note("RESOLVING_PIPE_REPRESENTATION",
+                          "Sidan är läst ur bild, så den läses inte om med skrivpennorna undantagna: en penna är där en "
+                          "bredd mätt i bildpunkter, och hänvisningslinjernas penna delar sina bredder med husets "
+                          "tunna linjer. Den första läsningen står.")
+            contact_stats = dict(contact_stats, annotation_restriction_not_tried_on_image=True)
         ann_layers = {}
         passes[-1]["kept"] = True
     if _label_reach_fails(pipe_families, anchors):
@@ -1734,10 +1757,8 @@ def analyze_page(page: RawPage, progress: Callable[[str], None] | None = None, o
         return complete_identities(_pipe_identities(
             designations, anchors, grammar,
             _R("pipeline.DN_ROWS_ARE_VERTICAL_ONLY", DN_ROWS_ARE_VERTICAL_ONLY), legend=legend,
-            unknown_codes=unknown_codes))
+            unknown_codes=unknown_codes, sheet_numbers=sheet_numbers))
 
-    # a sheet read from pixels (raster/): every run on it is reviewed, and its scale must be measured on the sheet
-    from_image = (page.input_class or {}).get("read_as") == "raster"
     scale = discover_scale(page, lines)
     if scale.meters_per_pt is None:
         # nothing on the sheet states its size: measure it on the pipes, whose labels say how wide they are
@@ -1791,7 +1812,7 @@ def analyze_page(page: RawPage, progress: Callable[[str], None] | None = None, o
                 ids = complete_identities(_pipe_identities(
                     designations, own, grammar,
                     _R("pipeline.DN_ROWS_ARE_VERTICAL_ONLY", DN_ROWS_ARE_VERTICAL_ONLY), legend=legend,
-                    unknown_codes=unknown_codes))
+                    unknown_codes=unknown_codes, sheet_numbers=sheet_numbers))
                 return propagate(split_graphs, own, page.info.index, ids, spelled_out,
                                  declared=declarations.connection_pipes, declared_max_pt=declared_max_pt,
                                  end_evidence=end_ev)
@@ -2169,7 +2190,8 @@ def _split_at_tick_contacts(page: RawPage, graphs: dict, pipe_families: dict, an
 
 
 def _pipe_identities(designations, anchors, grammar, dn_rows_are_vertical_only: bool = False,
-                    legend=None, unknown_codes: set[str] | None = None) -> dict[str, Identity]:
+                    legend=None, unknown_codes: set[str] | None = None,
+                    sheet_numbers: set[str] | None = None) -> dict[str, Identity]:
     """Anchors of pipe-designation grammar families: a family qualifies when >= 50 % of its members carry a DN
     (inline or DN row) or >= 50 % of its verified attachments have layer-token support. Other code families
     (component tags) never seed pipe ownership.
@@ -2227,6 +2249,8 @@ def _pipe_identities(designations, anchors, grammar, dn_rows_are_vertical_only: 
             continue        # the legend says this code names an object, not a pipe
         if d.did in (unknown_codes or set()):
             continue        # bladets egen förklaringslista nämner aldrig den här koden
+        if d.did in (sheet_numbers or set()):
+            continue        # ett ritningsnummer namnger ett blad, aldrig ett rör
         if _is_an_apparatus_tag(d, legend):
             continue        # AV21-10 är en ventil på röret, inte röret
         gf = grammar.families.get(d.pattern)

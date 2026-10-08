@@ -1,6 +1,6 @@
 """Ett skannat blad, eller en bild av ett blad, läses ur bildpunkterna - och allt det ger står som att granska.
 
-Proven håller fast fyra saker:
+Proven håller fast sex saker:
 
 1. Ett blad läst ur bild mäter samma rör som vektorbladet det är en bild av, inom vad en pixel är värd.
 2. Varje rör därifrån är flaggat för granskning med skälet att det är läst ur en bild, varje rad står som
@@ -9,6 +9,11 @@ Proven håller fast fyra saker:
    eller mått den gäller den; annars mäts inget förrän någon anger skalan - och då står raden som angiven skala.
 4. En bild blir en PDF med bildens egna bildpunkter, i den storlek filen anger - och en fil som inte anger någon
    upplösning, eller en orimlig, läggs ut vid 200 dpi.
+5. En sida läst ur bild läses en gång. Den andra läsningen, med de pennor undantagna som den första läsningens
+   hänvisningslinjer var ritade med, prövas bara på vektorblad: på en skanning är en penna en bredd mätt i
+   bildpunkter, och hänvisningslinjernas penna delar sina bredder med husets tunna linjer.
+6. Ett ritningsnummer på en sida läst ur bild namnger inget rör, vilken linje som än går från det: namnrutans
+   linjer kommer ur bildpunkterna som linjer som löper vidare under numret.
 """
 import io
 import json
@@ -113,6 +118,55 @@ def test_a_scan_whose_scale_is_only_printed_is_not_measured_until_someone_gives_
     vec = _read(synthetic_pdf, tmp_path / "vec")
     want = sum(r["confirmed_horizontal_m"] for r in vec["q"]["rows"])
     assert abs(sum(r["confirmed_horizontal_m"] for r in rows) - want) <= 0.02 * want
+
+
+@needs_pixels
+def test_a_page_read_from_pixels_is_not_read_again_with_its_writing_pens_withheld(synthetic_pdf, tmp_path, offline):
+    if not _ocr():
+        pytest.skip("tesseract behövs för att läsa bladets text")
+    _read(synthetic_pdf, tmp_path / "vec")
+    _read(_scan(synthetic_pdf, str(tmp_path / "scan.pdf")), tmp_path / "img")
+
+    def votes(d):
+        prof = json.loads((tmp_path / d / "drawing-profile.json").read_text(encoding="utf-8"))
+        return prof["pipe_structure"]["contact_votes"]
+
+    vec, img = votes("vec"), votes("img")
+    # the vector sheet is read twice, the second time with the pens its leaders are drawn with withheld
+    assert "annotation_pens_withheld" in [p["pass"] for p in vec["reading_passes"]], vec["reading_passes"]
+    assert "annotation_restriction_not_tried_on_image" not in vec
+    # its scan is read once, and says why
+    assert [p["pass"] for p in img["reading_passes"]] == ["unrestricted"], img["reading_passes"]
+    assert img["reading_passes"][0]["kept"] is True
+    assert img["annotation_restriction_not_tried_on_image"] is True
+
+
+@needs_pixels
+def test_a_drawing_number_on_a_scan_names_no_pipe_whatever_line_runs_from_it(synthetic_pdf, tmp_path, offline):
+    """On a real scan the line is the title block's ruling, come out of the pixels running on from under the number
+    to the frame. Here it is drawn to a pipe of its own, so that the sheet needs no title block to show it."""
+    if not _ocr():
+        pytest.skip("tesseract behövs för att läsa bladets text")
+    from conftest import make_dashed_line
+    doc = pymupdf.open(synthetic_pdf)
+    page = doc[0]
+    shape = page.new_shape()
+    make_dashed_line(shape, (650, 470), (800, 470))
+    page.insert_text((660, 430), "V-50-1-B-0217", fontsize=10, fontname="helv")
+    for a, b in (((660, 432), (745, 432)), ((745, 432), (720, 470)), ((719, 469), (721, 471))):
+        shape.draw_line(a, b)
+        shape.finish(width=0.72, color=(0, 0, 0), closePath=False)
+    shape.commit()
+    numbered = str(tmp_path / "med-ritningsnummer.pdf")
+    doc.save(numbered)
+    doc.close()
+
+    img = _read(_scan(numbered, str(tmp_path / "scan.pdf")), tmp_path / "img")
+    pipes = {p["designation"] for p in img["pipes"]["physical_pipes"]}
+    rows = {r["designation"] for r in img["q"]["rows"]}
+    assert not any("0217" in n for n in pipes | rows), (pipes, rows)
+    # and the pipes the sheet labels are measured as before
+    assert {"KV01-X7-40-W40", "VS21-S13-15"} <= pipes, pipes
 
 
 def _ev(kind="scale_text"):

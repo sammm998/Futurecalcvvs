@@ -79,6 +79,11 @@ _NUMBER = re.compile(
     r"(\d{2,4})\b", re.I)                      # plan och del
 
 
+def reads_as_a_drawing_number(text: str) -> bool:
+    """Om hela texten är skriven som ett ritningsnummer: `V-50-1-A0111`, `V-56-1-124` - men inte `S13-12`."""
+    return _NUMBER.fullmatch((text or "").strip()) is not None
+
+
 @dataclass
 class Field:
     """Ett värde och var det kom ifrån. Utan källan är värdet ett påstående ingen kan pröva."""
