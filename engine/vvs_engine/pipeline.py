@@ -1685,6 +1685,9 @@ def analyze_page(page: RawPage, progress: Callable[[str], None] | None = None, o
     native = None
     native_identities, native_elevations = {}, {}
     native_merge = None
+    # The reading's own leaders are never pipe. On a page read from pixels a traced leader is a run of the skeleton,
+    # and it can carry on into the pipe it points at, so there what it holds is not held out.
+    written_leaders = set() if from_image else {pid for ld in leaders for pid in ld.path_ids}
     if source_detector is not None:
         from .source_rules.native_bridge import merge_detection
         # the lettering this reading already built from the glyphs: the detector reads those label boxes from it
@@ -1697,13 +1700,13 @@ def analyze_page(page: RawPage, progress: Callable[[str], None] | None = None, o
         from .source_rules.unattested_codes import set_aside as set_aside_misread_codes
         misread_codes = set_aside_misread_codes(native.get('labels') or [], designations)
         native_merge = merge_detection(page, native, graphs, pipe_families, anchors,
-                                       native_identities, native_elevations)
+                                       native_identities, native_elevations, not_pipe=written_leaders)
         native_merge['label_sizes_from_drawing_lettering'] = label_sizes
         native_merge['misread_codes_set_aside'] = misread_codes
         from .source_rules.lost_suffix import restore as restore_lost_suffixes
         native_merge['suffixes_from_drawing_lettering'] = restore_lost_suffixes(
             native.get('labels') or [], [d.text for d in designations])
-    graphs, pipe_families = _split_at_tick_contacts(page, graphs, pipe_families, anchors)
+    graphs, pipe_families = _split_at_tick_contacts(page, graphs, pipe_families, anchors, written_leaders)
     prims = {fk: graphs[fk].prims for fk in graphs}
     # a family taken after the passes ran is not a declined one, whatever the pass that looked at it decided
     if contact_stats.get("declined_families"):
@@ -2166,9 +2169,13 @@ def _rows_owning_leader(block: AnnotationBlock, rows: list[Designation], ld: Lea
     return own if len(own) == 1 else rows
 
 
-def _split_at_tick_contacts(page: RawPage, graphs: dict, pipe_families: dict, anchors: list[PipeCodeAnchor]):
+def _split_at_tick_contacts(page: RawPage, graphs: dict, pipe_families: dict, anchors: list[PipeCodeAnchor],
+                            leader_pids: set[str] | None = None):
     """Tick marks of verified leaders are drawn boundary evidence on the pipe: re-split the pipe primitives there
-    so every tick contact becomes a graph node (ownership can then change identity exactly at the tick)."""
+    so every tick contact becomes a graph node (ownership can then change identity exactly at the tick).
+
+    leader_pids: the reading's own leaders. The pen is collected again, and a sheet that writes with the pen it
+    draws with had every leader back in the pipe graph, joined to the pipe it points at - and measured as it."""
     pts: dict[str, set[tuple[float, float]]] = defaultdict(set)
     for a in anchors:
         if a.state != "VERIFIED_PIPE_ATTACHMENT":
@@ -2178,7 +2185,7 @@ def _split_at_tick_contacts(page: RawPage, graphs: dict, pipe_families: dict, an
                 pts[c.family].add((round(c.point[0], 3), round(c.point[1], 3)))
     if not pts:
         return graphs, pipe_families
-    prims_all = collect_prims(page, set(pts))
+    prims_all = collect_prims(page, set(pts), exclude_pids=leader_pids)
     for fk in sorted(pts):
         if not prims_all.get(fk):
             continue

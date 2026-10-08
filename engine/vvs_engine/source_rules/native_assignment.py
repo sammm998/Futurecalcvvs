@@ -333,6 +333,72 @@ def _grey_or_coloured(family_key):
     return bool(rgb) and max(rgb)>.25
 
 
+OUTLINE_APART=(1.5,8.0)      # pt: a pipe drawn to scale has its two edges this far apart (attachment.EDGES_APART_*)
+OUTLINE_PARALLEL=0.9994      # cos of 2 degrees: the two edges of one pipe run the same way
+OUTLINE_SHARE=0.5            # share of a stroke's length that has to lie alongside itself for it to be an outline
+OUTLINE_PEN_SHARE=0.5        # share of a pen's named pipe that has to be outline for the pen to draw its pipes so
+
+
+def _outline_strokes(g):
+    """The drawn strokes that are a pipe's outline: a stroke that runs alongside itself, a pipe's width apart.
+
+    A pipe drawn to scale is drawn as its two edges, joined round its ends and bends into one stroke. A floor, a
+    column, the casing of a tank are strokes of the same pen on a section drawn in one pen, and they meet the
+    pipes - but none of them runs alongside itself at a pipe's width over half its length. What lies alongside is
+    measured as a length along each piece, so the answer does not depend on where the stroke happens to be split."""
+    import math
+    lo,hi=OUTLINE_APART;cell=32.0
+    by=defaultdict(list)
+    for pr in g.prims.values():
+        sg=pr.seg;n=math.hypot(sg.x1-sg.x0,sg.y1-sg.y0)
+        if n>=0.5:
+            by[pr.pid].append((sg,(sg.x1-sg.x0)/n,(sg.y1-sg.y0)/n,n))
+
+    def cells(sg):
+        for gx in range(int((min(sg.x0,sg.x1)-hi)//cell),int((max(sg.x0,sg.x1)+hi)//cell)+1):
+            for gy in range(int((min(sg.y0,sg.y1)-hi)//cell),int((max(sg.y0,sg.y1)+hi)//cell)+1):
+                yield gx,gy
+    out=set()
+    for pid,segs in by.items():
+        if len(segs)<2:
+            continue
+        grid=defaultdict(list)
+        for k,z in enumerate(segs):
+            for c in cells(z[0]):
+                grid[c].append(k)
+        total=sum(z[3] for z in segs);alongside=0.0
+        for k,(sk,ux,uy,n) in enumerate(segs):
+            near=set()
+            for c in cells(sk):
+                near.update(grid.get(c,()))
+            near.discard(k)
+            mx,my=(sk.x0+sk.x1)/2,(sk.y0+sk.y1)/2
+            spans=[]
+            for j in sorted(near):
+                sj,ex,ey,m=segs[j]
+                if abs(ux*ex+uy*ey)<OUTLINE_PARALLEL:
+                    continue
+                if not lo<=abs((mx-sj.x0)*ey-(my-sj.y0)*ex)<=hi:
+                    continue
+                t0=(sj.x0-sk.x0)*ux+(sj.y0-sk.y0)*uy;t1=(sj.x1-sk.x0)*ux+(sj.y1-sk.y0)*uy
+                a,b=max(0.0,min(t0,t1)),min(n,max(t0,t1))
+                if b>a:
+                    spans.append((a,b))
+            spans.sort();cur=None
+            for a,b in spans:
+                if cur is None or a>cur[1]:
+                    if cur is not None:
+                        alongside+=cur[1]-cur[0]
+                    cur=[a,b]
+                else:
+                    cur[1]=max(cur[1],b)
+            if cur is not None:
+                alongside+=cur[1]-cur[0]
+        if total>0 and alongside>=OUTLINE_SHARE*total:
+            out.add(pid)
+    return out
+
+
 def _settle_unowned(graphs,states,set_aside,host,pens=None):
     """Give drawn pipe no label reached the name the drawing gives it, and guess where the drawing makes it plain.
 
@@ -348,12 +414,30 @@ def _settle_unowned(graphs,states,set_aside,host,pens=None):
                                      a pipe runs straight through a tee, the branch leaves it at an angle.
 
     Ink joined to nothing named is left: on the reference sheets it was mostly not pipe at all.
+
+    On a pen that draws its pipes as their outlines, a pipe continues as an outline and a line as a line
+    (_outline_strokes). On a section drawn in one pen the floor a pipe stands on, a column and a tank's casing
+    are joined to the pipes, and the whole of that ink took the name of the one pipe it touched - a floor
+    measured as cold water.
     """
     counts={'continues_the_connected_pipe':0,'host_reading_single_candidate':0,'straight_through_the_junction':0}
     for fk,g in graphs.items():
         if pens is not None and fk not in pens:
             continue
         family=states[fk]
+        outline=_outline_strokes(g)
+        if outline:
+            # Only a pen that draws its pipes as outlines - most of what the labels already named is outline. On a
+            # plan the pipes are lines, and a stroke there that runs back alongside itself is a pipe too: one
+            # drawn out to a fitting and back.
+            named=[pr for pid,pr in g.prims.items() if pid in family and family[pid].state=='CONFIRMED']
+            total=sum(pr.seg.length for pr in named)
+            if total<=0 or sum(pr.seg.length for pr in named if pr.pid in outline)<OUTLINE_PEN_SHARE*total:
+                outline=set()
+
+        def drawn_as(pid):
+            pr=g.prims.get(pid)
+            return pr is not None and pr.pid in outline
         partner=defaultdict(set)
         for br in g.bridges or []:
             a,b=br.get('from_node'),br.get('to_node')
@@ -380,6 +464,8 @@ def _settle_unowned(graphs,states,set_aside,host,pens=None):
                                 if q==pid:continue
                                 s=family.get(q)
                                 if s is None:continue
+                                if outline and drawn_as(q)!=drawn_as(pid):
+                                    continue        # an outline goes on as an outline, a line as a line
                                 if s.state=='UNOWNED' and q not in seen and (fk,q) not in set_aside:
                                     seen.add(q);comp.append(q)
                                 elif s.state=='CONFIRMED' and s.identity is not None:

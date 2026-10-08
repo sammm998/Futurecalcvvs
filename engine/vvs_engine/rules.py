@@ -101,6 +101,20 @@ RULES: tuple[Rule, ...] = (
          "Hur nära varandra de rör som ligger inom räckvidden måste ligga för att vara en enda ritad sak. "
          "Ligger de isär har ritningen inte sagt vilket som menas, och sträckan lämnas onämnd.",
          "pt", 2.5, 0.5, 10.0, "bundle", True),
+    Rule("semantics.attachment.EDGES_APART_MIN", G_LEADER, "Linjen stannar inne i röret",
+         "Ett rör ritat i skala ritas som sina två kanter, och hänvisningslinjen stannar mitt i röret utan att "
+         "röra någon av dem. Kanterna måste ligga minst så här långt isär för att vara ett rörs två kanter och "
+         "inte ett streck ritat två gånger.",
+         "pt", 1.5, 0.5, 5.0, "leader", True),
+    Rule("semantics.attachment.EDGES_APART_MAX", G_LEADER, "...och kanterna ligger ett rörs bredd isär",
+         "Hur långt isär ett rörs två kanter högst ritas. Längre isär är det två saker och inte ett rör, och "
+         "linjen som stannar mellan dem har inte sagt vilken den menar. Kanterna måste dessutom vara samma "
+         "ritade streck, runt rörets ände: två rör bredvid varandra är två streck.",
+         "pt", 8.0, 2.0, 20.0, "leader", True),
+    Rule("semantics.attachment.EDGES_PARALLEL", G_LEADER, "...och går åt samma håll",
+         "Hur mycket ett rörs två kanter får skilja i riktning. Ett rör har parallella kanter; går de isär är "
+         "det inte ett rör linjen stannat i.",
+         "grader", 2.0, 0.0, 10.0, "leader", True),
     Rule("semantics.attachment.DASH_GAP_MAX", G_LEADER, "Landar i en lucka i strecken",
          "Den bredaste ritade luckan i ett streckat rör som en hänvisningslinje får sluta i och ändå räknas som "
          "att den träffat röret.",

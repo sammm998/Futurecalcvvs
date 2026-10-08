@@ -14,7 +14,9 @@ def _key(layer, width, rect):
     return layer, round(width, 2), tuple(round(v, 1) for v in rect)
 
 
-def merge_detection(page, native, graphs, families, anchors, identities, elevations):
+def merge_detection(page, native, graphs, families, anchors, identities, elevations, not_pipe=frozenset()):
+    """not_pipe: the reading's own leaders. The native reader may take a leader drawn with the pipe pen for a
+    stretch of pipe; it is not added, or the leader is joined to the pipe it points at and measured as that pipe."""
     from .swedish import designation_text
     from shapely.geometry import MultiLineString
     from .pipestudio.geom import flatten
@@ -67,9 +69,12 @@ def merge_detection(page, native, graphs, families, anchors, identities, elevati
     # every path: recounting made this quadratic in the sheet's pipe pieces.
     present: dict[str, set] = {}
     next_id: dict[str, int] = {}
+    leaders = 0
     for native_id in sorted(used):
         path = mapped.get(native_id)
         if path is None: continue
+        if path.pid in not_pipe:
+            leaders += 1; continue
         fk = stroke_family(path.layer, path.width, path.color)
         target = prims.setdefault(fk, {})
         # A path may already have been divided at leader contacts. Preserve its
@@ -140,5 +145,6 @@ def merge_detection(page, native, graphs, families, anchors, identities, elevati
                 contact_count += 1
     return {'matched_paths': len(mapped), 'native_pipe_paths': len(used),
             'added_primitives': added, 'added_label_contacts': contact_count,
+            'native_paths_that_are_leaders': leaders,
             'unmatched_native_paths': len(set(used) - set(mapped)),
             'native_nodes': len(native_nodes), 'native_stretches': len(native_stretches)}
