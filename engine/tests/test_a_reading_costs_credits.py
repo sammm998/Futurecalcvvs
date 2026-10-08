@@ -250,3 +250,31 @@ def test_a_page_read_from_pixels_costs_its_surcharge_and_a_vector_page_does_not(
         doc.save(mixed)
     q = client.get(f"/api/drawings/{_upload(client, H, mixed)['id']}/price", headers=H).json()
     assert [p["raster"] for p in q["pages"]] == [0, 0]
+
+
+def test_reading_rooms_costs_the_sheet_price_of_the_pages_with_rooms_once(client, tmp_path):
+    """ABT 06: rooms are priced as the plan decided - the sheet price of every page that has room labels - shown
+    before, drawn once per drawing, and a drawing without rooms costs nothing."""
+    sys.path.insert(0, os.path.dirname(__file__))
+    from test_abt_rooms_are_read_from_their_labels import _floor
+    _user(client, "forst-i-rum@example.com")              # the first account runs the service and does not pay
+    H, role = _user(client, "rum@example.com")
+    assert role == "member"
+    path = str(tmp_path / "a-plan.pdf")
+    doc = pymupdf.open()
+    _floor(doc.new_page(width=842, height=595), "1")
+    doc.new_page(width=842, height=595).insert_text((100, 100), "FÖRTECKNING", fontsize=10)   # no rooms here
+    doc.save(path); doc.close()
+    d = _upload(client, H, path)
+    price = client.get(f"/api/drawings/{d['id']}/rooms/price", headers=H).json()
+    sheet = client.get("/api/public/pricing").json()["sheet"]["A3"]
+    assert price["pages_with_rooms"] == [0] and price["credits"] == sheet and price["already_paid"] is False
+    before = client.get("/api/credits", headers=H).json()["balance"]
+    got = client.post(f"/api/drawings/{d['id']}/rooms", headers=H).json()
+    assert got["totals"]["rooms"] >= 4 and got["totals"]["apartments"] == 1
+    after = client.get("/api/credits", headers=H).json()["balance"]
+    assert round(before - after, 2) == sheet
+    again = client.post(f"/api/drawings/{d['id']}/rooms", headers=H).json()
+    assert again["totals"] == got["totals"]
+    assert client.get("/api/credits", headers=H).json()["balance"] == after, "read again, paid once"
+    assert client.get(f"/api/drawings/{d['id']}/rooms/price", headers=H).json()["credits"] == 0

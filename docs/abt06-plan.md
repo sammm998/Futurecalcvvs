@@ -140,3 +140,47 @@ utdrag. Användaren kopplar en kravpunkt till nyckeltal eller rader, eller marke
 
 Varje fas: små commits med tester, AB 04-regressionen körd, och en sammanfattning med vad som ändrats,
 testresultat, kända begränsningar och vad nästa fas behöver.
+
+## 11. Fas 2a – genomförd: rum och ytor ur rumsetiketterna
+
+**Rumsläsaren** (`engine/vvs_engine/abt/rooms.py`):
+- En rumsetikett är raderna ovanpå en rad som slutar med en area. Raderna står i linje (vänsterkant eller mitt),
+  är satta med samma penna (typsnitt och färg) i ungefär samma storlek och står utan lucka. Exempel:
+  "1-1106 / FRD / 3 m²" eller "005 / 2 ROK, 1 PERS / 44 m²".
+- Pennan håller isär installationens text och arkitektens bakgrund där de står ovanpå varandra i samma typsnitt.
+  En rörbeteckning med ett känt systemnamn (KV, VV, VS …, ur motorns egen systemtabell) blir aldrig en rad i ett rum.
+- Varje etikett ger nummer, namn eller lägenhetstyp ("N ROK", "N PERS") och arean som står skriven.
+- En etikett som börjar med ett ytmått ur SS 21054 (BTA, BOA, LOA, BRA …) är en summa och räknas inte som rum.
+- En sida vars etiketter står exakt som på en tidigare sida är samma plan och räknas en gång. Det står vid sidan, och
+  användaren avgör.
+- Samma rumsnummer med samma area på två sidor är ett rum. Rum utan nummer slås aldrig ihop.
+
+**I produkten:**
+- I ett ABT 06-projekt finns fliken Rum och ytor.
+- Läsning per ritning, med priset visat först: bladpriset för sidorna med rum, gånger `rooms_factor` som admin kan
+  ändra, draget en gång per ritning.
+- Visas: rum, rumsarea, lägenheter och lägenhetsarea; lägenheter per typ; en sidtabell med räknas/räknas inte och
+  samma plan som; rumslistan med källtyp RÄKNAD och var raden lästes.
+- Export till CSV med källtyp och spårbarhet.
+- Rummen lagras som `Space` (slag rum, lägenhet eller summa) och följer med när ritningen eller projektet tas bort.
+
+**Prövat på tre av dina fyra handlingar** (lokalt, inget incheckat):
+
+| Handling | Etiketter | Rum | Lägenheter per typ | Sidor som upprepar en annan |
+|---|---|---|---|---|
+| Badskon 1 | 431 | 386 | 6 × 3 ROK | 1 |
+| Badskon 2 | 691 | 511 | 13 × 1 ROK, 7 × 2 ROK, 17 × 3 ROK, 3 × 4 ROK | 5 |
+| Badmössan | 444 | 371 | 6 × 1 ROK, 48 × 2 ROK, 8 × 3 ROK, 11 × 5 ROK | 0 |
+
+Bläckhornet har inga rumsetiketter, eftersom dess planer saknar A-underlag med rum.
+
+**Kända begränsningar:**
+- Rummens polygoner läses inte än. Arean är den som står skriven, och någon kontroll mot geometrin görs inte.
+- Två våningar som är ritade exakt likadant på samma plats på bladet ser ut som samma plan, och tvärtom. Därför
+  avgör användaren per sida.
+- Antalen är inte kontrollerade mot en handräkning. Det behövs några blad som du räknat själv.
+
+**Nästa (fas 2b):** enheter och symboler.
+- Sanitetskoderna ur bladens egen förklaringslista, och de i referensdatan (`sanitary_fixtures.json`: TS, VK, DB, DM,
+  TM, BK, DK, UB …), räknas per sida och kopplas till rum.
+- Därefter upprepade CAD-block som en grupp. En grupp får namn bara av bladets förklaring eller av användaren.

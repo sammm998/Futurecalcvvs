@@ -78,6 +78,12 @@ export const api = {
   setProjectForm: (id: string, body: { contract_form?: string; discipline?: string; confirm: boolean }) =>
     req(`/api/projects/${id}/form`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }),
   project: (id: string) => req(`/api/projects/${id}`),
+  // ABT 06: rooms read from the A-plans' room labels, counted page by page
+  roomsPrice: (drawingId: string) => req(`/api/drawings/${drawingId}/rooms/price`),
+  readRooms: (drawingId: string) => req(`/api/drawings/${drawingId}/rooms`, { method: "POST" }),
+  projectRooms: (projectId: string) => req(`/api/projects/${projectId}/rooms`),
+  chooseRoomPage: (projectId: string, body: { drawing_id: string; page: number; counted: boolean }) =>
+    req(`/api/projects/${projectId}/rooms/pages`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }),
   deleteProject: (id: string) => req(`/api/projects/${id}`, { method: "DELETE" }),
   upload: (projectId: string, file: File) => { const fd = new FormData(); fd.append("file", file); return req(`/api/projects/${projectId}/drawings`, { method: "POST", body: fd }); },
   drawing: (id: string) => req(`/api/drawings/${id}`),

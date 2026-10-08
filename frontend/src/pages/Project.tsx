@@ -7,6 +7,7 @@ import { StatusBadge } from "../components/Status";
 import Tilted from "../components/Tilted";
 import { PriceTag } from "./Credits";
 import { ContractFormChoice, DisciplineChoice, Discipline, FALLBACK_DISCIPLINES, ProjectBadges } from "../components/ProjectForm";
+import { AbtPanel } from "../components/AbtRooms";
 
 const DATE = new Intl.DateTimeFormat(locale(), { day: "2-digit", month: "short", year: "numeric" });
 
@@ -118,11 +119,7 @@ export default function ProjectPage() {
           </div>
         </div>
       )}
-      {project.contract_form === "ABT06" && (
-        <p className="badge warn" style={{ marginTop: 14 }}>
-          {tr("ABT 06: läsning av rum, ytor och enheter samt kalkyl med nyckeltal byggs nu. Blad med ritade installationer mäts som vanligt.")}
-        </p>
-      )}
+      {project.contract_form === "ABT06" && <AbtPanel project={project} />}
       {progress && <p role="status" aria-live="polite">{progress}</p>}
       {notice && <p role="status">{notice}</p>}
       {err && <p className="error" style={{ marginTop: 18, whiteSpace: "pre-line" }}>{err}</p>}

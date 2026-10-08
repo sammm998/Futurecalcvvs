@@ -170,4 +170,5 @@ export const admin: Record<string, string> = {
   "Mest klickade": "Most clicked",
   "inga klick registrerade": "no clicks registered",
   "Skannad sida": "Scanned page",
+  "Rum (ABT 06), andel": "Rooms (ABT 06), share",
 };
