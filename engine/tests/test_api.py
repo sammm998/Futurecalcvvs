@@ -1825,3 +1825,64 @@ def test_abt_units_are_count_markers_counted_on_the_counted_pages_named_and_revi
     marks = client.get(f"/api/drawings/{d['id']}/markups?all_pages=true", headers=H).json()
     rows = marks["rows"] if isinstance(marks, dict) else marks
     assert sum(1 for m in rows if m["layer"] == "ABT enheter") == 10 and sum(1 for m in rows if m["layer"] == "Mängdning") == 1
+
+
+def test_abt_symbols_are_named_by_a_legend_or_the_person_and_counted_as_markers_in_every_drawing(client, tmp_path):
+    """The symbols of an ABT project: the reading gathers the repeated blocks. A symbol named by one sheet's legend
+    is counted in every drawing of the project that has it; one the person names is counted from then on; each
+    copy is a count marker the person can reject; a name taken back takes its markers with it."""
+    import pymupdf
+    sys.path.insert(0, os.path.dirname(__file__))
+    from test_abt_symbols_are_repeated_blocks_named_by_the_legend_or_the_person import _plan
+    r = client.post("/api/auth/register", json={"email": "symboler@example.com", "password": "hemligt1"}).json()
+    H = {"Authorization": f"Bearer {r['access_token']}"}
+    p = client.post("/api/projects", json={"name": "Symboler", "contract_form": "ABT06"}, headers=H).json()
+
+    def upload(name, legend, floor):
+        path = str(tmp_path / name)
+        doc = pymupdf.open()
+        _plan(doc.new_page(width=842, height=595), legend, floor)
+        doc.save(path)
+        doc.close()
+        with open(path, "rb") as fh:
+            return client.post(f"/api/projects/{p['id']}/drawings", files={"file": (name, fh, "application/pdf")}, headers=H).json()
+
+    plain = upload("A-plan-utan.pdf", legend=False, floor="1")
+    with_legend = upload("A-plan-med.pdf", legend=True, floor="2")
+    assert client.post(f"/api/drawings/{plain['id']}/rooms", headers=H).json()["named_symbols"] == 0
+    price = client.get(f"/api/drawings/{with_legend['id']}/rooms/price", headers=H).json()
+    assert price["pages_priced"] == [0] and price["symbols"] == 3
+    got = client.post(f"/api/drawings/{with_legend['id']}/rooms", headers=H).json()
+    assert got["symbols"] == 3 and got["named_symbols"] == 3
+
+    sy = client.get(f"/api/projects/{p['id']}/symbols", headers=H).json()
+    by = {s["name"]: s for s in sy["symbols"]}
+    assert by["Testklosett"]["count"] == 8, "four copies in each drawing: the legend in one names it in both"
+    assert by["Testklosett"]["name_source"] == "bladets förklaring" and by["Testklosett"]["source_type"] == "RÄKNAD"
+    assert by["Testkran"]["count"] == 2, "drawn once in each drawing: named by the legend in one, counted in both"
+    assert sy["totals"] == {"groups": 4, "named": 3, "symbols": 16}
+    tail = next(s for s in sy["symbols"] if not s["counted"])
+    assert (tail["count"], tail["name"]) == (4, None), "twice in each drawing: repeated in the project, not named"
+    pic = client.get(f"/api/drawings/{plain['id']}/symbols/{by['Testklosett']['id']}.png", headers=H)
+    assert pic.status_code == 200 and pic.content[:4] == b"\x89PNG"
+    assert client.get(f"/api/drawings/{plain['id']}/symbols/sym:0000000000.png", headers=H).status_code == 404
+
+    # the person names it otherwise: the markers keep their places and take the name
+    sid = by["Testklosett"]["id"]
+    named = client.put(f"/api/projects/{p['id']}/symbols/names", json={"id": sid, "name": "WC"}, headers=H).json()
+    wc = next(s for s in named["symbols"] if s["id"] == sid)
+    assert (wc["name"], wc["name_source"], wc["count"]) == ("WC", "angiven", 8)
+    marks = client.get(f"/api/drawings/{plain['id']}/markups?all_pages=true", headers=H).json()
+    rows = marks["rows"] if isinstance(marks, dict) else marks
+    mine = [m for m in rows if m["layer"] == "ABT symboler" and m["designation"] == "WC"]
+    assert len(mine) == 4 and all(m["tool"] == "antal" for m in mine)
+    assert client.patch(f"/api/drawings/{plain['id']}/markups/{mine[0]['id']}", json={"status": "avvisad"}, headers=H).status_code == 200
+    after = {s["id"]: s for s in client.get(f"/api/projects/{p['id']}/symbols", headers=H).json()["symbols"]}
+    assert after[sid]["count"] == 7, "a rejected marker is not a unit"
+    csv = client.get(f"/api/projects/{p['id']}/symbols.csv", headers=H).content.decode("utf-8-sig")
+    assert csv.splitlines()[0] == "källtyp;symbol;namn;namnet enligt;antal;sidor" and f"RÄKNAD;{sid};WC;angiven;7" in csv
+
+    # a name taken back: the legend's name again, and a symbol nobody names is not counted
+    back = client.put(f"/api/projects/{p['id']}/symbols/names", json={"id": sid, "name": ""}, headers=H).json()
+    assert next(s for s in back["symbols"] if s["id"] == sid)["name"] == "Testklosett"
+    assert client.put(f"/api/projects/{p['id']}/symbols/names", json={"id": "KV1", "name": "x"}, headers=H).status_code == 422

@@ -8,14 +8,19 @@ Samma plan förekommer ofta på flera blad - en våning i både sanitets- och v�
 står exakt som på en tidigare sida räknas inte en gång till, och det står vid sidan. Den som kalkylerar avgör: en
 sida kan räknas eller lämnas, och beslutet står kvar vid rummen.
 
-Priset är det som beslutades för ABT 06 (docs/abt06-plan.md, Credits): bladpriset för varje sida som har rum, visat
-innan läsningen och draget en gång per ritning. En ritning utan ett enda rum kostar ingenting. Administratören kan
-sätta rumsläsningen till en annan andel av bladpriset (`rooms_factor`).
+Samma läsning räknar enheterna - koderna vid inredningen - och symbolerna som upprepas (vvs_engine/abt/units och
+symbols). En symbol räknas först när den har ett namn: bladets egen förklaring eller det användaren säger.
+
+Priset är det som beslutades för ABT 06 (docs/abt06-plan.md, Credits): bladpriset för varje sida där läsningen
+hittar rum, enheter eller symboler, visat innan läsningen och draget en gång per ritning. En ritning utan något av
+det kostar ingenting. Administratören kan sätta läsningen till en annan andel av bladpriset (`rooms_factor`).
 """
 from __future__ import annotations
 
 import csv
 import io
+import json
+import re
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -33,7 +38,10 @@ router = APIRouter(prefix="/api", tags=["abt06"])
 READ_BY = "rumsläsare"          # rooms the reader wrote; a person's own rooms are never replaced by a new reading
 UNITS_BY = "enhetsläsare"       # units the reader counted, each a count marker the person can move or remove
 UNITS_LAYER = "ABT enheter"     # the takeoff tool's layer they lie on, so they can be shown, hidden and reviewed
+SYMBOLS_BY = "symbolläsare"     # copies of a named symbol, each a count marker like a unit
+SYMBOLS_LAYER = "ABT symboler"
 CHARGE_KIND = "rumslasning"
+SYMBOL_ID = re.compile(r"^sym:[0-9a-f]{10}(?:-\d{1,3})?$")
 
 
 def _project(db: Session, user: User, project_id: str) -> Project:
@@ -50,12 +58,48 @@ def _drawing(db: Session, user: User, drawing_id: str) -> Drawing:
     return d
 
 
-def _read(d: Drawing) -> dict[str, Any]:
-    from vvs_engine.abt import read_document
+def _kept(d: Drawing, name: str) -> str:
+    return f"results/{d.id}/abt/{name}"
+
+
+def _load(key: str) -> dict | None:
+    if not storage.exists(key):
+        return None
     try:
-        return read_document(storage.path(d.storage_key))
-    except Exception as e:                       # noqa: BLE001 - a file that cannot be opened is said, not raised
-        raise HTTPException(422, f"Ritningen kunde inte läsas på rum: {type(e).__name__}")
+        with storage.open(key) as fh:
+            return json.load(fh)
+    except (OSError, ValueError):
+        return None
+
+
+def _save(key: str, data: dict) -> None:
+    storage.put(key, io.BytesIO(json.dumps(data, ensure_ascii=False).encode("utf-8")))
+
+
+def _read(d: Drawing) -> dict[str, Any]:
+    """The drawing read on rooms, units and symbols - once: the price and the reading share it, and a large set
+    of plans takes a while to read."""
+    from vvs_engine.abt import READER, read_document
+    got = _load(_kept(d, "reading.json"))
+    if not got or got.get("reader") != READER or got.get("sha256") != (d.sha256 or ""):
+        try:
+            got = read_document(storage.path(d.storage_key))
+        except Exception as e:                   # noqa: BLE001 - a file that cannot be opened is said, not raised
+            raise HTTPException(422, f"Ritningen kunde inte läsas på rum: {type(e).__name__}")
+        got["sha256"] = d.sha256 or ""
+        _save(_kept(d, "reading.json"), got)
+    got["by_page"] = {int(k): v for k, v in (got.get("by_page") or {}).items()}
+    return got
+
+
+def _priced(got: dict) -> list[int]:
+    return list(got.get("priced_pages") or [p["page"] for p in got["pages"]])
+
+
+def _repeated(symbols: list[dict] | None) -> list[dict]:
+    """The groups worth showing from one drawing alone: repeated in it, or named by its own legend."""
+    from vvs_engine.abt.symbols import MIN_REPEAT
+    return [g for g in symbols or [] if g["count"] >= MIN_REPEAT or g.get("legend")]
 
 
 def _quote(db: Session, d: Drawing, pages: list[int]) -> dict[str, Any]:
@@ -79,13 +123,15 @@ def _charged(db: Session, d: Drawing) -> bool:
 def rooms_price(drawing_id: str, user: User = Depends(current_user), db: Session = Depends(get_db)):
     d = _drawing(db, user, drawing_id)
     got = _read(d)
-    pages = [p["page"] for p in got["pages"]]
+    pages = _priced(got)
     q = _quote(db, d, pages)
     already = _charged(db, d)
     exempt = credits_api.is_exempt(user)
-    return {"drawing_id": d.id, "pages_with_rooms": pages, "credits": 0.0 if (already or exempt) else q["credits"],
+    return {"drawing_id": d.id, "pages_with_rooms": [p["page"] for p in got["pages"]], "pages_priced": pages,
+            "credits": 0.0 if (already or exempt) else q["credits"],
             "sheet_credits": q["credits"], "already_paid": already, "exempt": exempt,
-            "labels": got["labels"], "balance": credits_api.balance(db, user)}
+            "labels": got["labels"], "units": len(got.get("units", [])), "symbols": len(_repeated(got.get("symbols"))),
+            "balance": credits_api.balance(db, user)}
 
 
 @router.post("/drawings/{drawing_id}/rooms")
@@ -93,7 +139,7 @@ def read_rooms(drawing_id: str, user: User = Depends(current_user), db: Session 
     """Read the drawing's rooms and put them in the project, in place of what an earlier reading put there."""
     d = _drawing(db, user, drawing_id)
     got = _read(d)
-    pages = [p["page"] for p in got["pages"]]
+    pages = _priced(got)
     if pages and not credits_api.is_exempt(user) and not _charged(db, d):
         q = _quote(db, d, pages)
         key = credits_api.owner_key(user)
@@ -103,7 +149,7 @@ def read_rooms(drawing_id: str, user: User = Depends(current_user), db: Session 
             raise HTTPException(402, {"message": f"Rumsläsningen kostar {q['credits']:g} credits och kontot har {have / 100:g}.",
                                       "credits": q["credits"], "balance": have / 100, "missing": (need - have) / 100})
         credits_api.post(db, user, key, -q["credits"], CHARGE_KIND, ref=f"rooms:{d.id}",
-                         note=f"Rum ur {d.filename}: {len(pages)} sidor med rum")
+                         note=f"Rum, enheter och symboler ur {d.filename}: {len(pages)} sidor")
     # an earlier reading of this drawing is replaced; what a person entered is kept
     for s in db.query(Space).filter(Space.drawing_id == d.id).all():
         if (s.props or {}).get("read_by") == READ_BY:
@@ -142,8 +188,22 @@ def read_rooms(drawing_id: str, user: User = Depends(current_user), db: Session 
                                 "signature": sigs.get(pno)}))
     db.commit()
     _remember_legend(db, d.project_id, legend)
+    # the symbols: what this reading found is kept with the drawing, and the named ones are counted - here, and
+    # in the project's other drawings when this one's legend names a symbol they have too
+    symbols = got.get("symbols") or []
+    _save(_kept(d, "symbols.json"), {"drawing_id": d.id, "sha256": d.sha256 or "", "symbols": symbols})
+    _thumbnails(d, symbols)
+    project = db.get(Project, d.project_id)
+    kept = _kept_symbols(project)
+    names = _symbol_names(db, project, kept)
+    named = _sync_symbols(db, user, d, symbols, names, fresh=True)
+    for other in project.drawings:
+        if other.id != d.id and other.id in kept:
+            _sync_symbols(db, user, other, kept[other.id], names)
+    db.commit()
     return {"drawing_id": d.id, "pages": got["pages"], "labels": got["labels"],
-            "totals": got["totals"], "apartments": got["apartments"], "units": len(got.get("units", []))}
+            "totals": got["totals"], "apartments": got["apartments"], "units": len(got.get("units", [])),
+            "symbols": len(_repeated(symbols)), "named_symbols": named}
 
 
 def _signatures(db: Session, project_id: str) -> dict[str, dict]:
@@ -198,7 +258,8 @@ def project_rooms(db: Session, project: Project) -> dict[str, Any]:
     reg = register(counted)
     return {"project_id": project.id, "contract_form": project.contract_form or "AB04", "pages": list(pages.values()),
             "rooms": rows, "register": {"apartments": reg["apartments"], "totals": reg["totals"]},
-            "source_type": "RÄKNAD"}
+            "source_type": "RÄKNAD",
+            "read": [d.id for d in project.drawings if storage.exists(_kept(d, "symbols.json"))]}
 
 
 @router.get("/projects/{project_id}/rooms")
@@ -329,7 +390,7 @@ def name_unit(project_id: str, body: UnitName, user: User = Depends(current_user
     who has the architect's legend in front of her. An empty name takes it back."""
     p = _project(db, user, project_id)
     code = body.code.strip()
-    if not code or code == LEGENDS or len(code) > 16:
+    if not code or code == LEGENDS or len(code) > 16 or SYMBOL_ID.match(code):
         raise HTTPException(422, "Okänd kod")
     est = _estimate(db, p.id)
     names = dict(est.unit_names or {})
@@ -354,3 +415,247 @@ def export_units(project_id: str, user: User = Depends(current_user), db: Sessio
     name = "".join(c for c in out["project_id"] if c.isalnum())[:12]
     return Response(("\ufeff" + buf.getvalue()).encode("utf-8"), media_type="text/csv; charset=utf-8",
                     headers={"Content-Disposition": f'attachment; filename="enheter-{name}.csv"'})
+
+
+# ------------------------------------------------------------------------------------------------------------
+# Symbolerna: upprepade block, räknade först när de har ett namn (vvs_engine/abt/symbols)
+# ------------------------------------------------------------------------------------------------------------
+
+THUMB_PX = 160          # the longest side of a symbol's picture in the gallery
+
+
+def _safe(symbol_id: str) -> str:
+    return symbol_id.replace(":", "_")
+
+
+def _kept_symbols(project: Project) -> dict[str, list[dict]]:
+    """What the readings found, drawing by drawing: only drawings that have been read have any."""
+    out: dict[str, list[dict]] = {}
+    for d in project.drawings:
+        kept = _load(_kept(d, "symbols.json"))
+        if kept is not None:
+            out[d.id] = kept.get("symbols") or []
+    return out
+
+
+def _symbol_names(db: Session, project: Project, kept: dict[str, list[dict]]) -> dict[str, tuple[str, str]]:
+    """Every symbol in the project that has a name, and who gave it: the person first, then a sheet's own legend -
+    in any of the project's drawings, as with the codes. Nobody else names a symbol."""
+    est = db.query(ProjectEstimate).filter(ProjectEstimate.project_id == project.id).first()
+    out: dict[str, tuple[str, str]] = {}
+    for groups in kept.values():
+        for g in groups:
+            if g.get("legend") and g["id"] not in out:
+                out[g["id"]] = (g["legend"]["term"], "bladets förklaring")
+    for k, v in ((est.unit_names if est else None) or {}).items():
+        if isinstance(v, str) and v and SYMBOL_ID.match(k):
+            out[k] = (v, "angiven")
+    return out
+
+
+def _sync_symbols(db: Session, user: User, d: Drawing, symbols: list[dict], names: dict[str, tuple[str, str]],
+                  only: str | None = None, fresh: bool = False) -> int:
+    """A count marker for every copy of a symbol with a name, none for the rest.
+
+    A fresh reading puts the copies where it found them. Otherwise a symbol keeps its markers where they are - a
+    marker someone moved or rejected keeps its place and its verdict - and only takes a new name; a symbol that
+    lost its name loses its markers, and one that got a name gets them."""
+    have: dict[str, list[Markup]] = {}
+    for m in db.query(Markup).filter(Markup.drawing_id == d.id, Markup.layer == SYMBOLS_LAYER).all():
+        props = m.props or {}
+        if props.get("read_by") == SYMBOLS_BY and (only is None or props.get("symbol") == only):
+            have.setdefault(props.get("symbol") or "", []).append(m)
+    named = 0
+    for g in symbols:
+        if only is not None and g["id"] != only:
+            continue
+        name, source = names.get(g["id"], (None, None))
+        mine = have.pop(g["id"], [])
+        if name:
+            named += 1
+        if name and mine and not fresh:
+            for m in mine:
+                m.designation, m.subject = name, name
+                m.props = {**(m.props or {}), "name_source": source}
+            continue
+        for m in mine:
+            db.delete(m)
+        if not name:
+            continue
+        for s in g["instances"]:
+            x0, y0, x1, y1 = s["bbox"]
+            db.add(Markup(drawing_id=d.id, user_id=user.id, page=s["page"], tool="antal", layer=SYMBOLS_LAYER,
+                          designation=name, points=[[round((x0 + x1) / 2, 2), round((y0 + y1) / 2, 2)]],
+                          subject=name, status="oppen",
+                          props={"read_by": SYMBOLS_BY, "source_type": "RÄKNAD", "bbox": s["bbox"],
+                                 "symbol": g["id"], "name_source": source},
+                          meta={"abt": True}))
+    if only is None:
+        for gone in have.values():               # a symbol the drawing's reading no longer has
+            for m in gone:
+                db.delete(m)
+    return named
+
+
+def _thumbnails(d: Drawing, symbols: list[dict]) -> None:
+    """A picture of the first copy of every symbol, drawn while the document is open: the gallery shows them, and
+    a page of a large set is laid out once for all its pictures."""
+    import pymupdf
+    want: dict[int, list[tuple[str, list]]] = {}
+    for g in _repeated(symbols):
+        s = g["instances"][0]
+        want.setdefault(s["page"], []).append((g["id"], s["bbox"]))
+    storage.delete_prefix(_kept(d, "sym"))
+    with pymupdf.open(storage.path(d.storage_key)) as doc:
+        for pno, items in want.items():
+            page = doc[pno]
+            shown = page.get_displaylist()
+            for sid, bbox in items:
+                _picture(d, page, shown, sid, bbox)
+
+
+def _picture(d: Drawing, page, shown, sid: str, bbox: list) -> bytes | None:
+    import pymupdf
+    x0, y0, x1, y1 = bbox
+    pad = max(2.0, 0.08 * max(x1 - x0, y1 - y0))
+    r = (pymupdf.Rect(x0 - pad, y0 - pad, x1 + pad, y1 + pad) * page.rotation_matrix) & page.rect
+    if r.is_empty:
+        return None
+    z = min(8.0, THUMB_PX / max(r.width, r.height, 1.0))
+    png = shown.get_pixmap(matrix=pymupdf.Matrix(z, z), clip=r, alpha=False).tobytes("png")
+    storage.put(_kept(d, f"sym/{_safe(sid)}.png"), io.BytesIO(png))
+    return png
+
+
+def project_symbols(db: Session, project: Project) -> dict[str, Any]:
+    """Every symbol the readings found in the project. A named one is counted from its markers - what was rejected
+    or removed in the takeoff is not - on the pages that are counted; one without a name is shown with how many
+    copies the reading found, and is not counted."""
+    names = {d.id: d.filename for d in project.drawings}
+    kept = _kept_symbols(project)
+    named_as = _symbol_names(db, project, kept)
+    counted_pages = {(s.drawing_id, s.page): bool((s.props or {}).get("counted", True))
+                     for s in db.query(Space).filter(Space.project_id == project.id).all()
+                     if (s.props or {}).get("read_by") == READ_BY}
+    groups: dict[str, dict] = {}
+    for d in project.drawings:
+        for g in kept.get(d.id, []):
+            e = groups.setdefault(g["id"], {"id": g["id"], "size": g["size"], "parts": g["parts"], "legend": None,
+                                            "found": 0, "found_not_counted": 0, "pages": [], "sample": None})
+            first = g["instances"][0]
+            if e["sample"] is None:
+                e["sample"] = {"drawing_id": d.id, "filename": d.filename, "page": first["page"], "bbox": first["bbox"]}
+            if g.get("legend") and e["legend"] is None:
+                e["legend"] = {**g["legend"], "drawing_id": d.id, "filename": d.filename}
+            for s in g["instances"]:
+                if counted_pages.get((d.id, s["page"]), True):
+                    e["found"] += 1
+                    where = {"drawing_id": d.id, "filename": d.filename, "page": s["page"]}
+                    if where not in e["pages"]:
+                        e["pages"].append(where)
+                else:
+                    e["found_not_counted"] += 1
+    counted: dict[str, int] = {}
+    not_counted: dict[str, int] = {}
+    marks = (db.query(Markup).filter(Markup.drawing_id.in_(list(names) or [""]), Markup.layer == SYMBOLS_LAYER,
+                                     Markup.deleted.is_(False)).all())
+    for m in marks:
+        props = m.props or {}
+        if props.get("read_by") != SYMBOLS_BY or m.status == "avvisad":
+            continue
+        sid = props.get("symbol") or ""
+        if counted_pages.get((m.drawing_id, m.page), True):
+            counted[sid] = counted.get(sid, 0) + 1
+        else:
+            not_counted[sid] = not_counted.get(sid, 0) + 1
+    rows = []
+    for sid, e in groups.items():
+        name, source = named_as.get(sid, (None, None))
+        found, extra = e.pop("found"), e.pop("found_not_counted")
+        rows.append({**e, "name": name, "name_source": source, "counted": bool(name), "source_type": "RÄKNAD",
+                     "count": counted.get(sid, 0) if name else found,
+                     "not_counted": not_counted.get(sid, 0) if name else extra})
+    from vvs_engine.abt.symbols import MIN_REPEAT
+    rows = [r for r in rows if r["counted"] or r["count"] + r["not_counted"] >= MIN_REPEAT]
+    rows.sort(key=lambda r: (not r["counted"], -r["count"], r["id"]))
+    named = [r for r in rows if r["counted"]]
+    return {"project_id": project.id, "symbols": rows, "layer": SYMBOLS_LAYER,
+            "read": len(kept),
+            "totals": {"groups": len(rows), "named": len(named), "symbols": sum(r["count"] for r in named)}}
+
+
+@router.get("/projects/{project_id}/symbols")
+def get_project_symbols(project_id: str, user: User = Depends(current_user), db: Session = Depends(get_db)):
+    return project_symbols(db, _project(db, user, project_id))
+
+
+class SymbolName(BaseModel):
+    id: str
+    name: str
+
+
+@router.put("/projects/{project_id}/symbols/names")
+def name_symbol(project_id: str, body: SymbolName, user: User = Depends(current_user), db: Session = Depends(get_db)):
+    """A person says what a symbol is - "det här är WC" - and from then on every copy of it in the project is
+    counted, in every drawing that has it. An empty name takes it back."""
+    p = _project(db, user, project_id)
+    sid = body.id.strip()
+    if not SYMBOL_ID.match(sid):
+        raise HTTPException(422, "Okänd symbol")
+    est = _estimate(db, p.id)
+    names = dict(est.unit_names or {})
+    if body.name.strip():
+        names[sid] = body.name.strip()[:120]
+    else:
+        names.pop(sid, None)
+    est.unit_names = names
+    db.flush()
+    kept = _kept_symbols(p)
+    named_as = _symbol_names(db, p, kept)
+    for d in p.drawings:
+        if d.id in kept:
+            _sync_symbols(db, user, d, kept[d.id], named_as, only=sid)
+    db.commit()
+    return project_symbols(db, p)
+
+
+@router.get("/drawings/{drawing_id}/symbols/{symbol_id}.png")
+def symbol_picture(drawing_id: str, symbol_id: str, user: User = Depends(current_user), db: Session = Depends(get_db)):
+    """The picture of a symbol's first copy in the drawing - drawn when the drawing was read, or now for a symbol
+    that is repeated only over the project's drawings."""
+    d = _drawing(db, user, drawing_id)
+    if not SYMBOL_ID.match(symbol_id):
+        raise HTTPException(404, "Symbolen finns inte")
+    key = _kept(d, f"sym/{_safe(symbol_id)}.png")
+    data = None
+    if storage.exists(key):
+        with storage.open(key) as fh:
+            data = fh.read()
+    else:
+        g = next((g for g in (_load(_kept(d, "symbols.json")) or {}).get("symbols") or [] if g["id"] == symbol_id), None)
+        if g is not None:
+            import pymupdf
+            s = g["instances"][0]
+            with pymupdf.open(storage.path(d.storage_key)) as doc:
+                page = doc[s["page"]]
+                data = _picture(d, page, page.get_displaylist(), symbol_id, s["bbox"])
+    if data is None:
+        raise HTTPException(404, "Symbolen finns inte")
+    return Response(data, media_type="image/png", headers={"Cache-Control": "private, max-age=3600"})
+
+
+@router.get("/projects/{project_id}/symbols.csv")
+def export_symbols(project_id: str, user: User = Depends(current_user), db: Session = Depends(get_db)):
+    """The named symbols as a list a calculation can take; a symbol without a name is not counted and not listed."""
+    out = project_symbols(db, _project(db, user, project_id))
+    buf = io.StringIO()
+    w = csv.writer(buf, delimiter=";")
+    w.writerow(["källtyp", "symbol", "namn", "namnet enligt", "antal", "sidor"])
+    for r in out["symbols"]:
+        if not r["counted"]:
+            continue
+        w.writerow([r["source_type"], r["id"], r["name"], r["name_source"], r["count"],
+                    ", ".join(f"{p['filename']} s.{p['page'] + 1}" for p in r["pages"])])
+    name = "".join(c for c in out["project_id"] if c.isalnum())[:12]
+    return Response(("﻿" + buf.getvalue()).encode("utf-8"), media_type="text/csv; charset=utf-8",
+                    headers={"Content-Disposition": f'attachment; filename="symboler-{name}.csv"'})
