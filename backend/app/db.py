@@ -282,6 +282,7 @@ class ProjectEstimate(Base):
     risk_pct: Mapped[float] = mapped_column(Float, default=0.0)
     line_risk: Mapped[dict] = mapped_column(JSON, default=dict)            # rad -> påslag i procent
     key_figures: Mapped[list] = mapped_column(JSON, default=list)          # valda nyckeltal
+    unit_names: Mapped[dict | None] = mapped_column(JSON, nullable=True, default=dict)   # kod -> namn, angivna av en person
     updated_at: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True), default=_now, onupdate=_now)
 
 
@@ -718,6 +719,7 @@ _ADDED_COLUMNS = (
     ("drawings", "discipline", "VARCHAR(24) DEFAULT ''"),
     ("drawings", "flow", "VARCHAR(16) DEFAULT ''"),
     ("analysis_jobs", "discipline", "VARCHAR(24) DEFAULT ''"),
+    ("project_estimates", "unit_names", "JSON"),
 )
 
 

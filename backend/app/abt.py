@@ -25,12 +25,14 @@ from sqlalchemy.orm import Session
 
 from . import credits as credits_api
 from .auth import current_user
-from .db import CreditEntry, Drawing, Project, Space, User, get_db
+from .db import CreditEntry, Drawing, Markup, Project, ProjectEstimate, Space, User, get_db
 from .storage import storage
 
 router = APIRouter(prefix="/api", tags=["abt06"])
 
 READ_BY = "rumsläsare"          # rooms the reader wrote; a person's own rooms are never replaced by a new reading
+UNITS_BY = "enhetsläsare"       # units the reader counted, each a count marker the person can move or remove
+UNITS_LAYER = "ABT enheter"     # the takeoff tool's layer they lie on, so they can be shown, hidden and reviewed
 CHARGE_KIND = "rumslasning"
 
 
@@ -49,7 +51,7 @@ def _drawing(db: Session, user: User, drawing_id: str) -> Drawing:
 
 
 def _read(d: Drawing) -> dict[str, Any]:
-    from vvs_engine.abt.rooms import read_document
+    from vvs_engine.abt import read_document
     try:
         return read_document(storage.path(d.storage_key))
     except Exception as e:                       # noqa: BLE001 - a file that cannot be opened is said, not raised
@@ -115,6 +117,19 @@ def read_rooms(drawing_id: str, user: User = Depends(current_user), db: Session 
             p["same_as_elsewhere"] = where
             p["counted"] = False
         earlier.setdefault(p["signature"], {"drawing_id": d.id, "page": p["page"], "filename": d.filename})
+    # the units: an earlier reading's markers go, a person's own markers stay
+    for m in db.query(Markup).filter(Markup.drawing_id == d.id).all():
+        if (m.props or {}).get("read_by") == UNITS_BY:
+            db.delete(m)
+    for u in got.get("units", []):
+        x0, y0, x1, y1 = u["bbox"]
+        db.add(Markup(drawing_id=d.id, user_id=user.id, page=u["page"], tool="antal", layer=UNITS_LAYER,
+                      designation=u["code"], points=[[round((x0 + x1) / 2, 2), round((y0 + y1) / 2, 2)]],
+                      subject=u["name"] or "", status="oppen",
+                      props={"read_by": UNITS_BY, "source_type": "RÄKNAD", "bbox": u["bbox"], "code": u["code"],
+                             "name_source": u["name_source"]},
+                      meta={"abt": True}))
+    legend = {k: {**v, "drawing_id": d.id, "filename": d.filename} for k, v in (got.get("legend") or {}).items()}
     counted = {p["page"]: p["counted"] for p in got["pages"]}
     sigs = {p["page"]: p["signature"] for p in got["pages"]}
     for pno, rooms in got["by_page"].items():
@@ -126,8 +141,9 @@ def read_rooms(drawing_id: str, user: User = Depends(current_user), db: Session 
                                 "bbox": r["bbox"], "lines": r["lines"], "counted": counted.get(pno, True),
                                 "signature": sigs.get(pno)}))
     db.commit()
+    _remember_legend(db, d.project_id, legend)
     return {"drawing_id": d.id, "pages": got["pages"], "labels": got["labels"],
-            "totals": got["totals"], "apartments": got["apartments"]}
+            "totals": got["totals"], "apartments": got["apartments"], "units": len(got.get("units", []))}
 
 
 def _signatures(db: Session, project_id: str) -> dict[str, dict]:
@@ -227,3 +243,114 @@ def export_rooms(project_id: str, user: User = Depends(current_user), db: Sessio
     name = "".join(c for c in out["project_id"] if c.isalnum())[:12]
     return Response(("﻿" + buf.getvalue()).encode("utf-8"), media_type="text/csv; charset=utf-8",
                     headers={"Content-Disposition": f'attachment; filename="rum-{name}.csv"'})
+
+
+# ------------------------------------------------------------------------------------------------------------
+# Enheterna: koderna arkitekten skriver vid inredningen (vvs_engine/abt/units)
+# ------------------------------------------------------------------------------------------------------------
+
+LEGENDS = "_legends"            # the sheets' own legends, kept beside the names a person gave
+
+
+def _estimate(db: Session, project_id: str) -> ProjectEstimate:
+    est = db.query(ProjectEstimate).filter(ProjectEstimate.project_id == project_id).first()
+    if est is None:
+        est = ProjectEstimate(project_id=project_id, unit_names={})
+        db.add(est)
+        db.flush()
+    return est
+
+
+def _remember_legend(db: Session, project_id: str, legend: dict[str, dict]) -> None:
+    if not legend:
+        return
+    est = _estimate(db, project_id)
+    names = dict(est.unit_names or {})
+    kept = dict(names.get(LEGENDS) or {})
+    for code, entry in legend.items():
+        kept.setdefault(code, entry)
+    names[LEGENDS] = kept
+    est.unit_names = names
+    db.commit()
+
+
+def project_units(db: Session, project: Project) -> dict[str, Any]:
+    """Every unit code in the project, counted on the pages that are counted, named by the person, the sheets'
+    legends or the reference data - or not at all."""
+    from vvs_engine.abt.units import name_of
+    est = db.query(ProjectEstimate).filter(ProjectEstimate.project_id == project.id).first()
+    stored = dict((est.unit_names if est else None) or {})
+    legends = stored.pop(LEGENDS, {}) or {}
+    given = {k: v for k, v in stored.items() if isinstance(v, str)}
+    names = {d.id: d.filename for d in project.drawings}
+    counted_pages = {(s.drawing_id, s.page): bool((s.props or {}).get("counted", True))
+                     for s in db.query(Space).filter(Space.project_id == project.id).all()
+                     if (s.props or {}).get("read_by") == READ_BY}
+    marks = (db.query(Markup).filter(Markup.drawing_id.in_(list(names) or [""]), Markup.layer == UNITS_LAYER,
+                                     Markup.deleted.is_(False))
+             .order_by(Markup.drawing_id, Markup.page).all())
+    codes: dict[str, dict] = {}
+    for m in marks:
+        if (m.props or {}).get("read_by") != UNITS_BY or m.status == "avvisad":
+            continue
+        code = m.designation or ""
+        e = codes.setdefault(code, {"code": code, "count": 0, "not_counted": 0, "pages": []})
+        if counted_pages.get((m.drawing_id, m.page), True):
+            e["count"] += 1
+            where = {"drawing_id": m.drawing_id, "filename": names.get(m.drawing_id), "page": m.page}
+            if where not in e["pages"]:
+                e["pages"].append(where)
+        else:
+            e["not_counted"] += 1
+    rows = []
+    for code, e in sorted(codes.items(), key=lambda kv: (-kv[1]["count"], kv[0])):
+        name, source = name_of(code, {k: v.get("term") for k, v in legends.items()}, given)
+        legend = legends.get(code) if source == "bladets förklaring" else None
+        rows.append({**e, "name": name, "name_source": source, "source_type": "RÄKNAD",
+                     "legend": {"filename": legend.get("filename"), "page": legend.get("page")} if legend else None})
+    return {"project_id": project.id, "units": rows, "layer": UNITS_LAYER,
+            "totals": {"codes": len(rows), "named": sum(1 for r in rows if r["name"]),
+                       "units": sum(r["count"] for r in rows)}}
+
+
+@router.get("/projects/{project_id}/units")
+def get_project_units(project_id: str, user: User = Depends(current_user), db: Session = Depends(get_db)):
+    return project_units(db, _project(db, user, project_id))
+
+
+class UnitName(BaseModel):
+    code: str
+    name: str
+
+
+@router.put("/projects/{project_id}/units/names")
+def name_unit(project_id: str, body: UnitName, user: User = Depends(current_user), db: Session = Depends(get_db)):
+    """A person says what a code is. That goes before the sheet's legend and the reference data - she is the one
+    who has the architect's legend in front of her. An empty name takes it back."""
+    p = _project(db, user, project_id)
+    code = body.code.strip()
+    if not code or code == LEGENDS or len(code) > 16:
+        raise HTTPException(422, "Okänd kod")
+    est = _estimate(db, p.id)
+    names = dict(est.unit_names or {})
+    if body.name.strip():
+        names[code] = body.name.strip()[:120]
+    else:
+        names.pop(code, None)
+    est.unit_names = names
+    db.commit()
+    return project_units(db, p)
+
+
+@router.get("/projects/{project_id}/units.csv")
+def export_units(project_id: str, user: User = Depends(current_user), db: Session = Depends(get_db)):
+    out = project_units(db, _project(db, user, project_id))
+    buf = io.StringIO()
+    w = csv.writer(buf, delimiter=";")
+    w.writerow(["källtyp", "kod", "namn", "namnet enligt", "antal", "sidor"])
+    for r in out["units"]:
+        w.writerow([r["source_type"], r["code"], r["name"] or "", r["name_source"], r["count"],
+                    ", ".join(f"{p['filename']} s.{p['page'] + 1}" for p in r["pages"])])
+    name = "".join(c for c in out["project_id"] if c.isalnum())[:12]
+    return Response(("\ufeff" + buf.getvalue()).encode("utf-8"), media_type="text/csv; charset=utf-8",
+                    headers={"Content-Disposition": f'attachment; filename="enheter-{name}.csv"'})
