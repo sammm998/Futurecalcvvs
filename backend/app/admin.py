@@ -855,18 +855,21 @@ def academy(admin: User = Depends(current_admin), db: Session = Depends(get_db))
 
 @router.get("/agent-recipes")
 def agent_recipes(admin: User = Depends(current_admin), db: Session = Depends(get_db)):
-    """Agentens recept över alla konton: vilka som håller (personen lät rättelserna stå) och hur ofta de använts.
+    """Agentens recept över alla konton: vilka som håller (personen lät rättelserna stå), hur ofta och på hur
+    många konton.
 
-    Härifrån väljer en utvecklare vad som är värt att bli en regel i motorn. Ett recept blir aldrig en regel av
-    sig självt: det skrivs om till motorkod och går genom korpusspärren (engine/tools/corpus.py gate), så att en
-    lösning som höll på en ritning inte gör tio andra sämre."""
+    Ett recept blir aldrig en regel av sig självt. Agenten skriver lösningen som en regel, regeln prövas mot de
+    kontrollerade bladen och en admin aktiverar den under Lärda regler, så att en lösning som höll på en ritning
+    inte gör tio andra sämre."""
     from .db import AgentRecipe
-    from .solver import recipe_state
+    from .solver import recipe_score, recipe_state
     users = {u.id: u.email for u in db.query(User).all()}
     out = []
     for rec in db.query(AgentRecipe).order_by(AgentRecipe.created_at.desc()).limit(500).all():
+        score, n, accounts = recipe_score(db, rec)
         out.append({"id": rec.id, "user": users.get(rec.user_id), "drawing_id": rec.drawing_id, "page": rec.page,
                     "problem_types": rec.problem_types, "state": recipe_state(db, rec), "uses": rec.uses,
+                    "score": round(score, 2), "outcomes": n, "accounts": accounts,
                     "code_runs": len(rec.code or []), "corrections": len(rec.correction_ids or []),
                     "created_at": rec.created_at.isoformat()})
     by_type: dict[str, dict] = defaultdict(lambda: {"kept": 0, "rejected": 0, "uses": 0})
@@ -891,3 +894,62 @@ def agent_recipe(recipe_id: str, admin: User = Depends(current_admin), db: Sessi
             "page": rec.page, "job_id": rec.job_id,
             "corrections": [{"id": c.id, "kind": c.kind, "designation": c.designation, "payload": c.payload,
                              "undone": c.undone} for c in corr]}
+
+
+@router.get("/learned-rules")
+def learned_rules_list(admin: User = Depends(current_admin), db: Session = Depends(get_db)):
+    """De regler systemet lärt sig av agenten: var de står på vägen från ett löst blad till alla läsningar."""
+    from .db import ConfirmedTakeoff, LearnedRule
+    from .learned_rules import rule_out
+    rules = db.query(LearnedRule).order_by(LearnedRule.created_at.desc()).limit(500).all()
+    checked = db.query(ConfirmedTakeoff).filter(ConfirmedTakeoff.withdrawn == False).count()  # noqa: E712
+    return {"rules": [rule_out(db, r) for r in rules], "checked_sheets": checked}
+
+
+@router.get("/learned-rules/{rule_id}")
+def learned_rule(rule_id: str, admin: User = Depends(current_admin), db: Session = Depends(get_db)):
+    from .db import LearnedRule
+    from .learned_rules import rule_out
+    rule = db.get(LearnedRule, rule_id)
+    if rule is None:
+        raise HTTPException(404, "Regeln finns inte")
+    return rule_out(db, rule, full=True)
+
+
+@router.post("/learned-rules/{rule_id}/gate")
+def learned_rule_gate(rule_id: str, admin: User = Depends(current_admin), db: Session = Depends(get_db)):
+    """Kör spärren igen, i bakgrunden: regeln prövas på varje kontrollerat blad."""
+    from .db import LearnedRule
+    from .jobs import submit_rule_gate
+    if db.get(LearnedRule, rule_id) is None:
+        raise HTTPException(404, "Regeln finns inte")
+    submit_rule_gate(rule_id)
+    return {"queued": True}
+
+
+@router.post("/learned-rules/{rule_id}/activate")
+def learned_rule_activate(rule_id: str, admin: User = Depends(current_admin), db: Session = Depends(get_db)):
+    """Låt regeln gälla alla läsningar. Bara en regel som klarat spärren kan aktiveras."""
+    from .db import LearnedRule
+    from .learned_rules import AKTIV, rule_out
+    rule = db.get(LearnedRule, rule_id)
+    if rule is None:
+        raise HTTPException(404, "Regeln finns inte")
+    if not rule.gate_passed:
+        raise HTTPException(409, f"Regeln har inte klarat spärren: {rule.gate_reason or 'den är inte prövad än'}")
+    rule.state, rule.activated_by, rule.off_reason = AKTIV, admin.id, None
+    rule.applied_count, rule.undone_count = rule.applied_count or 0, rule.undone_count or 0
+    db.commit()
+    return rule_out(db, rule)
+
+
+@router.post("/learned-rules/{rule_id}/deactivate")
+def learned_rule_deactivate(rule_id: str, admin: User = Depends(current_admin), db: Session = Depends(get_db)):
+    from .db import LearnedRule
+    from .learned_rules import AVSTANGD, rule_out
+    rule = db.get(LearnedRule, rule_id)
+    if rule is None:
+        raise HTTPException(404, "Regeln finns inte")
+    rule.state, rule.off_reason = AVSTANGD, "avstängd av admin"
+    db.commit()
+    return rule_out(db, rule)

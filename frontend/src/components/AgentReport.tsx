@@ -7,8 +7,9 @@ const STATUS: Record<string, string> = {
 
 /* Vad agenten gjorde efter läsningen: problemen den fick, vad den svarade, koden den körde. Rättelserna den lade in
  * står bland rättelserna och ångras där som alla andra. */
-export function AgentReport({ agent }: { agent?: any }) {
-  if (!agent) return null;
+export function AgentReport({ agent, rules }: { agent?: any; rules?: any[] }) {
+  if (!agent && !rules?.length) return null;
+  if (!agent) return <LearnedRulesLine rules={rules ?? []} />;
   const NUM = new Intl.NumberFormat(locale());
   const sheets: any[] = agent.sheets ?? [];
   const fixes = sheets.reduce((n, s) => n + (s.corrections?.length ?? 0), 0);
@@ -18,6 +19,7 @@ export function AgentReport({ agent }: { agent?: any }) {
         {tr("Agenten")}: <b>{tr(STATUS[agent.status] ?? agent.status)}</b>
         {fixes > 0 && <> · {NUM.format(fixes)} {tr("rättelser att granska")}</>}
       </summary>
+      {!!rules?.length && <LearnedRulesLine rules={rules} />}
       {sheets.map((s) => (
         <div key={s.page} style={{ margin: "6px 0 10px" }}>
           <div className="muted">
@@ -25,6 +27,7 @@ export function AgentReport({ agent }: { agent?: any }) {
             {" · "}{s.calls?.length ?? 0} {tr("verktygsanrop")} · {s.code?.length ?? 0} {tr("kodkörningar")}
             {" · "}{NUM.format(s.tokens_in ?? 0)} / {NUM.format(s.tokens_out ?? 0)} tokens
             {s.recipes_used > 0 && <> · {s.recipes_used} {tr("tidigare lösningar provade")}</>}
+            {s.rules_proposed > 0 && <> · {s.rules_proposed} {tr("regler föreslagna")}</>}
           </div>
           {s.problems?.length > 0 && (
             <ol style={{ margin: "4px 0 4px 18px" }}>
@@ -46,5 +49,16 @@ export function AgentReport({ agent }: { agent?: any }) {
         </div>
       ))}
     </details>
+  );
+}
+
+/* Regler systemet lärt sig och en admin godkänt: de körs på varje läsning, även utan AI, och deras rättelser står
+ * bland rättelserna som alla andra. */
+function LearnedRulesLine({ rules }: { rules: any[] }) {
+  const n = rules.reduce((t, r) => t + (r.corrections ?? 0), 0);
+  return (
+    <p className="sub muted" title={rules.map((r) => `${r.name} (blad ${r.page + 1}): ${r.corrections}`).join("\n")}>
+      {tr("Lärda regler")}: {rules.length} {tr("körda")} · {n} {tr("rättelser att granska")}
+    </p>
   );
 }

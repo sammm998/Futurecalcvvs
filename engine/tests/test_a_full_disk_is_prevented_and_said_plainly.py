@@ -53,10 +53,10 @@ def test_a_nearly_full_disk_is_refused_in_plain_words(tmp_path, monkeypatch):
     disk_space.ensure_room(str(tmp_path), str(tmp_path / "results"))                # room enough: nothing said
 
 
-def test_when_space_runs_out_only_older_runs_of_the_same_drawing_give_way(tmp_path, monkeypatch):
+def _runs(tmp_path, monkeypatch, confirmed=()):
+    """Four runs of one drawing and one of another, and the runs a customer marked as checked."""
     import datetime as dt
     from types import SimpleNamespace
-    from app import disk_space
     import app.db as db_module
     import app.storage as storage_module
     jobs = []
@@ -65,30 +65,48 @@ def test_when_space_runs_out_only_older_runs_of_the_same_drawing_give_way(tmp_pa
             key = f"results/{drawing}/{k}"
             (tmp_path / key).mkdir(parents=True)
             (tmp_path / key / "quantities.json").write_text("x" * 100)
-            jobs.append(SimpleNamespace(drawing_id=drawing, result_key=key, status="COMPLETED",
+            jobs.append(SimpleNamespace(id=f"{drawing}-{k}", drawing_id=drawing, result_key=key, status="COMPLETED",
                                         finished_at=dt.datetime(2026, 9, 1 + k), started_at=None))
 
     class Q:
+        def __init__(self, rows):
+            self.rows = rows
         def filter(self, *a):
             return self
         def all(self):
-            return jobs
+            return self.rows
 
     class S:
         def __enter__(self):
             return self
         def __exit__(self, *a):
             return False
-        def query(self, model):
-            return Q()
+        def query(self, what):
+            return Q(jobs if what is db_module.AnalysisJob else [(j,) for j in confirmed])
         def commit(self):
             pass
     monkeypatch.setattr(db_module, "SessionLocal", lambda: S())
     monkeypatch.setattr(storage_module, "storage", SimpleNamespace(path=lambda key: str(tmp_path / key)))
+    return jobs
+
+
+def test_when_space_runs_out_only_older_runs_of_the_same_drawing_give_way(tmp_path, monkeypatch):
+    from app import disk_space
+    jobs = _runs(tmp_path, monkeypatch)
     assert disk_space.remove_superseded_runs(keep=2) == 200
     kept = sorted(j.result_key for j in jobs if j.result_key)
     assert kept == ["results/d1/2", "results/d1/3", "results/d2/0"]        # the two newest, and the only run of d2
     assert not (tmp_path / "results/d1/0").exists() and (tmp_path / "results/d1/3").exists()
+
+
+def test_a_run_a_customer_marked_as_checked_is_never_cleaned_away(tmp_path, monkeypatch):
+    """It is the facit the learned rules are tested against: an old run that was checked stays."""
+    from app import disk_space
+    jobs = _runs(tmp_path, monkeypatch, confirmed=("d1-0",))
+    assert disk_space.remove_superseded_runs(keep=2) == 100
+    kept = sorted(j.result_key for j in jobs if j.result_key)
+    assert kept == ["results/d1/0", "results/d1/2", "results/d1/3", "results/d2/0"]
+    assert (tmp_path / "results/d1/0").exists() and not (tmp_path / "results/d1/1").exists()
 
 
 def test_a_disk_still_full_after_reclaim_gives_up_older_runs_but_keeps_the_newest(tmp_path, monkeypatch):

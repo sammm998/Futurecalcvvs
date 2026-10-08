@@ -736,6 +736,10 @@ def undo_correction(drawing_id: str, correction_id: str, user: User = Depends(cu
         raise HTTPException(404, "Rättelsen finns inte")
     # kept rather than deleted: what a person changed and then changed back is itself worth having
     c.undone = True
+    # a correction a learned rule made, undone by a person: counted against the rule, which switches itself off
+    # when people undo too much of what it does
+    from .learned_rules import on_undone
+    on_undone(db, c)
     db.commit()
     return _correction_out(c)
 
@@ -1012,6 +1016,72 @@ def _sheet_pages(rd: str) -> list[int]:
     return sorted(int(n) for n in os.listdir(d) if n.isdigit())
 
 
+class ConfirmIn(BaseModel):
+    page: int = 0
+
+
+def _confirmed_out(ct) -> dict | None:
+    if ct is None:
+        return None
+    return {"id": ct.id, "page": ct.page, "created_at": ct.created_at.isoformat(), "rows": ct.rows,
+            "total_m": round(sum(float(v) for v in (ct.rows or {}).values()), 2)}
+
+
+@app.post("/api/jobs/{job_id}/kontrollerad")
+def confirm_takeoff(job_id: str, body: ConfirmIn, user: User = Depends(current_user), db: Session = Depends(get_db)):
+    """Den som äger ritningen säger att mängden på bladet stämmer: den rättade mängden sparas som facit.
+
+    Det är de bladen de lärda reglerna prövas mot innan någon av dem får läsa en annan kunds ritning. Därför sparas
+    mängden som den ser ut nu, med alla rättelser, och inte en hänvisning till den: en regel ska mätas mot det som
+    personen godkände, inte mot det som råkar stå där senare."""
+    from .db import ConfirmedTakeoff
+    j = _job(db, user, job_id)
+    root = _result_dir(j)
+    pages = _sheet_pages(root)
+    if pages and body.page not in pages:
+        raise HTTPException(404, "Det valda bladet har inget analysresultat.")
+    rd = _sheet_dir(root, body.page)
+    quantities = _load(rd, "quantities.json")
+    mpp = quantities["scale"].get("meters_per_pdf_point")
+    corr = [_correction_out(c) for c in db.query(Correction).filter(
+        Correction.drawing_id == j.drawing_id, Correction.undone == False).all()  # noqa: E712
+        if c.page in (None, body.page)]
+    rows = apply_corrections(quantities["rows"], corr, mpp)["quantities"] if corr else quantities["rows"]
+    snap: dict[str, float] = {}
+    for r in rows:
+        name = r.get("designation")
+        if name:
+            snap[name] = round(snap.get(name, 0.0) + float(r.get("confirmed_horizontal_m") or 0.0), 3)
+    if not mpp and not any(snap.values()):
+        raise HTTPException(409, "Bladet har ingen skala och inga meter; det finns ingen mängd att bekräfta.")
+    for old in db.query(ConfirmedTakeoff).filter(ConfirmedTakeoff.drawing_id == j.drawing_id,
+                                                 ConfirmedTakeoff.page == body.page,
+                                                 ConfirmedTakeoff.withdrawn == False).all():  # noqa: E712
+        old.withdrawn = True
+    ct = ConfirmedTakeoff(job_id=j.id, drawing_id=j.drawing_id, page=body.page, user_id=user.id, rows=snap)
+    db.add(ct)
+    db.commit()
+    # a new checked sheet is a new test for every rule that is waiting or in use
+    from .db import LearnedRule
+    from .jobs import submit_rule_gate
+    for rid, in db.query(LearnedRule.id).filter(LearnedRule.state.in_(("kandidat", "klarat_sparren", "aktiv"))).all():
+        submit_rule_gate(rid)
+    return _confirmed_out(ct)
+
+
+@app.delete("/api/jobs/{job_id}/kontrollerad")
+def withdraw_confirmed(job_id: str, page: int = Query(default=0, ge=0), user: User = Depends(current_user),
+                       db: Session = Depends(get_db)):
+    from .db import ConfirmedTakeoff
+    j = _job(db, user, job_id)
+    for ct in db.query(ConfirmedTakeoff).filter(ConfirmedTakeoff.drawing_id == j.drawing_id,
+                                                ConfirmedTakeoff.page == page,
+                                                ConfirmedTakeoff.withdrawn == False).all():  # noqa: E712
+        ct.withdrawn = True
+    db.commit()
+    return {"ok": True}
+
+
 @app.get("/api/jobs/{job_id}/result")
 def job_result(job_id: str, page: int | None = Query(default=None, ge=0), user: User = Depends(current_user), db: Session = Depends(get_db)):
     """The reading, as the sheet the reader is looking at plus the takeoff for the whole set.
@@ -1030,6 +1100,7 @@ def job_result(job_id: str, page: int | None = Query(default=None, ge=0), user: 
     elif pages and page not in pages:
         raise HTTPException(404, "Det valda bladet har inget analysresultat.")
     rd = _sheet_dir(root, page)
+    page_no = page
     review = _load_optional(root, "review-findings.json") if page == (pages[0] if pages else 0) else None
     quantities = _load(rd, "quantities.json")
     pipes = _load(rd, "physical-pipes.json")["physical_pipes"]
@@ -1057,8 +1128,14 @@ def job_result(job_id: str, page: int | None = Query(default=None, ge=0), user: 
             db.query(Correction).filter(Correction.drawing_id == j.drawing_id, Correction.undone == False).all()]  # noqa: E712
     layered = apply_corrections(quantities["rows"], corr, mpp)
     rows = layered["quantities"] if corr else quantities["rows"]
+    from .db import ConfirmedTakeoff
+    confirmed = (db.query(ConfirmedTakeoff).filter(ConfirmedTakeoff.drawing_id == j.drawing_id,
+                                                   ConfirmedTakeoff.page == (page_no if page_no is not None else 0),
+                                                   ConfirmedTakeoff.withdrawn == False)  # noqa: E712
+                 .order_by(ConfirmedTakeoff.created_at.desc()).first())
     return {
         "job": _job_out(j), "page": page, "input": prof.get("input"), "scale": quantities["scale"], "quantities": rows, "totals": quantities["totals"],
+        "confirmed": _confirmed_out(confirmed),
         "corrections": corr,
         "drawing_style": _load_optional(rd, "drawing-style.json"),
         "quality": completion_checks(_load_optional(rd, "coverage-validity.json"), rows,

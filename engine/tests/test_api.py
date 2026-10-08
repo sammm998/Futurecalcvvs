@@ -1409,3 +1409,222 @@ def test_agent_recipes_are_kept_while_their_corrections_stand(client, source_api
     assert kept_recipes(owner, {"beteckning_utan_ror"}) == []
     with SessionLocal() as db:
         assert db.query(AgentRecipe).count() >= 1
+
+
+def test_recipes_are_shared_across_accounts_as_method_only(client, source_api_pdf):
+    """A recipe found on one account's drawing is offered to another account's agent - its code and tools, not the
+    drawing's text - and is no longer offered once it has failed most places it was tried."""
+    owners = []
+    for email in ("dela-a@example.com", "dela-b@example.com"):
+        r = client.post("/api/auth/register", json={"email": email, "password": "hemligt1"}).json()
+        H = {"Authorization": f"Bearer {r['access_token']}"}
+        p = client.post("/api/projects", json={"name": email, "description": ""}, headers=H).json()
+        with open(source_api_pdf, "rb") as fh:
+            d = client.post(f"/api/projects/{p['id']}/drawings", files={"file": (f"{email}.pdf", fh, "application/pdf")}, headers=H).json()
+        owners.append((p["id"], d["id"]))
+    from app.db import AgentRecipe, Correction, Project, SessionLocal
+    from app.solver import kept_recipes, save_recipe
+    with SessionLocal() as db:
+        a_user = db.get(Project, owners[0][0]).owner_id
+        b_user = db.get(Project, owners[1][0]).owner_id
+        c = Correction(drawing_id=owners[0][1], user_id=a_user, kind="draw", designation="KV1-X31-16",
+                       payload={"meters": 1.0}, situation={}, note="agent: 1 m")
+        db.add(c); db.flush()
+        rid = save_recipe(db, a_user, owners[0][1], None, 0, {
+            "problems": [{"typ": "onamngivet_ror", "text": "Kv. Eken, plan 3"}],
+            "code": [{"kod": "# kv. Eken\nresult = [s['id'] for s in segs if s['pen'] == 'w0.5']", "ok": True}],
+            "calls": [{"namn": "kor_python", "ok": True}], "report": "Löst på kv. Eken"}, [c.id])
+        db.commit()
+    [shared] = [r for r in kept_recipes(b_user, {"onamngivet_ror"}) if r["id"] == rid]
+    assert not shared["own"] and shared["report"] == "" and "Eken" not in shared["code"][0]
+    assert "result = [s['id'] for s in segs" in shared["code"][0]
+    [mine] = [r for r in kept_recipes(a_user, {"onamngivet_ror"}) if r["id"] == rid]
+    assert mine["own"] and "Eken" in mine["report"]
+    # tried on three of B's readings and undone by B every time: held 1 of 4, no longer offered to anyone
+    with SessionLocal() as db:
+        rec = db.get(AgentRecipe, rid)
+        outs = []
+        for _ in range(3):
+            u = Correction(drawing_id=owners[1][1], user_id=b_user, kind="draw", designation="X", payload={},
+                           situation={}, note="agent: x", undone=True)
+            db.add(u); db.flush()
+            outs.append({"job_id": None, "drawing_id": owners[1][1], "user_id": b_user, "correction_ids": [u.id]})
+        rec.outcomes = outs
+        db.commit()
+    assert all(r["id"] != rid for r in kept_recipes(b_user, {"onamngivet_ror"}))
+
+
+def test_a_learned_rule_is_activated_only_after_the_gate_and_switches_itself_off(client):
+    tok = client.post("/api/auth/register", json={"email": "larda@example.com", "password": "hemligt1"}).json()["access_token"]
+    A = {"Authorization": f"Bearer {tok}"}
+    from app.db import Correction, LearnedRule, SessionLocal, User
+    from app.learned_rules import AKTIV, AVSTANGD, on_undone
+    with SessionLocal() as db:
+        u = db.query(User).filter(User.email == "larda@example.com").first()
+        u.role = "admin"
+        rule = LearnedRule(name="Missad beteckning", problem_type="beteckning_utan_ror", description="d",
+                           code="def regel(problem, blad):\n    return []\n")
+        db.add(rule); db.commit()
+        rid = rule.id
+    r = client.post(f"/api/admin/learned-rules/{rid}/activate", headers=A)
+    assert r.status_code == 409                                    # not through the gate yet
+    with SessionLocal() as db:
+        rule = db.get(LearnedRule, rid); rule.gate_passed = True; rule.gate_reason = "bättre på 1"; db.commit()
+    assert client.post(f"/api/admin/learned-rules/{rid}/activate", headers=A).json()["state"] == AKTIV
+    listing = client.get("/api/admin/learned-rules", headers=A).json()
+    assert any(x["id"] == rid for x in listing["rules"])
+    # people undo two of five things it did: switched off by itself
+    with SessionLocal() as db:
+        rule = db.get(LearnedRule, rid); rule.applied_count = 5; db.commit()
+        for _ in range(2):
+            c = Correction(drawing_id=None, user_id=u.id, kind="draw", designation="X",
+                           payload={"rule_id": rid}, situation={}, note="regel: x")
+            on_undone(db, c)
+        db.commit()
+        assert db.get(LearnedRule, rid).state == AVSTANGD
+
+
+def test_a_checked_takeoff_is_kept_as_facit_and_can_be_withdrawn(client, source_api_pdf):
+    r = client.post("/api/auth/register", json={"email": "kontroll@example.com", "password": "hemligt1"}).json()
+    H = {"Authorization": f"Bearer {r['access_token']}"}
+    p = client.post("/api/projects", json={"name": "K", "description": ""}, headers=H).json()
+    with open(source_api_pdf, "rb") as fh:
+        d = client.post(f"/api/projects/{p['id']}/drawings", files={"file": ("k.pdf", fh, "application/pdf")}, headers=H).json()
+    j = client.post(f"/api/drawings/{d['id']}/analyze", headers=H).json()
+    for _ in range(120):
+        j = client.get(f"/api/jobs/{j['id']}", headers=H).json()
+        if j["status"] in ("COMPLETED", "FAILED"):
+            break
+        time.sleep(0.5)
+    assert j["status"] == "COMPLETED", j
+    c = client.post(f"/api/jobs/{j['id']}/kontrollerad", json={"page": 0}, headers=H)
+    assert c.status_code == 200, c.text                            # the sheet says 1:50, so there are metres to confirm
+    assert c.json()["rows"]
+    res = client.get(f"/api/jobs/{j['id']}/result", headers=H).json()
+    assert res["confirmed"]["id"] == c.json()["id"]
+    assert client.delete(f"/api/jobs/{j['id']}/kontrollerad?page=0", headers=H).json()["ok"]
+    assert client.get(f"/api/jobs/{j['id']}/result", headers=H).json()["confirmed"] is None
+
+
+# what a learned rule does where nobody named the pipe: the unnamed ink goes to the nearest named run
+NEAREST_RUN = '''
+def regel(problem, blad):
+    b = problem.get("bbox")
+    if not b:
+        return []
+    ids = [s["id"] for s in blad["segs"] if "w1.44" in s["pen"]
+           and min(s["x0"], s["x1"]) >= b[0] - 1 and max(s["x0"], s["x1"]) <= b[2] + 1
+           and min(s["y0"], s["y1"]) >= b[1] - 1 and max(s["y0"], s["y1"]) <= b[3] + 1]
+    cx, cy = (b[0] + b[2]) / 2, (b[1] + b[3]) / 2
+    best, name = None, None
+    for r in blad["ror"]:
+        for line in r["geometri"]:
+            for x, y in line:
+                d = abs(x - cx) + abs(y - cy)
+                if best is None or d < best:
+                    best, name = d, r["beteckning"]
+    if not ids or not name:
+        return []
+    return [{"gor": "rita", "segment_id": ids, "beteckning": name}]
+'''
+
+
+def test_a_learned_rule_from_gate_to_every_reading(client, source_api_pdf, tmp_path):
+    """The whole road on a real reading: a checked sheet, the gate under the rule, an admin's activation, the rule
+    on the next reading of the drawing - without any model - and a person undoing what it did."""
+    import pymupdf
+    from conftest import make_dashed_line
+    doc = pymupdf.open(source_api_pdf)
+    shape = doc[0].new_shape()
+    make_dashed_line(shape, (100, 420), (300, 420))           # drawn like the pipes, named by nobody
+    shape.commit()
+    pdf = tmp_path / "unnamed.pdf"
+    doc.save(pdf); doc.close()
+    tok = client.post("/api/auth/register", json={"email": "vagen@example.com", "password": "hemligt1"}).json()["access_token"]
+    H = {"Authorization": f"Bearer {tok}"}
+    from app.db import Correction, LearnedRule, SessionLocal, User, AnalysisJob, ConfirmedTakeoff
+    from app.learned_rules import AKTIV, KLARAT, gate
+    with SessionLocal() as db:
+        db.query(User).filter(User.email == "vagen@example.com").first().role = "admin"
+        db.commit()
+    p = client.post("/api/projects", json={"name": "V", "description": ""}, headers=H).json()
+    with open(pdf, "rb") as fh:
+        d = client.post(f"/api/projects/{p['id']}/drawings", files={"file": ("v.pdf", fh, "application/pdf")}, headers=H).json()
+
+    def read():
+        j = client.post(f"/api/drawings/{d['id']}/analyze", headers=H).json()
+        for _ in range(120):
+            j = client.get(f"/api/jobs/{j['id']}", headers=H).json()
+            if j["status"] in ("COMPLETED", "FAILED"):
+                break
+            time.sleep(0.5)
+        assert j["status"] == "COMPLETED", j
+        return j["id"]
+
+    first = read()
+    own = {q["designation"]: q["confirmed_horizontal_m"] for q in client.get(f"/api/jobs/{first}/result", headers=H).json()["quantities"]}
+    c = client.post(f"/api/jobs/{first}/kontrollerad", json={"page": 0}, headers=H).json()
+    # the person who priced it put the unnamed 2.2 m on the run beside it before saying the takeoff is right
+    with SessionLocal() as db:
+        ct = db.get(ConfirmedTakeoff, c["id"])
+        ct.rows = {**ct.rows, "KV01-X7-40-W40": round(own["KV01-X7-40-W40"] + 2.2, 3)}
+        rule = LearnedRule(name="Onamngivet rör till närmaste rör", problem_type="onamngivet_ror", description="d",
+                           code=NEAREST_RUN)
+        db.add(rule); db.commit()
+        rid = rule.id
+    g = gate(rid)
+    assert g["passed"], g
+    [sheet] = [r for r in g["results"] if r["kontrollerad"] == c["id"]]
+    assert sheet["verdict"] == "battre" and sheet["efter_m"] < sheet["fore_m"]
+    with SessionLocal() as db:
+        assert db.get(LearnedRule, rid).state == KLARAT
+    assert client.post(f"/api/admin/learned-rules/{rid}/activate", headers=H).json()["state"] == AKTIV
+
+    def by_rule(job_id):
+        for _ in range(120):
+            with SessionLocal() as db:
+                mine = [x for x in db.query(Correction).filter(Correction.job_id == job_id).all()
+                        if (x.payload or {}).get("rule_id") == rid]
+                if mine:
+                    return mine
+            time.sleep(0.5)
+        return []
+
+    second = read()                                            # no model chosen: only the rules work on it
+    mine = by_rule(second)
+    assert mine and mine[0].note.startswith("regel: ")
+    res = client.get(f"/api/jobs/{second}/result", headers=H).json()
+    after = {q["designation"]: q["confirmed_horizontal_m"] for q in res["quantities"]}
+    assert abs(after["KV01-X7-40-W40"] - (own["KV01-X7-40-W40"] + 2.2)) < 0.3
+    with SessionLocal() as db:
+        assert db.get(AnalysisJob, second).summary["learned_rules"][0]["corrections"] == 1
+        assert db.get(LearnedRule, rid).applied_count == 1
+    # read once more: the rule does its part again, and what it did on the reading before is set aside, not added
+    third = read()
+    again = by_rule(third)
+    with SessionLocal() as db:
+        earlier = db.get(Correction, mine[0].id)
+        assert earlier.undone and earlier.payload.get("set_aside_by_rereading")
+    res = client.get(f"/api/jobs/{third}/result", headers=H).json()
+    after = {q["designation"]: q["confirmed_horizontal_m"] for q in res["quantities"]}
+    assert abs(after["KV01-X7-40-W40"] - (own["KV01-X7-40-W40"] + 2.2)) < 0.3
+    assert client.delete(f"/api/drawings/{d['id']}/corrections/{again[0].id}", headers=H).status_code == 200
+    with SessionLocal() as db:
+        rule = db.get(LearnedRule, rid)
+        # a person undid one of two (the set-aside one is not theirs to count): not yet enough to switch it off
+        assert rule.applied_count == 2 and rule.undone_count == 1 and rule.state == AKTIV
+        # the same solution learned twice: the second rule finds the problem settled and the ink counted
+        twin = LearnedRule(name="Samma lösning igen", problem_type="onamngivet_ror", description="d", code=NEAREST_RUN,
+                           state=AKTIV, gate_passed=True)
+        db.add(twin); db.commit()
+        tid = twin.id
+    fourth = read()
+    by_rule(fourth)
+    with SessionLocal() as db:
+        made = [x for x in db.query(Correction).filter(Correction.job_id == fourth).all() if x.note.startswith("regel: ")]
+        assert [x.payload["rule_id"] for x in made] == [rid]
+    res = client.get(f"/api/jobs/{fourth}/result", headers=H).json()
+    after = {q["designation"]: q["confirmed_horizontal_m"] for q in res["quantities"]}
+    assert abs(after["KV01-X7-40-W40"] - (own["KV01-X7-40-W40"] + 2.2)) < 0.3
+    for x in (rid, tid):
+        client.post(f"/api/admin/learned-rules/{x}/deactivate", headers=H)

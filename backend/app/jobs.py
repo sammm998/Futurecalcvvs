@@ -36,6 +36,19 @@ _reader = ThreadPoolExecutor(max_workers=1, thread_name_prefix="handling")
 # Agenten som arbetar vidare efter en färdig läsning har en egen kö. I mängdningens kö höll den nästa ritning
 # stilla i upp till tjugo minuter, fast läsningen redan var klar och visad.
 _agent = ThreadPoolExecutor(max_workers=1, thread_name_prefix="agent")
+# Spärren för lärda regler läser kontrollerade blad igen under en regel. Den får aldrig stå i vägen för en
+# kunds läsning, så den har en egen kö med en tråd.
+_rules = ThreadPoolExecutor(max_workers=1, thread_name_prefix="rules")
+
+
+def submit_rule_gate(rule_id: str) -> None:
+    def _gate():
+        try:
+            from .learned_rules import gate
+            gate(rule_id)
+        except Exception:                                  # noqa: BLE001
+            log.exception("Spärren föll för regel %s", rule_id)
+    _rules.submit(_gate)
 _lock = threading.Lock()
 
 
@@ -244,9 +257,17 @@ def _keep_upright(summary: dict, out_dir: str, pdf_path: str) -> None:
 
 
 def _run_agent(job_id: str, out_dir: str, pdf_path: str, ai_model: str | None) -> None:
+    # First the rules the system has learned and an admin has approved - they need no model and run on every
+    # reading - then the agent, on what they left open.
+    solved = {}
+    try:
+        from .learned_rules import apply_active
+        solved = apply_active(job_id, out_dir, pdf_path)
+    except Exception:                                      # noqa: BLE001
+        log.exception("De lärda reglerna kunde inte köras efter analysen")
     try:
         from .solver import run_for_job
-        run_for_job(job_id, out_dir, pdf_path, ai_model)
+        run_for_job(job_id, out_dir, pdf_path, ai_model, solved)
     except Exception:                                      # noqa: BLE001
         log.exception("Agenten kunde inte köras efter analysen")
 
