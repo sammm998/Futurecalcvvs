@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { api } from "../api";
 import { num, t as tr, trf } from "../i18n";
+import { AbtKeyFigures, AbtSchablon } from "./AbtEstimate";
 
 /* ABT 06: rummen i projektet, lästa ur A-planernas rumsetiketter.
  *
@@ -23,13 +24,17 @@ export function AbtPanel({ project }: { project: any }) {
         <button className={tab === "rum" ? "active" : ""} onClick={() => setTab("rum")}>{tr("Rum och ytor")}</button>
         <button className={tab === "enheter" ? "active" : ""} onClick={() => setTab("enheter")}>{tr("Enheter")}</button>
         <button className={tab === "symboler" ? "active" : ""} onClick={() => setTab("symboler")}>{tr("Symboler")}</button>
-        {["Nyckeltal", "Schablon", "Krav"].map((t) => (
+        <button className={tab === "nyckeltal" ? "active" : ""} onClick={() => setTab("nyckeltal")}>{tr("Nyckeltal")}</button>
+        <button className={tab === "schablon" ? "active" : ""} onClick={() => setTab("schablon")}>{tr("Schablon")}</button>
+        {["Krav"].map((t) => (
           <button key={t} disabled title={tr("Kommer i nästa del av ABT 06.")}>{tr(t)} · {tr("kommer")}</button>
         ))}
       </div>
       {tab === "rum" && <AbtRooms project={project} />}
       {tab === "enheter" && <AbtUnits project={project} />}
       {tab === "symboler" && <AbtSymbols project={project} />}
+      {tab === "nyckeltal" && <AbtKeyFigures project={project} />}
+      {tab === "schablon" && <AbtSchablon project={project} />}
     </section>
   );
 }
@@ -278,6 +283,7 @@ export function AbtSymbols({ project }: { project: any }) {
         style={{ width: "100%", minWidth: 0, boxSizing: "border-box" }}
         onChange={(e) => setNames({ ...names, [r.id]: e.target.value })} />
       {r.name_source && <span className="muted small">{tr(SYMBOL_SOURCE[r.name_source] ?? r.name_source)}</span>}
+      {r.beside_code && <span className="muted small">{trf("{0} står vid koden {1} och räknas en gång", r.beside_code.count, r.beside_code.code)}</span>}
       {names[r.id] !== undefined && <button className="small" onClick={() => save(r.id)}>{tr("Spara")}</button>}
     </div>
   );

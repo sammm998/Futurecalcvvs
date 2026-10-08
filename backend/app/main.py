@@ -18,8 +18,8 @@ from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy.orm import Session
 
 from . import (abt as abt_api, academy as academy_legacy, academy_api, admin as admin_api, cad as cad_api,
-               calc as calc_api, credits as credits_api, desk as desk_api, exports, jobs, markups as markups_api,
-               projects_api, public as public_api)
+               calc as calc_api, credits as credits_api, desk as desk_api, exports, jobs,
+               keyfigures as keyfigures_api, markups as markups_api, projects_api, public as public_api)
 from vvs_engine.output.schema import upgrade
 from vvs_engine.coverage import completion_checks
 from vvs_engine.corrections import KINDS as CORRECTION_KINDS, apply as apply_corrections
@@ -119,6 +119,7 @@ app.include_router(calc_api.router)
 app.include_router(cad_api.router)
 app.include_router(credits_api.router)
 app.include_router(abt_api.router)
+app.include_router(keyfigures_api.router)
 app.include_router(desk_api.router)
 
 

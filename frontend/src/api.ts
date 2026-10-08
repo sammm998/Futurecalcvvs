@@ -91,6 +91,13 @@ export const api = {
   nameSymbol: (projectId: string, id: string, name: string) =>
     req(`/api/projects/${projectId}/symbols/names`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, name }) }),
   symbolPictureUrl: (drawingId: string, id: string) => `/api/drawings/${drawingId}/symbols/${encodeURIComponent(id)}.png`,
+  keyFigures: () => req(`/api/key-figures`),
+  createKeyFigure: (body: any) => req(`/api/key-figures`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }),
+  updateKeyFigure: (id: string, body: any) => req(`/api/key-figures/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }),
+  deleteKeyFigure: (id: string) => req(`/api/key-figures/${id}`, { method: "DELETE" }),
+  projectSchablon: (projectId: string) => req(`/api/projects/${projectId}/schablon`),
+  putEstimate: (projectId: string, body: any) =>
+    req(`/api/projects/${projectId}/estimate`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }),
   deleteProject: (id: string) => req(`/api/projects/${id}`, { method: "DELETE" }),
   upload: (projectId: string, file: File) => { const fd = new FormData(); fd.append("file", file); return req(`/api/projects/${projectId}/drawings`, { method: "POST", body: fd }); },
   drawing: (id: string) => req(`/api/drawings/${id}`),

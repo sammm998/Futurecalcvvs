@@ -288,7 +288,70 @@ Handling D har inga rumsetiketter, eftersom dess planer saknar A-underlag med ru
   bakom rör. Varje variant namnges för sig, och liknande grupper föreslås inte än.
 - Många grupper är annat än inredning: dörrar, fönster, pelare, träd, rörsymboler. De räknas inte om de inte
   namnges, men de gör galleriet långt.
-- Enheter ur koder och symboler räknas var för sig. En tvättmaskin som har både koden TM och ett block räknas två
-  gånger om båda namnges.
+- Enheter ur koder och symboler räknas var för sig i flikarna Enheter och Symboler. I schablonunderlaget räknas
+  ett exemplar som står där dess kod är skriven (koden själv, eller namnet koden har) som en enhet, inte två.
+  Galleriet visar hur många exemplar det gäller.
 - Symbolerna kopplas inte till rum än, eftersom rummens polygoner saknas.
 - Antalen är inte kontrollerade mot en handräkning.
+
+## 14. Fas 3 – strukturen genomförd: nyckeltal och schablonrader
+
+Enligt beslutet "jag skickar egna nyckeltal" finns bara strukturen. Inga värden är ifyllda och inga branschvärden
+hittas på. Biblioteket är tomt tills användaren lägger in sina egna.
+
+**Nyckeltalen** (`backend/app/keyfigures.py`, tabellen `key_figures`):
+- Ett nyckeltal har:
+  - ett namn och en grund: per enhet eller per m²;
+  - vad det gäller: en enhetskod (TM, VK …), ett symbolnamn ("WC") eller en lägenhetstyp ("2 ROK"); för m² en
+    rumstyp, eller alla rum;
+  - vad det ger: rader med system eller beteckning, mått (längd, antal, yta, volym), värde och en valfri artikel ur
+    materialboken;
+  - timmar per enhet eller m², och en källa i fritext (var värdet kommer ifrån).
+- Biblioteket hör till företaget, eller till användaren om hon inte har något företag. Ingen annan ser det eller
+  kan använda det.
+- Ett nyckeltal är ett utkast tills någon bekräftar det, och ett utkast kan inte väljas för ett projekt. Ändras ett
+  bekräftat nyckeltal blir det ett utkast igen och lämnar projektets rader tills det bekräftas på nytt.
+
+**Schablonraderna:**
+- En rad är underlaget gånger nyckeltalet:
+  - räknade enheter (koder och namngivna symboler), lägenheter av en typ, eller m² av rummen;
+  - allt räknat på de sidor som räknas.
+- Raden räknas fram varje gång och lagras aldrig. Den visar sitt underlag ("2 st TM (koder)") och sin uträkning
+  ("2 st × 2.5 m = 5 m").
+- Riskpåslag:
+  - per projekt, och en rad kan ha ett eget;
+  - båda syns i raden och i exporten.
+- En artikel ger raden materialbokens nettopris (pris × (1 − rabatt)) och en kostnad. Timmarna blir en egen rad.
+- En symbol som står där dess kod är skriven är samma enhet som koden. Den räknas en gång när både koden och
+  symbolen hör till ett nyckeltals underlag, och raden säger hur många det gällde.
+- Export till CSV med källtyp SCHABLON och nyckeltalets källa.
+- Det som lagras per projekt är bara besluten: valda nyckeltal, påslaget och radernas egna påslag
+  (`project_estimates`).
+
+**I produkten:**
+- **Fliken Nyckeltal:** biblioteket med status. Där finns ett formulär med förslag ur projektets koder, symbolnamn,
+  lägenhetstyper och rumsnamn, och sökning i materialboken. Där bekräftar du nyckeltal och väljer dem för projektet.
+- **Fliken Schablon:** raderna med underlag, uträkning, påslag, artikel och kostnad, samt summor för timmar och
+  materialkostnad.
+
+**Prövat:** API-test med påhittade värden:
+- ett utkast nekas;
+- rader per enhet, per m² och per lägenhetstyp;
+- projektets påslag och radens eget;
+- nettopris och kostnad ur materialboken;
+- ett ändrat nyckeltal blir utkast och lämnar raderna;
+- ett annat konto ser inte biblioteket;
+- ett borttaget nyckeltal lämnar projektet;
+- felaktiga nyckeltal nekas.
+
+**Prövat i webbläsaren** på handling B, lokalt och med ett påhittat nyckeltal:
+- formuläret med artikelsök;
+- att ett utkast inte går att välja, och att det sedan bekräftas och väljs för projektet;
+- tre rader på 47 räknade TM (koder på sidor som räknas);
+- påslaget 10 %;
+- svenska, engelska och mobilbredd, utan konsolfel.
+
+**Kvar i fas 3:**
+- Dina nyckeltal, eller ditt ja till att härleda förslag ur de fyra projekten (avsnitt 9).
+- Schablonraderna i kalkylens och anbudets dokument. I dag finns de som en egen lista och i CSV-exporten.
+- Byggnadstyp används inte än som filter.
