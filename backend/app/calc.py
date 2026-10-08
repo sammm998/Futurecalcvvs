@@ -28,6 +28,8 @@ from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import Response
+
+from .config import settings
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
@@ -475,7 +477,7 @@ def tender_meta(calc: dict, meta: dict) -> dict:
     A = calc["assumptions"]
     today = dt.date.today()
     return {
-        "company": A.get("company") or meta.get("company") or "FutureCalc",
+        "company": A.get("company") or meta.get("company") or settings.app_name,
         "customer": A.get("customer") or "–",
         "project": meta.get("project") or "–",
         "drawing": meta.get("drawing") or "",

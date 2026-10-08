@@ -3,7 +3,7 @@ import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import Lenis from "lenis";
 
-/* FutureCalcs rörelse, på ett ställe.
+/* Radiator VVS:s rörelse, på ett ställe.
  *
  * Tre regler bär hela systemet:
  *
