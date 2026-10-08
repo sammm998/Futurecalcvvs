@@ -12,6 +12,7 @@ type Page = { drawing_id: string; filename: string; page: number; rooms: number;
   counted: boolean; same_as: { filename: string; page: number } | null };
 
 const KIND: Record<string, string> = { rum: "Rum", lagenhet: "Lägenhet" };
+const priced = (offer: any): number[] => offer.pages_priced ?? offer.pages_with_rooms ?? [];
 
 export function AbtPanel({ project }: { project: any }) {
   const [tab, setTab] = useState("rum");
@@ -21,12 +22,14 @@ export function AbtPanel({ project }: { project: any }) {
       <div className="tabs">
         <button className={tab === "rum" ? "active" : ""} onClick={() => setTab("rum")}>{tr("Rum och ytor")}</button>
         <button className={tab === "enheter" ? "active" : ""} onClick={() => setTab("enheter")}>{tr("Enheter")}</button>
-        {["Symboler", "Nyckeltal", "Schablon", "Krav"].map((t) => (
+        <button className={tab === "symboler" ? "active" : ""} onClick={() => setTab("symboler")}>{tr("Symboler")}</button>
+        {["Nyckeltal", "Schablon", "Krav"].map((t) => (
           <button key={t} disabled title={tr("Kommer i nästa del av ABT 06.")}>{tr(t)} · {tr("kommer")}</button>
         ))}
       </div>
       {tab === "rum" && <AbtRooms project={project} />}
       {tab === "enheter" && <AbtUnits project={project} />}
+      {tab === "symboler" && <AbtSymbols project={project} />}
     </section>
   );
 }
@@ -62,12 +65,12 @@ export default function AbtRooms({ project }: { project: any }) {
   };
   const rows = useMemo(() => (data?.rooms ?? []).filter((r: any) => r.kind !== "summa" && (!filter ||
     `${r.number ?? ""} ${r.name ?? ""} ${r.apartment?.text ?? ""}`.toLowerCase().includes(filter.toLowerCase()))), [data, filter]);
-  const read_ = new Set((data?.pages ?? []).map((p: Page) => p.drawing_id));
+  const read_ = new Set([...(data?.pages ?? []).map((p: Page) => p.drawing_id), ...(data?.read ?? [])]);
   const t = data?.register?.totals;
 
   return (
     <div style={{ marginTop: 12 }}>
-      <p className="muted small">{tr("Rummen läses ur A-planernas rumsetiketter: nummer, namn eller lägenhetstyp och arean som står skriven. Raderna är RÄKNADE – inget är mätt. En sida som upprepar en annan räknas en gång; du väljer vilka sidor som räknas.")}</p>
+      <p className="muted small">{tr("Rummen läses ur A-planernas rumsetiketter: nummer, namn eller lägenhetstyp och arean som står skriven. Raderna är RÄKNADE – inget är mätt. En sida som upprepar en annan räknas en gång; du väljer vilka sidor som räknas.")} {tr("Samma läsning räknar enheterna och symbolerna.")}</p>
       <div className="tablewrap">
         <table className="qty">
           <thead><tr><th>{tr("Ritning")}</th><th>{tr("Sidor")}</th><th></th></tr></thead>
@@ -78,7 +81,7 @@ export default function AbtRooms({ project }: { project: any }) {
                 <td className="num">{d.n_pages}</td>
                 <td>
                   <button className="secondary small" disabled={!!busy} onClick={() => ask(d)}>
-                    {busy === d.id ? tr("Läser…") : read_.has(d.id) ? tr("Läs rummen igen") : tr("Läs rum")}
+                    {busy === d.id ? tr("Läser…") : read_.has(d.id) ? tr("Läs ritningen igen") : tr("Läs ritningen")}
                   </button>
                 </td>
               </tr>
@@ -88,15 +91,15 @@ export default function AbtRooms({ project }: { project: any }) {
       </div>
       {offer && (
         <div className="callout" role="dialog" style={{ marginTop: 10 }}>
-          {offer.pages_with_rooms.length === 0 ? <p>{tr("Ritningen har inga rumsetiketter att läsa. Det kostar ingenting.")}</p> : (
+          {priced(offer).length === 0 ? <p>{tr("Ritningen har inga rum, enheter eller symboler att läsa. Det kostar ingenting.")}</p> : (
             <p>
-              {trf("{0} sidor har rumsetiketter ({1} etiketter).", offer.pages_with_rooms.length, offer.labels)}{" "}
+              {trf("{0} sidor har rum, enheter eller symboler: {1} rumsetiketter, {2} enheter och {3} symbolgrupper.", priced(offer).length, offer.labels, offer.units ?? 0, offer.symbols ?? 0)}{" "}
               {offer.exempt ? tr("Läsningen kostar inga credits här.") : offer.already_paid ? tr("Ritningen är redan betald – att läsa den igen kostar ingenting.")
-                : trf("Läsningen kostar {0} credits – bladpriset för sidorna med rum.", num(offer.credits, 1))}
+                : trf("Läsningen kostar {0} credits – bladpriset för de sidorna.", num(offer.credits, 1))}
             </p>
           )}
           <div className="row" style={{ gap: 8 }}>
-            {offer.pages_with_rooms.length > 0 && <button onClick={read} disabled={!!busy}>{tr("Läs rummen")}</button>}
+            {priced(offer).length > 0 && <button onClick={read} disabled={!!busy}>{tr("Läs ritningen")}</button>}
             <button className="secondary" onClick={() => setOffer(null)}>{tr("Avbryt")}</button>
           </div>
         </div>
@@ -217,6 +220,95 @@ export function AbtUnits({ project }: { project: any }) {
           </table>
         </div>
         <p className="muted small">{tr("(+N) är enheter på sidor som inte räknas – samma plan en gång till.")}</p>
+      </>}
+    </div>
+  );
+}
+
+/* Symbolerna: det som ritas som ett block och upprepas – toaletter, tvättställ, diskbänkar. Läsningen samlar lika
+ * block i grupper, hur de än är vridna eller speglade. En grupp räknas först när den har ett namn – bladets egen
+ * förklaring eller ditt; då blir varje exemplar en räknemarkering på lagret "ABT symboler" i Mängda. Grupperna
+ * utan namn visas med flest exemplar först, och du namnger de som är enheter. */
+const SYMBOL_SOURCE: Record<string, string> = { "angiven": "angiven av dig", "bladets förklaring": "bladets förklaring" };
+const SHOWN = 48;
+
+function SymbolPicture({ drawingId, id }: { drawingId: string; id: string }) {
+  const [src, setSrc] = useState("");
+  useEffect(() => {
+    let url = "";
+    let live = true;
+    api.fetchBlob(api.symbolPictureUrl(drawingId, id))
+      .then((b) => { if (live) { url = URL.createObjectURL(b); setSrc(url); } })
+      .catch(() => undefined);
+    return () => { live = false; if (url) URL.revokeObjectURL(url); };
+  }, [drawingId, id]);
+  return src ? <img src={src} alt="" style={{ maxWidth: "100%", maxHeight: 104, objectFit: "contain" }} /> : <span className="muted small">…</span>;
+}
+
+export function AbtSymbols({ project }: { project: any }) {
+  const [data, setData] = useState<any>(null);
+  const [err, setErr] = useState("");
+  const [names, setNames] = useState<Record<string, string>>({});
+  const [shown, setShown] = useState(SHOWN);
+  const load = () => api.projectSymbols(project.id).then(setData).catch((e) => setErr(e.message));
+  useEffect(() => { load(); }, [project.id]);
+  const save = async (id: string) => {
+    setErr("");
+    try { setData(await api.nameSymbol(project.id, id, names[id] ?? "")); setNames({ ...names, [id]: undefined as any }); }
+    catch (e: any) { setErr(e.message); }
+  };
+  const csv = async () => {
+    const b = await api.fetchBlob(`/api/projects/${project.id}/symbols.csv`);
+    const a = document.createElement("a"); a.href = URL.createObjectURL(b);
+    a.download = `${(project.name || "projekt").replace(/[^\wåäöÅÄÖ-]+/g, "_")}-symboler.csv`; a.click();
+  };
+  const rows: any[] = data?.symbols ?? [];
+  const named = rows.filter((r) => r.counted);
+  const open = rows.filter((r) => !r.counted);
+  const card = (r: any) => (
+    <div key={r.id} className="card" style={{ padding: 8, display: "grid", gap: 6, alignContent: "start", minWidth: 0 }}>
+      <div style={{ height: 112, display: "grid", placeItems: "center", background: "#fff", borderRadius: 6 }}>
+        <SymbolPicture drawingId={r.sample.drawing_id} id={r.id} />
+      </div>
+      <div className="row" style={{ justifyContent: "space-between", gap: 6 }}>
+        <span><b>{r.count}</b> {tr("st")}{r.not_counted ? <span className="muted small"> (+{r.not_counted})</span> : null}</span>
+        <span className="muted small">{trf("{0} sidor", r.pages.length)}</span>
+      </div>
+      <input value={names[r.id] ?? r.name ?? ""} placeholder={tr("Vad är det här?")} aria-label={tr("Namnge symbolen")}
+        style={{ width: "100%", minWidth: 0, boxSizing: "border-box" }}
+        onChange={(e) => setNames({ ...names, [r.id]: e.target.value })} />
+      {r.name_source && <span className="muted small">{tr(SYMBOL_SOURCE[r.name_source] ?? r.name_source)}</span>}
+      {names[r.id] !== undefined && <button className="small" onClick={() => save(r.id)}>{tr("Spara")}</button>}
+    </div>
+  );
+  const grid = { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: 10 } as const;
+  return (
+    <div style={{ marginTop: 12 }}>
+      <p className="muted small">{tr("Symbolerna är det som ritas som ett block och upprepas – toaletter, tvättställ, diskbänkar. Läsningen samlar lika block i grupper, hur de än är vridna eller speglade. En grupp räknas först när den har ett namn: bladets egen förklaring eller ditt. Då blir varje exemplar en räknemarkering på lagret ”ABT symboler” i Mängda, där du kan granska, flytta eller avvisa den.")}</p>
+      {err && <p className="error" role="alert">{err}</p>}
+      {data && rows.length === 0 && <p className="muted">{tr("Inga symboler än. Läs ritningarna i fliken Rum och ytor – symbolerna läses samtidigt.")}</p>}
+      {rows.length > 0 && <>
+        <div className="kpi">
+          <div className="card"><div className="v">{data.totals.symbols}</div><div className="l">{tr("Räknade symboler")}</div></div>
+          <div className="card"><div className="v">{data.totals.named}</div><div className="l">{tr("Grupper med namn")}</div></div>
+          <div className="card"><div className="v">{data.totals.groups}</div><div className="l">{tr("Grupper")}</div></div>
+        </div>
+        <div className="row" style={{ margin: "12px 0", gap: 8 }}>
+          <button className="secondary small" onClick={csv} disabled={named.length === 0}>{tr("Exportera symbolerna (CSV)")}</button>
+          {project.drawings[0] && <a className="small" href={`/mangda/${project.drawings[0].id}`}>{tr("Granska markeringarna i Mängda →")}</a>}
+        </div>
+        {named.length > 0 && <>
+          <h4 style={{ margin: "8px 0" }}>{tr("Räknas")}</h4>
+          <div style={grid}>{named.map(card)}</div>
+        </>}
+        {open.length > 0 && <>
+          <h4 style={{ margin: "16px 0 4px" }}>{tr("Att namnge")}</h4>
+          <p className="muted small" style={{ marginTop: 0 }}>{tr("Grupperna utan namn räknas inte. De med flest exemplar står först; namnge de som är enheter och låt resten vara.")}</p>
+          <div style={grid}>{open.slice(0, shown).map(card)}</div>
+          {open.length > shown && <button className="secondary small" style={{ marginTop: 10 }} onClick={() => setShown(shown + SHOWN)}>
+            {trf("Visa fler ({0} till)", open.length - shown)}</button>}
+        </>}
+        <p className="muted small">{tr("(+N) är exemplar på sidor som inte räknas – samma plan en gång till.")}</p>
       </>}
     </div>
   );

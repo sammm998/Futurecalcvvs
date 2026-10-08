@@ -87,6 +87,10 @@ export const api = {
   projectUnits: (projectId: string) => req(`/api/projects/${projectId}/units`),
   nameUnit: (projectId: string, code: string, name: string) =>
     req(`/api/projects/${projectId}/units/names`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ code, name }) }),
+  projectSymbols: (projectId: string) => req(`/api/projects/${projectId}/symbols`),
+  nameSymbol: (projectId: string, id: string, name: string) =>
+    req(`/api/projects/${projectId}/symbols/names`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, name }) }),
+  symbolPictureUrl: (drawingId: string, id: string) => `/api/drawings/${drawingId}/symbols/${encodeURIComponent(id)}.png`,
   deleteProject: (id: string) => req(`/api/projects/${id}`, { method: "DELETE" }),
   upload: (projectId: string, file: File) => { const fd = new FormData(); fd.append("file", file); return req(`/api/projects/${projectId}/drawings`, { method: "POST", body: fd }); },
   drawing: (id: string) => req(`/api/drawings/${id}`),

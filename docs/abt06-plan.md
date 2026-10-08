@@ -230,5 +230,65 @@ Handling D har inga rumsetiketter, eftersom dess planer saknar A-underlag med ru
 - Enheterna kopplas inte till rum än, eftersom rummens polygoner saknas.
 - Antalen är inte kontrollerade mot en handräkning.
 
-**Nästa (fas 2c):** symboler, alltså upprepade CAD-block. En grupp får namn av bladets förklaring eller av
-användaren, och det behövs för handling D.
+## 13. Fas 2c – genomförd: symboler, alltså block som upprepas
+
+**Symbolläsaren** (`engine/vvs_engine/abt/symbols.py`):
+- Ett CAD-block skrivs ut som en följd i ritningsströmmen: linjer med samma penna, tätt intill varandra. Läsaren
+  delar strömmen i sådana följder och beskriver var och en med det som inte ändras när den vrids eller speglas:
+  antal linjer, deras längder och hur långt ändarna ligger från mitten. Följder som är lika, på avrundningen när,
+  är samma del av samma block.
+- Ett block i flera pennor (kontur, skål, kran) blir flera följder. De står på samma ställe och direkt efter
+  varandra i strömmen, nästan varje gång. Då slås de ihop till en symbol.
+- Detta sorteras bort:
+  - långa och tunna följder: väggar, fönster, streckade linjer;
+  - vita masker bakom text;
+  - bokstäver ritade som streck, alltså låga följder i samma penna på rad, en bokstavs bredd isär.
+- **Namnet** kommer från en av två källor. Annars räknas gruppen inte, och ingen betydelse hittas på.
+  1. Bladets egen symbolförklaring. Det är en tabell: symbolerna i en kolumn, namnen i en annan med samma penna,
+     varje namn tätt intill sin symbol, raderna utan glapp, minst tre rader med en egen symbol och ett eget namn
+     på varje. Exemplaret i förklaringen räknas inte.
+  2. Användaren.
+- Varje grupp behålls, också en som ritas bara en gång. Ett projekt levereras ofta som ett blad per PDF. Därför
+  avgörs i hela projektet om en grupp utan namn ska visas: den behöver minst tre exemplar.
+- Samma block får samma id i projektets alla ritningar. Ett namn gäller därför överallt, också ett namn ur en
+  annan ritnings förklaring.
+
+**I produkten:**
+- Symbolerna läses samtidigt som rum och enheter. Läsningen sparas per ritning (`results/<id>/abt/`), så prisfrågan
+  och läsningen delar den.
+- Pris enligt beslutet "rum och symboler per A-blad": bladpriset för sidor där läsningen hittar rum, enheter eller
+  minst tre exemplar av upprepade symboler. En ritning som redan är betald läses om utan kostnad.
+- Fliken Symboler är ett galleri med en bild av varje grupp, antal exemplar och sidor:
+  - grupper med namn står först och räknas;
+  - övriga står med flest exemplar först;
+  - du skriver vad en grupp är ("WC") och sparar.
+- Varje exemplar av en namngiven grupp blir en räknemarkering på lagret "ABT symboler" i Mängda.
+  - Markeringen kan granskas, flyttas, avvisas eller tas bort, och räknas då inte.
+  - Ett nytt namn byter namn på markeringarna där de står.
+  - Sidor som rumsläsaren tar som en upprepad plan räknas inte heller för symbolerna (+N).
+- Export till CSV med källtyp RÄKNAD.
+
+**Prövat:**
+- **Syntetiska blad i CI:**
+  - samma block rakt, vridet 90° och 37° och speglat blir en grupp;
+  - ett block i två pennor blir en symbol;
+  - förklaringen namnger och räknas inte själv;
+  - väggar, streck och ord blir inga symboler;
+  - samma id i två ritningar;
+  - namnet ur den ena ritningens förklaring gäller i den andra.
+- **Handling D** (21 sidor, inredningen ritad som symboler):
+  - prisfrågan tar 30 s; själva läsningen tar sedan 3 s eftersom den är sparad;
+  - 387 grupper med minst tre exemplar;
+  - toaletter i två varianter (74 + 64) och tvättställ i tre (71 + 53 + 20);
+  - stickprov på sida 9: markeringarna sitter på toaletterna och tvättställen.
+- **Handling B:** bokstäver ritade som streck sorteras bort, så galleriet visar mest symboler.
+
+**Kända begränsningar:**
+- Samma föremål ritat på olika sätt blir olika grupper, till exempel en annan modell eller ett föremål delvis dolt
+  bakom rör. Varje variant namnges för sig, och liknande grupper föreslås inte än.
+- Många grupper är annat än inredning: dörrar, fönster, pelare, träd, rörsymboler. De räknas inte om de inte
+  namnges, men de gör galleriet långt.
+- Enheter ur koder och symboler räknas var för sig. En tvättmaskin som har både koden TM och ett block räknas två
+  gånger om båda namnges.
+- Symbolerna kopplas inte till rum än, eftersom rummens polygoner saknas.
+- Antalen är inte kontrollerade mot en handräkning.
