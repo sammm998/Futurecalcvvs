@@ -4,7 +4,8 @@ the result held against the last accepted run.
 A change to the reading is judged sheet by sheet, never on a total: a gain on one sheet can hide a loss on another.
 Beside the facit's metres - right, under the wrong size or system, missed - each sheet reports what the reading
 measured where the facit has no pipe, as a share of the facit's metres. That share is shown and kept with the
-baseline, and the gate does not refuse on it yet: what it does from one run to the next has not been measured.
+baseline, and the gate does not refuse on it yet: a takeoff does not always take off everything the sheet draws,
+and what the share does from one run to the next has not been measured.
 The manifest names the sheets and their facit PDFs (the drawings themselves are client material and stay outside
 the repository); the baseline is the per-sheet result of the last run that was accepted.
 

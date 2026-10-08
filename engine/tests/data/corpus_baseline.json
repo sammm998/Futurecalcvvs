@@ -3,6 +3,7 @@
   "A0011": {
    "facit_pt": 12097.3,
    "missed": 0.05,
+   "outside": 5.65,
    "right": 96.12,
    "risers_facit": 55,
    "risers_off": 22,
@@ -13,6 +14,7 @@
   "A0013": {
    "facit_pt": 6417.8,
    "missed": 0.03,
+   "outside": 3.14,
    "right": 95.69,
    "risers_facit": 24,
    "risers_off": 1,
@@ -23,6 +25,7 @@
   "A0014": {
    "facit_pt": 2867.3,
    "missed": 0.0,
+   "outside": 77.46,
    "right": 99.99,
    "risers_facit": 16,
    "risers_off": 0,
@@ -33,16 +36,18 @@
   "A0111": {
    "facit_pt": 29476.1,
    "missed": 1.62,
-   "right": 79.98,
+   "outside": 13.42,
+   "right": 80.24,
    "risers_facit": 90,
    "risers_off": 79,
    "risers_ours": 115,
-   "wrong_dn": 9.46,
-   "wrong_system": 8.94
+   "wrong_dn": 9.47,
+   "wrong_system": 8.67
   },
   "A0114": {
    "facit_pt": 18450.9,
    "missed": 0.04,
+   "outside": 47.77,
    "right": 93.14,
    "risers_facit": 39,
    "risers_off": 27,
@@ -53,6 +58,7 @@
   "A0213": {
    "facit_pt": 12007.5,
    "missed": 0.05,
+   "outside": 7.58,
    "right": 94.65,
    "risers_facit": 46,
    "risers_off": 13,
@@ -63,6 +69,7 @@
   "A0222": {
    "facit_pt": 12069.0,
    "missed": 0.0,
+   "outside": 10.08,
    "right": 95.82,
    "risers_facit": 29,
    "risers_off": 27,
@@ -73,6 +80,7 @@
   "A0223": {
    "facit_pt": 8507.6,
    "missed": 0.9,
+   "outside": 19.56,
    "right": 90.42,
    "risers_facit": 21,
    "risers_off": 9,
@@ -83,6 +91,7 @@
   "A0233": {
    "facit_pt": 13948.2,
    "missed": 0.03,
+   "outside": 10.33,
    "right": 96.38,
    "risers_facit": 31,
    "risers_off": 19,
@@ -93,6 +102,7 @@
   "A0311": {
    "facit_pt": 7609.2,
    "missed": 6.41,
+   "outside": 5.52,
    "right": 87.38,
    "risers_facit": 3,
    "risers_off": 11,
@@ -103,6 +113,7 @@
   "A0314": {
    "facit_pt": 908.2,
    "missed": 0.0,
+   "outside": 6.16,
    "right": 100.0,
    "risers_facit": 0,
    "risers_off": 3,
@@ -113,6 +124,7 @@
   "W0023": {
    "facit_pt": 2067.8,
    "missed": 0.0,
+   "outside": 18.32,
    "right": 100.0,
    "risers_facit": 9,
    "risers_off": 0,
@@ -123,6 +135,7 @@
   "W0024": {
    "facit_pt": 3226.8,
    "missed": 0.02,
+   "outside": 18.77,
    "right": 99.98,
    "risers_facit": 16,
    "risers_off": 1,
@@ -133,6 +146,7 @@
   "W0122": {
    "facit_pt": 18921.4,
    "missed": 0.18,
+   "outside": 13.65,
    "right": 93.42,
    "risers_facit": 64,
    "risers_off": 27,
@@ -143,6 +157,7 @@
   "W0123": {
    "facit_pt": 16700.3,
    "missed": 0.01,
+   "outside": 11.6,
    "right": 91.12,
    "risers_facit": 47,
    "risers_off": 29,

@@ -261,8 +261,11 @@ C2 mäter bildläsningen åt två håll. Det första är facits meter: hur mång
 eller inte alls. Det andra är läsningens egna meter: hur många som ligger där facit inte har något rör.
 Korpusverktyget räknade tidigare bara det första. En ändring kunde därför se bättre ut samtidigt som den mätte
 tusentals meter som inte finns. Därför visar verktyget nu också **utanför facit**, per blad och som andel av facits
-meter. Siffran sparas med baslinjen. Spärren nekar inte på den än, eftersom ingen vet hur mycket den varierar
-mellan två körningar.
+meter. Siffran sparas med baslinjen.
+
+Utanför facit är inte alltid fel. En mängdning tar inte alltid med allt som är ritat: vektorläsningen har 16,4 %
+utanför facit, och på A0014 77,5 %. Därför jämförs varje blad bara med sig självt, och spärren nekar inte på
+siffran än. Ingen vet ännu hur mycket den varierar mellan två körningar.
 
 **Två ändringar, båda bara för sidor lästa ur bild:**
 
@@ -324,8 +327,11 @@ facitlinje med ett annat namn (47,9 %) och 17,3 % där facit inte har något rö
   facit. Det är vanliga fel, inte en ny felklass: en ledning som läses en bit förbi facit, och en avkortad
   etikett (`S2-P5-1`) på tunna grå linjer.
 
-**Oförändrat:** vektorläsningen. Golden-testerna och vektorkorpusen är identiska, och båda ändringarna gäller
-bara sidor med `read_as == "raster"`.
+**Oförändrat:** vektorläsningen. Båda ändringarna gäller bara sidor med `read_as == "raster"`, och golden-testerna
+är identiska. Vektorkorpusen läser alla 15 blad precis som main gör.
+
+Baslinjen för A0111 var äldre än main: där stod 79,98 % rätt, medan main läser 80,24 %. Det kommer av en tidigare
+ändring. Baslinjen är nu uppdaterad, och varje blad har fått sin andel utanför facit.
 
 **Kända begränsningar (kvar till nästa steg i C2):**
 - Mer än hälften av läsningens meter ligger på ett rör som facit kallar något annat, med fel DN eller fel
