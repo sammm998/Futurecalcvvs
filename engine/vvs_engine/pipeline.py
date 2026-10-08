@@ -2505,6 +2505,15 @@ def _generalize_families(page: RawPage, pipe_families: dict, graphs: dict, never
     return pipe_families, graphs
 
 
+def _names_a_fitting(name: str, legend) -> bool:
+    """Whether a written label names a fitting rather than a run: the sheet's own list calls it one, or it is a
+    valve's tag (`AV201-40`) by the rule the reading keeps for those."""
+    if legend is not None and legend.names_a_component(name):
+        return True
+    tokens = [t for t in name.split("/")[0].split("-") if t]
+    return _is_an_apparatus_tag(SimpleNamespace(tokens=tokens), legend)
+
+
 def _text_layer_pipe_names(pa: PageAnalysis) -> dict[str, list]:
     """{designation: [rect, ...]} for every pipe designation the page writes as text; empty without a text layer."""
     from types import SimpleNamespace
@@ -2535,14 +2544,29 @@ def reading_coverage(pa: PageAnalysis) -> dict[str, Any]:
     A reading that accepted no pipe geometry at all has nothing left unowned, and every ratio built on its own
     families is then vacuously perfect - which is exactly the case that needs to be visible.
     """
-    named = {(d.text or "").strip().upper() for d in pa.designations
-             if pa.legend.names_a_pipe(d) and (d.text or "").upper() not in pa.legend.components()}
-    named.discard("")
+    # A fitting the sheet writes - a valve, a floor drain - is counted, not measured. It stands in the same blocks
+    # as the pipes' names and often in their shape (`AV201-40`), and a share taken over everything written counted
+    # every valve as a pipe the reading had missed: on one sheet half its "missed pipes" were its valves. What the
+    # sheet's own list calls a fitting, and a valve's tag by the rule the reading already keeps for those, is
+    # listed apart with how many times it is written.
+    fittings: dict[str, list] = defaultdict(list)
+    named = set()
+    for d in pa.designations:
+        text = (d.text or "").strip().upper()
+        if not text:
+            continue
+        if _names_a_fitting(text, pa.legend):
+            if not pa.legend.holds(d.bbox):          # the list's own row explains the code; it is no fitting
+                fittings[text].append([round(v, 1) for v in d.bbox])
+        elif pa.legend.names_a_pipe(d) and text not in pa.legend.components():
+            named.add(text)
     # A sheet whose lettering is text says itself which pipes it names: every designation it writes, the split form
     # (code over a bare dimension) joined. That list, not the host's own parse of the lettering, is what the share
     # is taken over: the host's parse counts fire classes and fittings (EI60, TV102) and the split form unjoined.
     places = _text_layer_pipe_names(pa)
     if places:
+        for name in [n for n in places if _names_a_fitting(n, pa.legend)]:
+            places.pop(name)
         named = set(places)
     measured = {q["designation"].upper() for q in pa.quantities if (q.get("confirmed_total_m") or 0) > 0}
 
@@ -2580,6 +2604,8 @@ def reading_coverage(pa: PageAnalysis) -> dict[str, Any]:
         "scale_settled": bool(pa.scale and pa.scale.state in SETTLED_SCALE and pa.scale.meters_per_pt),
         "scale_reason": (pa.scale.reason if pa.scale else None),
     }
+    if fittings:
+        out["components"] = [{"name": n, "count": len(r), "rects": r[:6]} for n, r in sorted(fittings.items())][:60]
     # Someone else's marks on the sheet, and how far they ran. A page that arrives already measured by hand
     # carries the answer drawn on top of the drawing; the reading takes that ink off before it reads, and says
     # here that it did, so nobody has to wonder whether a number came from the drawing or from the markup.
