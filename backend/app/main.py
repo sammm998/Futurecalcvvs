@@ -372,7 +372,8 @@ def delete_project(project_id: str, user: User = Depends(current_user), db: Sess
     for d in p.drawings:
         storage.delete_prefix(f"results/{d.id}")
         storage.delete_prefix(f"drawings/{d.id}")
-    abt_api.forget_project(db, p.id)
+    from .purge import purge_project
+    purge_project(db, p)
     db.delete(p); db.commit()
     return {"ok": True}
 
@@ -497,7 +498,8 @@ def drawing_page_image(drawing_id: str, page: int = 0, x0: float = 0, y0: float 
 def delete_drawing(drawing_id: str, user: User = Depends(current_user), db: Session = Depends(get_db)):
     d = _drawing(db, user, drawing_id)
     storage.delete_prefix(f"results/{d.id}"); storage.delete_prefix(f"drawings/{d.id}")
-    abt_api.forget_drawing(db, d.id)
+    from .purge import purge_drawing
+    purge_drawing(db, d)
     db.delete(d); db.commit()
     return {"ok": True}
 
