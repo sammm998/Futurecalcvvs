@@ -408,4 +408,5 @@ export const projekt: Record<string, string> = {
   "alla rum": "all rooms",
   "t.ex. eget utfall, projekt och år": "e.g. own outcome, project and year",
   "Krav": "Requirements",
+  "{0} står vid koden {1} och räknas en gång": "{0} stand by the code {1} and are counted once",
 };

@@ -288,8 +288,9 @@ Handling D har inga rumsetiketter, eftersom dess planer saknar A-underlag med ru
   bakom rör. Varje variant namnges för sig, och liknande grupper föreslås inte än.
 - Många grupper är annat än inredning: dörrar, fönster, pelare, träd, rörsymboler. De räknas inte om de inte
   namnges, men de gör galleriet långt.
-- Enheter ur koder och symboler räknas var för sig. En tvättmaskin som har både koden TM och ett block räknas två
-  gånger om båda namnges.
+- Enheter ur koder och symboler räknas var för sig i flikarna Enheter och Symboler. I schablonunderlaget räknas
+  ett exemplar som står där dess kod är skriven (koden själv, eller namnet koden har) som en enhet, inte två.
+  Galleriet visar hur många exemplar det gäller.
 - Symbolerna kopplas inte till rum än, eftersom rummens polygoner saknas.
 - Antalen är inte kontrollerade mot en handräkning.
 
@@ -321,6 +322,8 @@ hittas på. Biblioteket är tomt tills användaren lägger in sina egna.
   - per projekt, och en rad kan ha ett eget;
   - båda syns i raden och i exporten.
 - En artikel ger raden materialbokens nettopris (pris × (1 − rabatt)) och en kostnad. Timmarna blir en egen rad.
+- En symbol som står där dess kod är skriven är samma enhet som koden. Den räknas en gång när både koden och
+  symbolen hör till ett nyckeltals underlag, och raden säger hur många det gällde.
 - Export till CSV med källtyp SCHABLON och nyckeltalets källa.
 - Det som lagras per projekt är bara besluten: valda nyckeltal, påslaget och radernas egna påslag
   (`project_estimates`).

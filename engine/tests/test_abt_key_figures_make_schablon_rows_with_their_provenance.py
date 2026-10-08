@@ -8,6 +8,7 @@ Värdena här är påhittade för testet och står inte för något. Proven hål
 - riskpåslaget gäller projektet, en rad kan ha ett eget, och båda syns i raden och i exporten
 - en artikel ur materialboken ger raden ett nettopris och en kostnad
 - biblioteket är företagets: någon annan ser det inte och kan inte använda det
+- en symbol som står där dess kod är skriven är samma enhet som koden, och räknas en gång
 """
 import os
 import sys
@@ -116,3 +117,37 @@ def test_a_key_figure_per_unit_needs_its_unit_and_a_measure_it_knows(client):
     bad = client.post("/api/key-figures", json={"name": "Okänt mått", "unit_code": "TM",
                                                 "outputs": [{"system": "KV", "measure": "WEIGHT", "value": 1}]}, headers=H)
     assert bad.status_code == 422
+
+
+def test_a_symbol_drawn_where_its_code_is_written_is_counted_once(client, tmp_path):
+    """A box drawn three times with its code TM in it: three codes and three symbols, named alike - three units."""
+    from test_abt_rooms_are_read_from_their_labels import GREY, _floor, _label
+    from test_abt_symbols_are_repeated_blocks_named_by_the_legend_or_the_person import BOX, BOWL, _draw
+    tok = client.post("/api/auth/register", json={"email": "dubbel@example.com", "password": "hemligt1"}).json()["access_token"]
+    H = {"Authorization": f"Bearer {tok}"}
+    p = client.post("/api/projects", json={"name": "Dubbelt", "contract_form": "ABT06"}, headers=H).json()
+    path = str(tmp_path / "kod-och-symbol.pdf")
+    doc = pymupdf.open()
+    page = doc.new_page(width=842, height=595)
+    _floor(page, "3")
+    for x in (140, 260, 380):
+        _draw(page, BOX, x, 470)
+        _draw(page, BOWL, x, 470)
+        _label(page, x - 5, 500, ["TM"], color=GREY)
+    doc.save(path)
+    doc.close()
+    with open(path, "rb") as fh:
+        d = client.post(f"/api/projects/{p['id']}/drawings", files={"file": ("A-plan.pdf", fh, "application/pdf")}, headers=H).json()
+    assert client.post(f"/api/drawings/{d['id']}/rooms", headers=H).status_code == 200
+    units = {u["code"]: u for u in client.get(f"/api/projects/{p['id']}/units", headers=H).json()["units"]}
+    assert units["TM"]["count"] == 3
+    box = next(s for s in client.get(f"/api/projects/{p['id']}/symbols", headers=H).json()["symbols"] if s["count"] == 3)
+    named = client.put(f"/api/projects/{p['id']}/symbols/names", json={"id": box["id"], "name": "TM"}, headers=H).json()
+    tm = next(s for s in named["symbols"] if s["id"] == box["id"])
+    assert tm["beside_code"] == {"code": "TM", "count": 3}, "each copy has its code written by it"
+    kf = client.post("/api/key-figures", json={"name": "Testtal TM", "basis": "per_enhet", "unit_code": "TM",
+                                               "outputs": [{"system": "KV", "measure": "LENGTH", "value": 1}]}, headers=H).json()
+    client.patch(f"/api/key-figures/{kf['id']}", json={"status": "bekraftad"}, headers=H)
+    rows = client.put(f"/api/projects/{p['id']}/estimate", json={"key_figures": [kf["id"]]}, headers=H).json()["rows"]
+    assert rows[0]["basis_qty"] == 3, rows[0]["basis_from"]
+    assert any("räknas inte två gånger" in w for w in rows[0]["basis_from"])

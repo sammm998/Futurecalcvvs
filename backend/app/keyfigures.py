@@ -197,10 +197,14 @@ def _basis_of(kf: dict, bases: dict) -> tuple[float, str, list[str]]:
         if _same(u["code"], code) or _same(u.get("name"), code):
             qty += u["count"]
             why.append(f"{u['count']} st {u['code']} (koder)")
+    coded = qty > 0
     for s in bases["symbols"]:
         if _same(s["name"], code):
-            qty += s["count"]
-            why.append(f"{s['count']} st {s['name']} (symboler)")
+            # a copy drawn where its code is written is the unit the code already counted
+            twice = (s.get("beside_code") or {}).get("count", 0) if coded else 0
+            qty += s["count"] - twice
+            why.append(f"{s['count'] - twice} st {s['name']} (symboler)" +
+                       (f", {twice} till vid en kod räknas inte två gånger" if twice else ""))
     for a in bases["apartments"]:
         if _same(a["type"], code):
             qty += a["count"]

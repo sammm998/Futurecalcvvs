@@ -527,6 +527,42 @@ def _picture(d: Drawing, page, shown, sid: str, bbox: list) -> bytes | None:
     return png
 
 
+BESIDE = 0.75           # of a symbol's size: a code written this close to a copy is the code of that copy
+
+
+def _beside_codes(db: Session, project: Project, counted_pages: dict) -> dict[str, dict]:
+    """The copies of each named symbol that stand where a code for the same thing is written - the code itself,
+    or the name the code goes by: one unit drawn and labelled, not two. Each code stands by one copy at most."""
+    code_names = {u["code"]: u.get("name") or "" for u in project_units(db, project)["units"]}
+    ids = [d.id for d in project.drawings] or [""]
+    codes: dict[tuple, list[list]] = {}
+    for m in db.query(Markup).filter(Markup.drawing_id.in_(ids), Markup.layer == UNITS_LAYER, Markup.deleted.is_(False)).all():
+        if (m.props or {}).get("read_by") != UNITS_BY or m.status == "avvisad" or not m.points:
+            continue
+        if counted_pages.get((m.drawing_id, m.page), True):
+            codes.setdefault((m.drawing_id, m.page), []).append([m.points[0][0], m.points[0][1], m.designation or "", False])
+    out: dict[str, dict] = {}
+    same = lambda a, b: bool(a) and bool(b) and a.strip().casefold() == b.strip().casefold()  # noqa: E731
+    for m in db.query(Markup).filter(Markup.drawing_id.in_(ids), Markup.layer == SYMBOLS_LAYER, Markup.deleted.is_(False)).all():
+        props = m.props or {}
+        if props.get("read_by") != SYMBOLS_BY or m.status == "avvisad" or not props.get("bbox"):
+            continue
+        if not counted_pages.get((m.drawing_id, m.page), True):
+            continue
+        x0, y0, x1, y1 = props["bbox"]
+        reach = BESIDE * max(x1 - x0, y1 - y0)
+        cx, cy = (x0 + x1) / 2, (y0 + y1) / 2
+        near = [c for c in codes.get((m.drawing_id, m.page), []) if not c[3]
+                and (same(c[2], m.designation) or same(code_names.get(c[2]), m.designation))
+                and x0 - reach <= c[0] <= x1 + reach and y0 - reach <= c[1] <= y1 + reach]
+        if near:
+            c = min(near, key=lambda c: (c[0] - cx) ** 2 + (c[1] - cy) ** 2)
+            c[3] = True
+            e = out.setdefault(props.get("symbol") or "", {"code": c[2], "count": 0})
+            e["count"] += 1
+    return out
+
+
 def project_symbols(db: Session, project: Project) -> dict[str, Any]:
     """Every symbol the readings found in the project. A named one is counted from its markers - what was rejected
     or removed in the takeoff is not - on the pages that are counted; one without a name is shown with how many
@@ -577,6 +613,9 @@ def project_symbols(db: Session, project: Project) -> dict[str, Any]:
                      "not_counted": not_counted.get(sid, 0) if name else extra})
     from vvs_engine.abt.symbols import MIN_REPEAT
     rows = [r for r in rows if r["counted"] or r["count"] + r["not_counted"] >= MIN_REPEAT]
+    beside = _beside_codes(db, project, counted_pages) if any(r["counted"] for r in rows) else {}
+    for r in rows:
+        r["beside_code"] = beside.get(r["id"]) if r["counted"] else None
     rows.sort(key=lambda r: (not r["counted"], -r["count"], r["id"]))
     named = [r for r in rows if r["counted"]]
     return {"project_id": project.id, "symbols": rows, "layer": SYMBOLS_LAYER,

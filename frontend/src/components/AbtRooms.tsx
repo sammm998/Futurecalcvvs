@@ -283,6 +283,7 @@ export function AbtSymbols({ project }: { project: any }) {
         style={{ width: "100%", minWidth: 0, boxSizing: "border-box" }}
         onChange={(e) => setNames({ ...names, [r.id]: e.target.value })} />
       {r.name_source && <span className="muted small">{tr(SYMBOL_SOURCE[r.name_source] ?? r.name_source)}</span>}
+      {r.beside_code && <span className="muted small">{trf("{0} står vid koden {1} och räknas en gång", r.beside_code.count, r.beside_code.code)}</span>}
       {names[r.id] !== undefined && <button className="small" onClick={() => save(r.id)}>{tr("Spara")}</button>}
     </div>
   );
