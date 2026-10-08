@@ -10,7 +10,7 @@ import {
   DURATION_MEDIUM, DURATION_SLOW, EASE_PRIMARY, EASE_REVEAL, isCoarse, prefersStill, scrollTo, useScene,
 } from "./motion";
 
-/* FutureCalcs rörelsedelar.
+/* Radiator VVS:s rörelsedelar.
  *
  * Varje del gör en sak och städar efter sig. Ingen av dem sätter React-state under rullning; det som rör sig
  * gör det genom gsap på en ref. Den som bett om mindre rörelse får innehållet direkt, utan resa.

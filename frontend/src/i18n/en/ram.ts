@@ -41,8 +41,8 @@ export const ram: Record<string, string> = {
 
   // --- menyn och vägen in -------------------------------------------------------------------------------
   "Direkt in": "Straight in",
-  "FutureCalc / Meny": "FutureCalc / Menu",
-  "FutureCalc, till startsidan": "FutureCalc, to the start page",
+  "Radiator VVS / Meny": "Radiator VVS / Menu",
+  "Radiator VVS, till startsidan": "Radiator VVS, to the start page",
   "Till startsidan": "To the start page",
   "På den här sidan": "On this page",
   "Kom igång": "Get started",
@@ -63,8 +63,7 @@ export const ram: Record<string, string> = {
   "Ladda om sidan": "Reload the page",
 
   // --- oöversatt med avsikt: märket och adressen är desamma på båda språken ------------------------------
-  "FUTURECALC®": "FUTURECALC®",
-  "FutureCalc Academy": "FutureCalc Academy",
-  "FutureCalc® / VPR System / 2026": "FutureCalc® / VPR System / 2026",
-  "hej@futurecalc.se": "hej@futurecalc.se",
+  "RADIATOR VVS": "RADIATOR VVS",
+  "Radiator VVS Academy": "Radiator VVS Academy",
+  "Radiator VVS / VPR System / 2026": "Radiator VVS / VPR System / 2026",
 };
