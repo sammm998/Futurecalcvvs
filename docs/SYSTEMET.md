@@ -110,6 +110,27 @@ Tre ritkonventioner som läsningen läser som geometri, inte som antaganden (`pi
   redovisas som `double_line_m` på raden och i exporten. Avståndet följer dimensionen av ett skäl: ett DN16-rör
   är en punkt brett i 1:50 och kan inte ritas som två kanter, så två DN16-linjer några punkter isär är två
   kopplingsledningar i en bunt - och båda räknas. Utan känd dimension eller skala viks ingenting.
+* **Ett rör ritat som sin kontur** är också ett rör. På ett sektionsblad i 1:20 ritas rören i skala, ofta i ett
+  enda streck: längs ena kanten, runt änden och tillbaka längs den andra. Tre saker gäller då:
+  * Hänvisningslinjen slutar mitt i röret, på centrumlinjen, och rör ingen kant. En ände mellan två långa,
+    parallella kanter av *samma* streck, ett rörs bredd isär och utan något närmare på någon sida, har hittat sitt
+    rör (kontakten `between_edges`, gränserna `semantics.attachment.EDGES_APART_MIN/MAX` och `EDGES_PARALLEL`).
+    Mellan två olika streck - två rör bredvid varandra - har linjen inte sagt vilket, och då väljs inget.
+  * Ett rör vars två kanter är samma streck mäts en gång (`own_second_edge_pt`): det som går bredvid sträckan
+    själv på rörets avstånd går dit parvis, och hälften redovisas som `double_line_m`.
+  * Ett namn som går vidare längs sammanhängande ritning går från kontur till kontur och från linje till linje.
+    På ett sektionsblad ritat med en penna hänger golvet, en pelare och en tanks mantel ihop med rören, och utan
+    den regeln mättes golvet som kallvatten. Regeln gäller bara en penna där mer än hälften av det etiketterna
+    redan namngett är konturer (`OUTLINE_PEN_SHARE`). På en planritning är rören linjer, och ett streck som går
+    ut till en armatur och tillbaka bredvid sig själv är ett rör: där tog regeln 43 m från ett blad.
+
+  Läsningens egna hänvisningslinjer blir aldrig rör i grafen. På ett blad som skriver med samma penna som det
+  ritar med tog den andra läsaren dem för rörsträckor, och när grafen delades vid ett markeringsstreck samlades
+  pennan in igen med dem: varje hänvisningslinje hängde då ihop med röret den pekar på och mättes som det röret.
+  Undantaget gäller bara hänvisningslinjerna i den läsning som behölls. Bokstäver och understrykningar räknas inte
+  dit: på ett referensblad tog textläsningen streck i en streckad rörlinje för bindestreck, och de kom bara
+  tillbaka genom de två vägarna. Och det gäller inte en sida läst ur bild: där är en spårad hänvisningslinje en
+  del av skelettet, och den kan fortsätta in i röret den pekar på.
 
 ## 3. Vilka AI-modeller som används, och exakt hur
 

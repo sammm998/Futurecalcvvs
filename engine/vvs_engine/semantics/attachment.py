@@ -35,6 +35,9 @@ MARKER_MAX = 3.0          # pt: closed end markers (dots, small circles) of pipe
 DASH_GAP_MAX = 8.0        # pt: the widest drawn gap in a dashed run a leader end may land in
 NEAR_MISS = 6.0           # pt: how far short of its pipe a leader may stop and still be pointing at it
 NEAR_ONE = 2.5            # pt: ...and how close the candidates must lie to each other to be one place
+EDGES_APART_MIN = 1.5     # pt: a pipe's two drawn edges never lie closer than the pen allows
+EDGES_APART_MAX = 8.0     # pt: ...nor further apart than a pipe's outer diameter is ever drawn
+EDGES_PARALLEL = 2.0      # degrees: the two edges of one pipe run the same way
 SYMBOL_EDGE_TOL = 0.2    # PDF points: export rounding at a symbol's actual contour
 
 
@@ -379,6 +382,63 @@ def _near_miss_hits(pt: tuple[float, float], gidx: "GeometryIndex", pipe_familie
     return sorted(((p, k, d) for p, k, d, _ in near), key=lambda t: (t[0].pid, t[1]))
 
 
+def _between_edges_hits(pt: tuple[float, float], gidx: "GeometryIndex", pipe_families: set[str] | None,
+                        skip: set[str]) -> list[tuple[RawPath, int, float]]:
+    """The pipe a leader ends inside: a run drawn as its two edges, with the leader stopping between them.
+
+    On a sheet drawn to scale a pipe is drawn as its outline, and the leader points into its middle: it stops on
+    the centre line, a couple of points from either edge, and touches neither. The near-miss reach refuses that
+    on purpose - two things lie within reach, one on each side - and two single-line runs drawn side by side look
+    the same from the leader's end. What tells them apart is the drawing itself: a pipe's outline is one stroke,
+    its two edges joined round its ends, and two runs are two. So only an end between two long parallel edges of
+    ONE drawn path, a pipe's width apart and nothing nearer on either side, has found its pipe; the nearer edge is
+    the contact, and the measurement gives a double line's second edge's metres to the first.
+
+    Runs only once the sheet's pipe pens are known: while they are still being elected, a wall drawn as two lines
+    would look the same."""
+    if not pipe_families:
+        return []
+    reach = _R("semantics.attachment.EDGES_APART_MAX", EDGES_APART_MAX)
+    near: list[tuple] = []      # path, segment, distance, direction, offset across it, where along it, its length
+    for i in gidx.idx.query_point(pt[0], pt[1], reach + 1.0):
+        p, k, sg = gidx.items[i]
+        if p.pid in skip or family_of(p) not in pipe_families:
+            continue
+        d, t = point_seg_distance(pt[0], pt[1], sg)
+        if d > reach or sg.length < 1e-6:
+            continue
+        ang = math.atan2(sg.y1 - sg.y0, sg.x1 - sg.x0) % math.pi
+        nx, ny = -math.sin(ang), math.cos(ang)
+        near.append((p, k, d, ang, (pt[0] - sg.x0) * nx + (pt[1] - sg.y0) * ny, t, sg.length))
+    if not near:
+        return []
+    near.sort(key=lambda c: c[2])
+    first = near[0]
+    # the nearest thing on the other side of the end, measured across the first edge's direction
+    nx, ny = -math.sin(first[3]), math.cos(first[3])
+    side = 1.0 if first[4] > 0 else -1.0
+    opposite = None
+    for c in near[1:]:
+        sg = c[0].segs[c[1]]
+        if ((pt[0] - sg.x0) * nx + (pt[1] - sg.y0) * ny) * side < 0:
+            opposite = c
+            break
+    if opposite is None:
+        return []
+    a, b = first, opposite
+    turn = abs(a[3] - b[3])
+    if min(turn, math.pi - turn) > math.radians(_R("semantics.attachment.EDGES_PARALLEL", EDGES_PARALLEL)):
+        return []                          # not two edges of one run: they do not run the same way
+    apart = a[2] + b[2]
+    if not (_R("semantics.attachment.EDGES_APART_MIN", EDGES_APART_MIN) <= apart <= reach):
+        return []
+    if a[0].pid != b[0].pid:
+        return []                          # two drawn paths: two runs side by side, and the sheet has not said which
+    if not all(0.0 < c[5] < 1.0 and c[6] >= _R("semantics.attachment.BUNDLE_MIN_RUN", BUNDLE_MIN_RUN) for c in (a, b)):
+        return []                          # an end, a cap or a tick is not an edge running past the leader's end
+    return [(a[0], a[1], a[2])]
+
+
 def _paired_symbol_ports(points, gidx, pipe_families, skip):
     """Two explicit circles terminating two parallel, spatially distinct pipes.
 
@@ -626,6 +686,18 @@ def leader_contacts(ld: Leader, gidx: GeometryIndex, pipe_families: set[str] | N
                     continue
                 seen.add((q.pid, kk))
                 out.append(Contact(point=pt, kind="near_miss", family=family_of(q), pid=q.pid, seg_index=kk,
+                                   distance=dd, mark_id=mid))
+    if not out:
+        # ...or it stopped inside the pipe it points at, between the two edges a pipe drawn to scale has.
+        for (pt, kind, mid) in contact_points(ld):
+            for q, kk, dd in _between_edges_hits(pt, gidx, pipe_families, skip):
+                if (q.pid, kk) in seen:
+                    continue
+                seen.add((q.pid, kk))
+                sg = q.segs[kk]           # seeded on the edge itself, not in the middle of the pipe
+                _, t = point_seg_distance(pt[0], pt[1], sg)
+                out.append(Contact(point=(sg.x0 + t * (sg.x1 - sg.x0), sg.y0 + t * (sg.y1 - sg.y0)),
+                                   kind="between_edges", family=family_of(q), pid=q.pid, seg_index=kk,
                                    distance=dd, mark_id=mid))
     out.sort(key=lambda c: (c.pid, c.seg_index))
     return out

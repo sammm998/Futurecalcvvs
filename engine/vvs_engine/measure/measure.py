@@ -22,6 +22,7 @@ DOUBLE_LINE_FACTOR = 1.6    # the edges lie the pipe's outer diameter apart, at 
 DOUBLE_LINE_SHARE = 0.6     # share of the shorter run that has to lie alongside the longer
 DOUBLE_LINE_DRAWABLE = 2.5  # pt: a pipe narrower than this on the sheet (0.9 mm) is never drawn as two lines
 DUPLICATE_LINE_MAX = 0.75   # pt: lines this close are one line drawn twice
+EDGES_PARALLEL = 2.0        # degrees: the two edges of one pipe drawn in one stroke run the same way
 TWIN_REASON = "second_edge_of_a_double_line"
 # Outer diameter in mm for a nominal size - the distance the two drawn edges of a double-line pipe lie apart.
 # A DN16 pipe is one point wide at 1:50: it cannot be drawn as two lines, and two DN16 lines a few points
@@ -168,6 +169,89 @@ def twin_overlap_pt(pipes: list[PhysicalPipe], mpp: float | None = None) -> dict
     return out
 
 
+def own_second_edge_pt(p: PhysicalPipe, mpp: float | None) -> float:
+    """Hur många punkter av en sträcka som är dess egen andra kant.
+
+    Ett rör ritat i skala ritas som sina två kanter, och ofta i ett enda streck: längs den ena kanten, runt
+    änden och tillbaka längs den andra. Då är båda kanterna samma sträcka, och jämförelsen mellan sträckor
+    (twin_overlap_pt) ser dem aldrig - ett sådant rör mättes två gånger. Det som går bredvid sträckan själv, på
+    det avstånd ett rör av den storleken har mellan sina kanter, går bredvid parvis: hälften är den andra
+    kanten. En sträcka som inte vänder tillbaka längs sig själv har ingen sådan del, och mäts som förut."""
+    dmax = double_line_gap(p.identity.dn, mpp)
+    if dmax is None:
+        return 0.0
+    segs = _segments(p)
+    if len(segs) < 2:
+        return 0.0
+    cell = max(32.0, 4.0 * dmax)
+
+    def cells(x0, y0, x1, y1):
+        for gx in range(int((min(x0, x1) - dmax) // cell), int((max(x0, x1) + dmax) // cell) + 1):
+            for gy in range(int((min(y0, y1) - dmax) // cell), int((max(y0, y1) + dmax) // cell) + 1):
+                yield gx, gy
+    grid: dict[tuple[int, int], list[int]] = defaultdict(list)
+    for i, sg in enumerate(segs):
+        for c in cells(*sg):
+            grid[c].append(i)
+    beside = 0.0
+    for i, sg in enumerate(segs):
+        near: set[int] = set()
+        for c in cells(*sg):
+            near.update(grid.get(c, ()))
+        near.discard(i)
+        beside += _within_pt(sg, [segs[j] for j in sorted(near)], dmax)
+    return beside / 2.0
+
+
+def _within_pt(seg, others, dmax: float) -> float:
+    """Hur långt av segmentet som har en annan sträcka inom dmax i sidled, just där.
+
+    Två grenar som lämnar samma nod med några graders vinkel ligger intill varandra vid noden och isär längre ner.
+    Bara den del där avståndet verkligen är ett rörs bredd eller mindre går bredvid - inte hela längden för att
+    ena änden råkar ligga nära."""
+    x0, y0, x1, y1 = seg
+    L = math.hypot(x1 - x0, y1 - y0)
+    if L <= 1e-9:
+        return 0.0
+    ux, uy = (x1 - x0) / L, (y1 - y0) / L
+    ang = math.atan2(y1 - y0, x1 - x0)
+    spans: list[tuple[float, float]] = []
+    for ox0, oy0, ox1, oy1 in others:
+        if math.hypot(ox1 - ox0, oy1 - oy0) <= 1e-9:
+            continue
+        da = abs(ang - math.atan2(oy1 - oy0, ox1 - ox0)) % math.pi
+        if min(da, math.pi - da) > math.radians(EDGES_PARALLEL):
+            continue                         # a pipe's two edges run the same way; a branch leaves at an angle
+        t0 = (ox0 - x0) * ux + (oy0 - y0) * uy
+        t1 = (ox1 - x0) * ux + (oy1 - y0) * uy
+        n0 = -(ox0 - x0) * uy + (oy0 - y0) * ux
+        n1 = -(ox1 - x0) * uy + (oy1 - y0) * ux
+        if abs(t1 - t0) <= 1e-9:
+            continue
+        lo, hi = min(t0, t1), max(t0, t1)
+        k = (n1 - n0) / (t1 - t0)            # how the distance across changes along the segment
+        if abs(k) <= 1e-12:
+            if abs(n0) > dmax:
+                continue
+        else:
+            ta, tb = t0 + (-dmax - n0) / k, t0 + (dmax - n0) / k
+            lo, hi = max(lo, min(ta, tb)), min(hi, max(ta, tb))
+        lo, hi = max(0.0, lo), min(L, hi)
+        if hi - lo > 1e-9:
+            spans.append((lo, hi))
+    if not spans:
+        return 0.0
+    spans.sort()
+    total, cur_lo, cur_hi = 0.0, spans[0][0], spans[0][1]
+    for lo, hi in spans[1:]:
+        if lo > cur_hi:
+            total += cur_hi - cur_lo
+            cur_lo, cur_hi = lo, hi
+        else:
+            cur_hi = max(cur_hi, hi)
+    return total + (cur_hi - cur_lo)
+
+
 @dataclass
 class PipeMeasure:
     pipe: PhysicalPipe
@@ -182,6 +266,7 @@ class PipeMeasure:
     hatched_m: float | None = None      # part of the horizontal length running inside a hatched area
     twin_of: str | None = None          # the run this one is the second drawn edge of: its metres are counted there
     twin_pdf_units: float = 0.0
+    own_edge_pdf_units: float = 0.0     # the run's own second edge, drawn in the same stroke: counted once
 
 
 # Vad bladet självt har avgjort om sin storlek. En meter mätt under något annat är ett förslag: den redovisas
@@ -229,10 +314,17 @@ def measure_pipes(own: OwnershipResult, scale: ScaleResult, elevations: dict[str
             # verkligen går bredvid. Det som går sin egen väg är ett eget rör och stannar i mängden.
             twin_pu = min(hpu, twin[1] * factor)
             hpu -= twin_pu
+        own_pu = 0.0
+        if twin is None:
+            # ...och ett rör vars två kanter är samma streck lämnar den ena kantens meter till den andra.
+            own_pu = min(hpu, own_second_edge_pt(p, mpp) * factor)
+            hpu -= own_pu
         hm = hpu * mpp if mpp is not None else None
         reasons = []
         if twin_of is not None:
             reasons.append(f"{TWIN_REASON}:{twin_of}")
+        elif own_pu > 0.0:
+            reasons.append(f"{TWIN_REASON}:{p.physical_pipe_id}")
         if mpp is None:
             reasons.append("no_verified_scale")
         elif scale_note:
@@ -254,7 +346,7 @@ def measure_pipes(own: OwnershipResult, scale: ScaleResult, elevations: dict[str
         out.append(PipeMeasure(pipe=p, horizontal_pdf_units=hpu, horizontal_m=hm, vertical_m=vert, vertical_evidence=vev,
                                total_m=total, state=state, reasons=reasons, hatched_pdf_units=hpt,
                                hatched_m=(hpt * mpp if mpp is not None else None),
-                               twin_of=twin_of, twin_pdf_units=twin_pu))
+                               twin_of=twin_of, twin_pdf_units=twin_pu, own_edge_pdf_units=own_pu))
     return out
 
 
@@ -307,6 +399,7 @@ def aggregate(measures: list[PipeMeasure], ambiguous_pt: dict[str, float], mpp: 
             r["pipe_ids"].append(m.pipe.physical_pipe_id)
             continue
         r["physical_pipe_count"] += 1
+        r["double_line_m"] += getattr(m, "own_edge_pdf_units", 0.0) * mpp if mpp else 0.0
         if m.horizontal_m is not None and DECLARED_REASON in (m.pipe.evidence or []):
             r["declared_m"] += m.horizontal_m       # named by the sheet's written rule, not by a label
         r["horizontal_pdf_units"] += m.horizontal_pdf_units
