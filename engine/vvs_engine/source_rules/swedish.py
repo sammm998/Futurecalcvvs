@@ -8,6 +8,8 @@ import json
 from pathlib import Path
 import re
 
+from .. import disciplines as _disciplines
+
 DATA = Path(__file__).resolve().parents[3] / 'reference_sources/swedish-vvs-drawings-main/data'
 
 
@@ -62,7 +64,8 @@ def label_facts(label, legend=None):
                        'material': None, 'jointing': None, 'insulation_specification': None,
                        'unresolved_middle_fields': d.get('middle', []),
                        'components': [{'code': c, 'lookup': lookup(re.sub(r'\d+$', '', c), legend)} for c in d.get('components', [])],
-                       'level_can_indicate_flow': code.startswith(('S', 'D')) and code != 'SL'})
+                       'level_can_indicate_flow': code.startswith(tuple(_disciplines.value('systems.GRAVITY_PREFIXES', ('S', 'D'))))
+                       and code not in tuple(_disciplines.value('systems.NOT_GRAVITY', ('SL',)))})
     notation = label.get('stroke_notation')
     return {'designations': result, 'vertical_notation': vertical_notation(
         bool(notation and notation.get('over')), bool(notation and notation.get('under')),

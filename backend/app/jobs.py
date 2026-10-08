@@ -316,7 +316,7 @@ def run_job(job_id: str) -> None:
                                 second_reader_enabled=second_reader_state()[0], known_families=known, known_legend=vocab,
                                 given_scale=by_hand, source_mode="combined", native_detection=True,
                                 native_cache_dir=storage.path(f"cache/native/{drawing.project_id}"),
-                                source_style="auto", ai_model=ai_model)
+                                source_style="auto", ai_model=ai_model, discipline=job.discipline or "")
             # Ett blad som låg på sidan lästes vridet upprätt, och dess koordinater gäller det vridna bladet. Ritningen
             # som visas byts mot den vridna - samma innehåll, bara /Rotate ändrad - så att markeringarna hamnar rätt.
             _keep_upright(summary, out_dir, pdf_path)

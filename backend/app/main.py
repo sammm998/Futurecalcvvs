@@ -240,6 +240,32 @@ def me(user: User = Depends(current_user)):
 class ProjectIn(BaseModel):
     name: str
     description: str = ""
+    # AB 04 och VVS är förval: ett projekt skapat utan val är det som alla projekt varit (docs/abt06-plan.md)
+    contract_form: str = "AB04"
+    discipline: str = "vvs"
+
+
+CONTRACT_FORMS = ("AB04", "ABT06")
+
+
+def _checked_modes(contract_form: str | None, discipline: str | None) -> tuple[str | None, str | None]:
+    """The project's modes as stored, or a 422 that says which choice is not available."""
+    from vvs_engine import disciplines as disc
+    cf = None if contract_form is None else (contract_form or "").strip().upper()
+    if cf is not None and cf not in CONTRACT_FORMS:
+        raise HTTPException(422, "Okänd entreprenadform. Välj AB 04 eller ABT 06.")
+    d = None if discipline is None else disc.normalize(discipline)
+    if d is not None and not disc.known(d):
+        raise HTTPException(422, "Okänd disciplin.")
+    if d is not None and not disc.selectable(d):
+        raise HTTPException(422, f"{disc.get(d).name} är inte byggd än och kan inte väljas.")
+    return cf, d
+
+
+class ProjectFormIn(BaseModel):
+    contract_form: str | None = None
+    discipline: str | None = None
+    confirm: bool = False
 
 
 def _project(db: Session, user: User, project_id: str) -> Project:
@@ -264,13 +290,17 @@ def _job(db: Session, user: User, job_id: str) -> AnalysisJob:
 
 
 def _proj_out(p: Project):
-    return {"id": p.id, "name": p.name, "description": p.description, "created_at": p.created_at, "n_drawings": len(p.drawings)}
+    from vvs_engine import disciplines as disc
+    return {"id": p.id, "name": p.name, "description": p.description, "created_at": p.created_at, "n_drawings": len(p.drawings),
+            # tomt är vad projektet var innan valen fanns: AB 04 och VVS
+            "contract_form": p.contract_form or "AB04", "discipline": disc.normalize(p.discipline)}
 
 
 def _drawing_out(d: Drawing):
     latest = sorted(d.jobs, key=lambda j: j.created_at)[-1] if d.jobs else None
     return {"id": d.id, "project_id": d.project_id, "filename": d.filename, "size_bytes": d.size_bytes, "n_pages": d.n_pages,
-            "sha256": d.sha256, "created_at": d.created_at, "latest_job": _job_out(latest) if latest else None}
+            "sha256": d.sha256, "created_at": d.created_at, "latest_job": _job_out(latest) if latest else None,
+            "discipline": d.discipline or "", "flow": d.flow or ""}
 
 
 def _job_out(j: AnalysisJob):
@@ -293,8 +323,39 @@ def list_projects(user: User = Depends(current_user), db: Session = Depends(get_
 
 @app.post("/api/projects")
 def create_project(body: ProjectIn, user: User = Depends(current_user), db: Session = Depends(get_db)):
-    p = Project(owner_id=user.id, name=body.name.strip() or "Namnlöst projekt", description=body.description)
+    contract_form, discipline = _checked_modes(body.contract_form, body.discipline)
+    p = Project(owner_id=user.id, name=body.name.strip() or "Namnlöst projekt", description=body.description,
+                contract_form=contract_form, discipline=discipline)
     db.add(p); db.commit()
+    return _proj_out(p)
+
+
+@app.get("/api/disciplines")
+def list_disciplines():
+    """Disciplinerna tjänsten känner, byggda eller inte. Valet visar dem alla och låter de byggda väljas."""
+    from vvs_engine import disciplines as disc
+    return [d.out() for d in disc.registry().values()]
+
+
+@app.patch("/api/projects/{project_id}/form")
+def change_project_form(project_id: str, body: ProjectFormIn, user: User = Depends(current_user), db: Session = Depends(get_db)):
+    """Byt entreprenadform eller disciplin i efterhand.
+
+    Bytet kräver en bekräftelse: det ändrar hur nya blad i projektet läses, och den som byter ska ha sett det
+    sagt. Läsningar som redan är gjorda ändras inte. Bytet skrivs i händelseloggen med vad det var och vad det blev."""
+    p = _project(db, user, project_id)
+    contract_form, discipline = _checked_modes(body.contract_form, body.discipline)
+    before = {"contract_form": p.contract_form or "AB04", "discipline": _proj_out(p)["discipline"]}
+    after = {"contract_form": contract_form or before["contract_form"], "discipline": discipline or before["discipline"]}
+    if after == before:
+        return _proj_out(p)
+    if not body.confirm:
+        raise HTTPException(409, "Bekräfta bytet: det gäller nya läsningar i projektet, gjorda läsningar ändras inte.")
+    p.contract_form, p.discipline = after["contract_form"], after["discipline"]
+    from .db import Event
+    db.add(Event(user_id=user.id, session="server", name="projektlage", path=f"/projects/{p.id}",
+                 meta={"before": before, "after": after}))
+    db.commit()
     return _proj_out(p)
 
 
@@ -319,8 +380,10 @@ MAX_UPLOAD_BYTES = 200 * 1024 * 1024      # samma tak som docker/nginx.conf: cli
 
 
 @app.post("/api/projects/{project_id}/drawings")
-async def upload_drawing(project_id: str, file: UploadFile = File(...), user: User = Depends(current_user), db: Session = Depends(get_db)):
+async def upload_drawing(project_id: str, file: UploadFile = File(...), discipline: str | None = Query(default=None),
+                         user: User = Depends(current_user), db: Session = Depends(get_db)):
     p = _project(db, user, project_id)
+    _, own_discipline = _checked_modes(None, discipline) if discipline else (None, None)
     if not (file.filename or "").lower().endswith(".pdf"):
         raise HTTPException(400, "Endast PDF-filer stöds")
     # Läs in filen bit för bit och sluta vid taket. `file.read()` rakt av drar hela filen in i minnet innan
@@ -359,7 +422,7 @@ async def upload_drawing(project_id: str, file: UploadFile = File(...), user: Us
     if existing is not None:
         return {**_drawing_out(existing), "duplicate": True}
     d = Drawing(project_id=p.id, filename=os.path.basename(file.filename), storage_key="", sha256=digest,
-                size_bytes=len(data), n_pages=n_pages)
+                size_bytes=len(data), n_pages=n_pages, discipline=own_discipline or "")
     db.add(d); db.flush()
     key = f"drawings/{d.id}/{d.filename}"
     import io
@@ -519,7 +582,12 @@ def analyze(drawing_id: str, body: AnalyzeIn | None = None, user: User = Depends
         if ((active.summary or {}).get("given_scale") or None) != given:
             raise HTTPException(409, "Ritningen analyseras redan. Vänta tills den analysen är klar innan skalan ändras.")
         return _job_out(active)
-    j = AnalysisJob(drawing_id=d.id, status="QUEUED", stage="QUEUED", progress=0.0,
+    # the discipline the drawing is read in: its own, else its project's - and only one that is built
+    from vvs_engine import disciplines as disc
+    discipline = disc.normalize(d.discipline or d.project.discipline)
+    if not disc.selectable(discipline):
+        raise HTTPException(409, f"{disc.get(discipline).name if disc.known(discipline) else discipline} är inte byggd än.")
+    j = AnalysisJob(drawing_id=d.id, status="QUEUED", stage="QUEUED", progress=0.0, discipline=discipline,
                     summary={"given_scale": given, "assignment_mode": mode, "source_style": style_id,
                              "ai_model": ai_model})
     db.add(j); db.flush()

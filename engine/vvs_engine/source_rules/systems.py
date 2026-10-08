@@ -9,9 +9,15 @@ from functools import lru_cache
 from pathlib import Path
 
 @lru_cache(maxsize=1)
-def systems():
+def _table():
     data=json.loads((Path(__file__).with_name('data')/'system_designations.json').read_text())
     return {entry['code']:entry for entry in data['entries']}
+
+def systems():
+    # the discipline being read may bring its own system table; VVS reads the supplied Swedish one
+    from .. import disciplines
+    own=disciplines.value('systems.TABLE', None)
+    return _table() if own is None else {entry['code']:entry for entry in own}
 
 def system_code(system):
     value = re.sub(r'\d+$','',(system or '').strip())
@@ -27,4 +33,6 @@ def permits_unlabelled_twin(system):
 def is_gravity(system):
     # Swedish assign_label.py and PipeStudio associate.py: S*/D*, except SL.
     code=system_code(system)
-    return code.startswith(('S','D')) and code!='SL'
+    from .. import disciplines
+    return code.startswith(tuple(disciplines.value('systems.GRAVITY_PREFIXES', ('S','D')))) \
+        and code not in tuple(disciplines.value('systems.NOT_GRAVITY', ('SL',)))

@@ -21,7 +21,10 @@ def offline_source_service():
         kwargs.pop('ai_model',None)  # the worker's choice of model; this double answers in its place
         kwargs.pop('native_detection',None)  # Real detector has separate integration/geometry tests.
         kwargs['source_ask']=offline_model
-        result = analyze_pdf(*args, **kwargs)
+        # the discipline the reading is made in, bound as the worker binds it
+        from vvs_engine import disciplines
+        with disciplines.using(kwargs.pop('discipline', None)):
+            result = analyze_pdf(*args, **kwargs)
         from app.reference_audit import write_report
         write_report(args[0], args[1])
         return result

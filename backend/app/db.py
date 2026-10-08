@@ -65,6 +65,10 @@ class Project(Base):
     # Vilken sorts analys projektet använder. Saknas den är projektet ett av de gamla, och de fortsätter
     # fungera precis som förut - "simple" är vad de alltid har gjort.
     analysis_mode: Mapped[str] = mapped_column(String(16), default="")     # "" | simple | project
+    # Entreprenadformen och disciplinen (docs/abt06-plan.md, docs/multi-discipline-plan.md). Tomt är vad varje
+    # projekt var innan valen fanns: AB 04 och VVS, läst precis som förut.
+    contract_form: Mapped[str] = mapped_column(String(8), default="")       # "" | AB04 | ABT06
+    discipline: Mapped[str] = mapped_column(String(24), default="")         # "" | vvs | sprinkler | kyla | ventilation ...
     created_at: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True), default=_now)
     owner: Mapped[User] = relationship(back_populates="projects")
     drawings: Mapped[list["Drawing"]] = relationship(back_populates="project", cascade="all, delete-orphan")
@@ -115,6 +119,9 @@ class Drawing(Base):
     sha256: Mapped[str] = mapped_column(String(64))
     size_bytes: Mapped[int] = mapped_column(Integer)
     n_pages: Mapped[int] = mapped_column(Integer, default=0)
+    # en ritning kan ha en annan disciplin än sitt projekt; tomt = projektets. Flödet väljs i ABT 06: tomt är mätning
+    discipline: Mapped[str] = mapped_column(String(24), default="")
+    flow: Mapped[str] = mapped_column(String(16), default="")               # "" | rum_symboler | kravtext
     created_at: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True), default=_now)
     project: Mapped[Project] = relationship(back_populates="drawings")
     jobs: Mapped[list["AnalysisJob"]] = relationship(back_populates="drawing", cascade="all, delete-orphan")
@@ -133,6 +140,8 @@ class AnalysisJob(Base):
     created_at: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True), default=_now)
     started_at: Mapped[dt.datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     finished_at: Mapped[dt.datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    # disciplinen läsningen gjordes i, så att ett resultat alltid går att läsa som det lästes
+    discipline: Mapped[str] = mapped_column(String(24), default="")
     drawing: Mapped[Drawing] = relationship(back_populates="jobs")
 
 
@@ -226,6 +235,72 @@ class ConfirmedTakeoff(Base):
     user_id: Mapped[str] = mapped_column(ForeignKey("users.id"), index=True)
     rows: Mapped[dict] = mapped_column(JSON, default=dict)          # designation -> horizontal metres
     withdrawn: Mapped[bool] = mapped_column(Boolean, default=False)
+    created_at: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True), default=_now)
+
+
+class DisciplineOverride(Base):
+    """Ett företags eller ett projekts egna koder och mönster för en disciplin (inte VVS).
+
+    Beteckningar skiljer sig mellan beställare och konsulter, så de är data och inte antaganden i koden. VVS läses
+    av sin egen förklaringslista på varje blad och tar aldrig emot en avvikelse härifrån."""
+    __tablename__ = "discipline_overrides"
+    id: Mapped[str] = mapped_column(String(32), primary_key=True, default=_uuid)
+    discipline: Mapped[str] = mapped_column(String(24), index=True)
+    account_id: Mapped[str | None] = mapped_column(String(32), nullable=True, index=True)
+    project_id: Mapped[str | None] = mapped_column(ForeignKey("projects.id"), nullable=True, index=True)
+    values: Mapped[dict] = mapped_column(JSON, default=dict)
+    created_at: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True), default=_now)
+
+
+class KeyFigure(Base):
+    """Ett nyckeltal i ett företags bibliotek (ABT 06 fas 3): per enhet eller per m², med vad det ger.
+
+    Inget värde här är en branschsanning. Ett nyckeltal är företagets eget, eller härlett ur företagets egna
+    genomförda projekt med källan utskriven, och används inte förrän någon bekräftat det."""
+    __tablename__ = "key_figures"
+    id: Mapped[str] = mapped_column(String(32), primary_key=True, default=_uuid)
+    account_id: Mapped[str | None] = mapped_column(String(32), nullable=True, index=True)
+    user_id: Mapped[str | None] = mapped_column(ForeignKey("users.id"), nullable=True, index=True)
+    name: Mapped[str] = mapped_column(String(160), default="")
+    basis: Mapped[str] = mapped_column(String(16), default="per_enhet")    # per_enhet | per_m2
+    unit_code: Mapped[str] = mapped_column(String(24), default="")         # WC, TS, DUSCH ... eller yta
+    building_type: Mapped[str] = mapped_column(String(64), default="")
+    room_type: Mapped[str] = mapped_column(String(64), default="")
+    outputs: Mapped[list] = mapped_column(JSON, default=list)              # [{system, article, measure, value, unit}]
+    hours: Mapped[float | None] = mapped_column(Float, nullable=True)
+    status: Mapped[str] = mapped_column(String(16), default="utkast")       # utkast | bekraftad
+    source: Mapped[str] = mapped_column(Text, default="")
+    created_at: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True), default=_now)
+
+
+class ProjectEstimate(Base):
+    """Det en kalkylator bestämt för ett ABT 06-projekt: riskpåslag och valda nyckeltal. Schablonraderna räknas
+    fram ur detta och de räknade enheterna varje gång - ett lagrat resultat går inte att spåra."""
+    __tablename__ = "project_estimates"
+    id: Mapped[str] = mapped_column(String(32), primary_key=True, default=_uuid)
+    project_id: Mapped[str] = mapped_column(ForeignKey("projects.id"), index=True)
+    risk_pct: Mapped[float] = mapped_column(Float, default=0.0)
+    line_risk: Mapped[dict] = mapped_column(JSON, default=dict)            # rad -> påslag i procent
+    key_figures: Mapped[list] = mapped_column(JSON, default=list)          # valda nyckeltal
+    updated_at: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True), default=_now, onupdate=_now)
+
+
+class Requirement(Base):
+    """Ett kostnadsdrivande krav ur en rambeskrivning (ABT 06 fas 4), med sida och ordagrant utdrag.
+
+    `verified` säger att utdraget står ordagrant på den sidan. Ett krav påverkar aldrig kalkylen förrän en
+    människa kopplat det till en rad eller ett nyckeltal."""
+    __tablename__ = "requirements"
+    id: Mapped[str] = mapped_column(String(32), primary_key=True, default=_uuid)
+    project_id: Mapped[str] = mapped_column(ForeignKey("projects.id"), index=True)
+    drawing_id: Mapped[str | None] = mapped_column(ForeignKey("drawings.id"), nullable=True, index=True)
+    page: Mapped[int] = mapped_column(Integer, default=0)
+    excerpt: Mapped[str] = mapped_column(Text, default="")
+    category: Mapped[str] = mapped_column(String(64), default="")
+    status: Mapped[str] = mapped_column(String(16), default="oppen")        # oppen | kopplad | hanterad
+    links: Mapped[list] = mapped_column(JSON, default=list)
+    created_by: Mapped[str] = mapped_column(String(8), default="ai")         # ai | user
+    verified: Mapped[bool] = mapped_column(Boolean, default=False)
     created_at: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True), default=_now)
 
 
@@ -638,6 +713,11 @@ _ADDED_COLUMNS = (
     ("users", "last_seen_at", "TIMESTAMP"),
     ("projects", "analysis_mode", "VARCHAR(16) DEFAULT ''"),
     ("agent_recipes", "outcomes", "JSON"),
+    ("projects", "contract_form", "VARCHAR(8) DEFAULT ''"),
+    ("projects", "discipline", "VARCHAR(24) DEFAULT ''"),
+    ("drawings", "discipline", "VARCHAR(24) DEFAULT ''"),
+    ("drawings", "flow", "VARCHAR(16) DEFAULT ''"),
+    ("analysis_jobs", "discipline", "VARCHAR(24) DEFAULT ''"),
 )
 
 

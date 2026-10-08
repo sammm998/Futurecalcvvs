@@ -25,6 +25,7 @@ from typing import Any
 
 from ..text.model import TextRow
 from .grammar import split_tokens
+from .. import disciplines as _disciplines
 
 from .. import rules as _rules
 
@@ -552,10 +553,10 @@ def role_from_words(description: str) -> str | None:
     if not ws:
         return None
     for w in ws:
-        if any(w.endswith(h) for h in COMPONENT_HEADS):
+        if any(w.endswith(h) for h in _disciplines.value("legend.COMPONENT_HEADS", COMPONENT_HEADS)):
             return "component"
     # samma sammansättningsregel som för sakerna: TAPPKALLVATTEN är KALLVATTEN, TILLUFT är TILLUFT
-    if any(any(w.endswith(sw) for sw in SYSTEM_WORDS) for w in ws):
+    if any(any(w.endswith(sw) for sw in _disciplines.value("legend.SYSTEM_WORDS", SYSTEM_WORDS)) for w in ws):
         return "system"
     for w in ws:
         if any(w.endswith(h) for h in MATERIAL_HEADS) or _is_fire_class(w):
