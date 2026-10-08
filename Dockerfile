@@ -15,12 +15,15 @@ WORKDIR /app
 # missing dependency at build time. tests/test_image_dependencies.py reads this line against what the installed
 # packages actually ask the loader for, so the two cannot drift apart.
 #
+# tesseract-ocr-swe: a scanned sheet or an image is read by OCR (vvs_engine/raster), and its room names and notes
+# are Swedish - without the language Å, Ä and Ö are read as A and O.
+#
 # fonts-liberation is what the tender is set in. A slim Python image carries no fonts at all, so the font file
 # the tender asked for was not there and every tender request answered with an error - the page said only
 # "Hämtning misslyckades". The code now falls back to a built-in font rather than failing, and the package is
 # installed so the fallback is never the one that is used.
 RUN apt-get update \
- && apt-get install -y --no-install-recommends libgl1 libglib2.0-0 fonts-liberation tesseract-ocr \
+ && apt-get install -y --no-install-recommends libgl1 libglib2.0-0 fonts-liberation tesseract-ocr tesseract-ocr-swe \
  && rm -rf /var/lib/apt/lists/*
 COPY backend/requirements.txt /app/backend/requirements.txt
 COPY backend/requirements-ocr.txt /app/backend/requirements-ocr.txt

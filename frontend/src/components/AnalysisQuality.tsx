@@ -18,6 +18,7 @@ const reasons: Record<string, string> = {
   MOST_NAMES_WITHOUT_METRES: "Många rörbeteckningar saknar uppmätta sträckor.",
   MOST_PIPE_INK_UNOWNED: "En stor del av den möjliga rörgeometrin saknar beteckning.",
   MANY_LOSSY_FRONTIERS: "Flera rörsträckor kan fortsätta utanför det som har mätts.",
+  READ_FROM_IMAGE: "Ritningen är läst ur en bild – en skanning eller ett foto. Linjer och text är tolkade ur bildpunkter, så varje rad ska granskas mot ritningen.",
 };
 
 export default function AnalysisQuality({ quality }: { quality?: Quality }) {
@@ -34,4 +35,13 @@ export default function AnalysisQuality({ quality }: { quality?: Quality }) {
       ? tr("ej mätt") : `${num(quality.measures.NAMES_WITH_METRES_SHARE * 100, 0)} %`}</div>
     <p className="muted small">{tr("Automatiska kontroller visar läsningens täckning. De verifierar inte träffsäkerheten mot en handmängdning.")}</p>
   </section>;
+}
+
+/* Läst ur en bild: alla ser det, inte bara personalen - varje rad står som att granska. */
+export function ReadFromImage({ quality }: { quality?: Quality }) {
+  if (!(quality?.reasons ?? []).includes("READ_FROM_IMAGE")) return null;
+  return <div className="callout warn" role="note" style={{ marginBottom: 12 }}>
+    <strong>{tr("Läst ur en bild – allt ska granskas")}</strong>
+    <p className="small" style={{ margin: "4px 0 0" }}>{tr("Ritningen är en skanning eller ett foto. Linjer och text är tolkade ur bildpunkter, så varje rad står som LÄST UR BILD tills du har granskat den mot ritningen. Skalan gäller bara om en skalstock eller mått på bladet bekräftar den – annars anger du den.")}</p>
+  </div>;
 }

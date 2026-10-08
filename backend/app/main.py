@@ -384,8 +384,11 @@ async def upload_drawing(project_id: str, file: UploadFile = File(...), discipli
                          user: User = Depends(current_user), db: Session = Depends(get_db)):
     p = _project(db, user, project_id)
     _, own_discipline = _checked_modes(None, discipline) if discipline else (None, None)
-    if not (file.filename or "").lower().endswith(".pdf"):
-        raise HTTPException(400, "Endast PDF-filer stöds")
+    from vvs_engine.raster import IMAGE_MAGIC, ImageTooLarge, image_to_pdf, is_image
+    filename = os.path.basename(file.filename or "")
+    ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
+    if ext != "pdf" and ext not in IMAGE_MAGIC:
+        raise HTTPException(400, "Endast PDF-filer och bilder (PNG, JPG, TIFF) stöds")
     # Läs in filen bit för bit och sluta vid taket. `file.read()` rakt av drar hela filen in i minnet innan
     # någon tittat på storleken, och en tillräckligt stor fil tar då hela arbetaren med sig - ett tak som
     # prövas först när allt redan är läst är inget tak. Samma gräns som nginx sätter framför tjänsten.
@@ -399,6 +402,19 @@ async def upload_drawing(project_id: str, file: UploadFile = File(...), discipli
             raise HTTPException(413, f"Filen är större än {MAX_UPLOAD_BYTES // (1024 * 1024)} MB")
         chunks.append(chunk)
     data = b"".join(chunks)
+    if ext in IMAGE_MAGIC:
+        # En bild av en ritning - ett foto, en skanning sparad som bild - blir en PDF med bilden som sida. Den läses
+        # sedan ur bildpunkterna, och allt den ger står som att granska (vvs_engine/raster).
+        if not is_image(data, filename):
+            raise HTTPException(400, "Filen är inte en giltig bild")
+        from starlette.concurrency import run_in_threadpool
+        try:
+            data, _ = await run_in_threadpool(image_to_pdf, data, filename)
+        except ImageTooLarge as e:
+            raise HTTPException(413, f"Bilden är för stor att läsas som ritning ({e}).")
+        except Exception:
+            raise HTTPException(400, "Bilden kunde inte läsas")
+        filename = filename.rsplit(".", 1)[0] + ".pdf"
     if not data.startswith(b"%PDF"):
         raise HTTPException(400, "Filen är inte en giltig PDF")
     import pymupdf
@@ -421,7 +437,7 @@ async def upload_drawing(project_id: str, file: UploadFile = File(...), discipli
     existing = db.query(Drawing).filter(Drawing.project_id == p.id, Drawing.sha256 == digest).first()
     if existing is not None:
         return {**_drawing_out(existing), "duplicate": True}
-    d = Drawing(project_id=p.id, filename=os.path.basename(file.filename), storage_key="", sha256=digest,
+    d = Drawing(project_id=p.id, filename=filename, storage_key="", sha256=digest,
                 size_bytes=len(data), n_pages=n_pages, discipline=own_discipline or "")
     db.add(d); db.flush()
     key = f"drawings/{d.id}/{d.filename}"

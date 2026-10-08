@@ -135,9 +135,12 @@ class LazyPages(Sequence):
     same marks as the first time, although the ink is already off the shared document.
     """
 
-    def __init__(self, doc, indexes: list[int], pdf_path: str, known: dict[int, tuple] | None = None):
+    def __init__(self, doc, indexes: list[int], pdf_path: str, known: dict[int, tuple] | None = None,
+                 raster: dict[int, dict] | None = None):
         self._doc, self._idx, self._path = doc, list(indexes), pdf_path
         self._known = known or {}
+        self._raster = raster or {}                 # page -> its classification, for pages read from pixels
+        self._ocr: dict = {}                        # ...and what OCR read on them, which is not read twice
         self._held: dict[int, RawPage] = {}
 
     def __len__(self) -> int:
@@ -150,6 +153,11 @@ class LazyPages(Sequence):
             i += len(self._idx)
         if i not in self._held:
             pno = self._idx[i]
+            if pno in self._raster:
+                from ..raster import read_raster_page
+                self._held[i] = read_raster_page(self._doc[pno], pno, self._path, self._raster[pno],
+                                                 ocr_cache=self._ocr)
+                return self._held[i]
             annots, markup, only_markup = self._known.get(pno, (None, None, False))
             if only_markup:
                 # bladet har ingen egen ritning under märkena: läs det igen ur filen med märkena kvar
@@ -575,12 +583,27 @@ def _read_page(doc, pno: int, pdf_path: str, keep_markup: bool = False, known: t
     return rp
 
 
-def extract_document(pdf_path: str, pages: list[int] | None = None, progress=None, eager: bool = True) -> RawDocument:
+def _can_read_pixels() -> bool:
+    from ..raster import available
+    return available()
+
+
+def _raster_pages(rd: RawDocument) -> list[dict]:
+    """The skipped pages that are scans or images, taken out of the skipped list to be read from their pixels."""
+    got = [c for c in rd.skipped_pages if c.get("mode") == "raster"]
+    rd.skipped_pages = [c for c in rd.skipped_pages if c.get("mode") != "raster"]
+    return got
+
+
+def extract_document(pdf_path: str, pages: list[int] | None = None, progress=None, eager: bool = True,
+                     raster: bool = True) -> RawDocument:
     """Read the vector content of every page: paths with their segments, layers, stroke widths and text spans.
 
-    Only vector pages are analysed. A page whose content is a scan or an image is classified as such and skipped,
-    because reading it would mean guessing at pixels instead of the drawing's own geometry; a PDF with no vector
-    page at all raises UnsupportedInputError.
+    Vector pages are what the reading reads. A page whose content is a scan or an image is classified as such
+    and, in a document that has vector pages, skipped: the drawing's own geometry is there to be read, and a
+    scanned page among them is most often a cover or a photo. A document with no vector page at all is read from
+    its pixels instead (raster/): lines traced, text read by OCR, and everything from it marked to be reviewed.
+    raster=False keeps the old answer for such a document - UnsupportedInputError.
 
     eager=False reads a page's geometry the first time somebody asks for it, and lets the reading hand it back
     when it is done with the page. It matters at the size real sets arrive in: a fifty-sheet set holds 1.1
@@ -601,6 +624,10 @@ def extract_document(pdf_path: str, pages: list[int] | None = None, progress=Non
         for pno in wanted:
             got = _read_page(doc, pno, pdf_path)
             (rd.skipped_pages if isinstance(got, dict) else rd.pages).append(got)
+        if not rd.pages and raster and _can_read_pixels():
+            from ..raster import read_raster_page
+            for c in _raster_pages(rd):
+                rd.pages.append(read_raster_page(doc[c["page"]], c["page"], pdf_path, c))
         doc.close()
     else:
         from .classify import classify_page
@@ -624,12 +651,17 @@ def extract_document(pdf_path: str, pages: list[int] | None = None, progress=Non
             else:
                 known[pno] = (annots, markup, False)
                 keep.append(pno)
-        rd.pages = LazyPages(doc, keep, pdf_path, known)
+        from_pixels: dict[int, dict] = {}
+        if not keep and raster and _can_read_pixels():
+            for c in _raster_pages(rd):
+                from_pixels[c["page"]] = c
+                keep.append(c["page"])
+        rd.pages = LazyPages(doc, keep, pdf_path, known, from_pixels)
     if not len(rd.pages):
         which = ", ".join(f"page {c['page'] + 1}: {'; '.join(c['reasons'])}" for c in rd.skipped_pages) or "no pages"
         raise UnsupportedInputError(
-            "The PDF carries no vector drawing. This engine reads the drawing's own vector geometry and never "
-            f"guesses at pixels, so a scanned or image-only PDF cannot be measured ({which}).", rd.skipped_pages)
+            "The PDF carries no drawing that can be read: no page has vector geometry, and none is a scan or an "
+            f"image to be read from its pixels ({which}).", rd.skipped_pages)
     return rd
 
 

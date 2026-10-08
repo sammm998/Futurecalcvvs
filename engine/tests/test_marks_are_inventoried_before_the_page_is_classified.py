@@ -103,15 +103,22 @@ def test_a_scanned_sheet_with_a_takeoff_on_it_is_still_a_scan(tmp_path):
     p = str(tmp_path / "scan-with-takeoff.pdf")
     doc.save(p); doc.close()
 
+    # Read without pixels it is refused, and the refusal names it a scan with the marks set aside.
     with pytest.raises(UnsupportedInputError) as ei:
-        extract_document(p)
+        extract_document(p, raster=False)
     skipped = ei.value.classifications[0]
     assert skipped["mode"] == "raster", skipped
     assert skipped["markup_set_aside"]["removed"] and skipped["markup_set_aside"]["n"] == 210
     assert len(skipped["annotations"]) == 210
 
-    with pytest.raises(UnsupportedInputError):
-        extract_document(p, eager=False)
+    # Read from its pixels it is a scan too: the marks are inventoried and set aside before anything is read,
+    # and not one of the two hundred polylines becomes a line of the drawing. The scan itself is blank paper.
+    for eager in (True, False):
+        pg = extract_document(p, eager=eager).pages[0]
+        assert pg.input_class["mode"] == "raster" and pg.input_class["read_as"] == "raster", pg.input_class
+        assert pg.info.markup_set_aside["removed"] and pg.info.markup_set_aside["n"] == 210
+        assert len(pg.info.annots) == 210
+        assert not pg.paths, "påskriften är inte ritningen, inte heller på en skanning"
 
 
 def test_a_page_that_is_only_marks_is_read_and_flagged(tmp_path):

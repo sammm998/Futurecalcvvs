@@ -19,6 +19,11 @@ from ..semantics.leaders import leader_family_report
 from ..pipes.confidence import tier
 
 
+def _from_image(pa) -> bool:
+    """Whether the sheet was read from pixels (raster/) rather than from its own vectors."""
+    return ((getattr(pa.page, "input_class", None) or {}).get("read_as")) == "raster"
+
+
 def _dump(path: str, obj: Any) -> None:
     with open(path, "w", encoding="utf-8") as fh:
         json.dump(stamp(obj), fh, indent=1, ensure_ascii=False, sort_keys=False, default=str)
@@ -607,7 +612,7 @@ def sheet_reading(pa, doc, doc_legend=None, profile: dict | None = None,
     out["coverage-validity.json"] = coverage_validity(_rc(pa), pa.anchors, rec, pa.scale.state if pa.scale else None,
                                                       len(pa.measures))
     out["coverage-validity.json"] = completion_checks(out["coverage-validity.json"], pa.quantities,
-        getattr(pa, "source_assignment", None), pa.review_findings)
+        getattr(pa, "source_assignment", None), pa.review_findings, from_image=_from_image(pa))
     out["route-crosscheck.json"] = pa.crosscheck
     out["reading-review.json"] = pa.review_findings
     if getattr(pa, "source_assignment", None) is not None:
@@ -652,7 +657,8 @@ def write_all(pdf_path: str, doc, analyses: list, out_dir: str, name: str, timin
         if _fn != "page.json":
             if _fn == "coverage-validity.json":
                 from ..coverage import completion_checks
-                _obj = completion_checks(_obj, pa.quantities, getattr(pa, "source_assignment", None), review)
+                _obj = completion_checks(_obj, pa.quantities, getattr(pa, "source_assignment", None), review,
+                                         from_image=_from_image(pa))
             W(_fn, _obj)
     if review is not None:
         W("review-findings.json", review)

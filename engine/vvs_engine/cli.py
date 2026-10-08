@@ -48,7 +48,9 @@ def _upright(pdf_path: str, doc, pages, out_dir: str, progress):
     for i in range(len(doc.pages)):
         pg = doc.pages[i]
         prep = prepare_page(pg)
-        t = turn_for(pdf_path, pg.info.index, prep)
+        # a page read from pixels has already read its text both ways round; turning it means reading it again
+        from_image = (pg.input_class or {}).get("read_as") == "raster"
+        t = 0 if from_image else turn_for(pdf_path, pg.info.index, prep)
         if t:
             turns[pg.info.index] = t
         if len(held) < _R("cli.VOCAB_HOLD", VOCAB_HOLD):

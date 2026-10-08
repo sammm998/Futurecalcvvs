@@ -18,7 +18,7 @@ export const projekt: Record<string, string> = {
   "Obegränsad": "Unlimited",
   "{0} uppladdade · {1} fanns redan · {2} misslyckades": "{0} uploaded · {1} already present · {2} failed",
   "{0} analyser i kö": "{0} analyses queued",
-  "{0} PDF-filer valda": "{0} PDF files selected",
+  "{0} filer valda": "{0} files selected",
   "Välj oanalyserade": "Select unread drawings",
   "Avmarkera": "Clear selection",
   "Analysera valda ({0})": "Read selected ({0})",
@@ -291,4 +291,7 @@ export const projekt: Record<string, string> = {
   "Bekräfta ändringen": "Confirm the change",
   "ABT 06: läsning av rum, ytor och enheter samt kalkyl med nyckeltal byggs nu. Blad med ritade installationer mäts som vanligt.": "ABT 06: reading rooms, areas and units, and pricing with key figures, is being built. Sheets with drawn installations are measured as usual.",
   "Ritningar i projektet": "Drawings in the project",
+  "Välj PDF eller bild…": "Choose PDF or image…",
+  "Vektor-PDF läses ur ritningens egna linjer. En skanning eller bild läses ur bildpunkterna och ska granskas.": "A vector PDF is read from the drawing's own lines. A scan or an image is read from its pixels and must be reviewed.",
+  "Helst vektor-PDF, exporterad ur CAD: då läses ritningens egna linjer och texter. En skannad PDF eller en bild (PNG, JPG, TIFF) läses ur bildpunkterna – allt därifrån ska granskas, och skalan måste bekräftas av en skalstock eller mått på bladet, eller anges.": "Preferably a vector PDF exported from CAD: then the drawing's own lines and text are read. A scanned PDF or an image (PNG, JPG, TIFF) is read from its pixels – everything from it must be reviewed, and the scale must be confirmed by a scale bar or dimensions on the sheet, or entered.",
 };

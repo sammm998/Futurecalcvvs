@@ -191,6 +191,7 @@ SETTLED_SCALE = ("VERIFIED", "TEXT_ONLY", "BAR_ONLY", "DIMENSIONS_ONLY")
 UNSETTLED_ROW_STATE = {"CONFLICT": "SCALE_UNSETTLED", "FROM_THE_SET": "SCALE_FROM_THE_SET",
                        "GIVEN_BY_HAND": "SCALE_GIVEN_BY_HAND", "FROM_PIPES": "SCALE_FROM_PIPES"}
 HATCHED_ONLY = "IN_HATCHED_AREA"        # hela stråket ligger inne i en skraffering: ritat, men inte det här bladets
+FROM_IMAGE = "READ_FROM_IMAGE"          # mätt på ett blad läst ur en bild: uppmätt, men bekräftad först av en person
 
 
 def scale_standing(scale: ScaleResult) -> str | None:
@@ -201,9 +202,10 @@ def scale_standing(scale: ScaleResult) -> str | None:
 
 
 def measure_pipes(own: OwnershipResult, scale: ScaleResult, elevations: dict[str, list[dict]],
-                  hatched_pt: dict[str, float] | None = None) -> list[PipeMeasure]:
+                  hatched_pt: dict[str, float] | None = None, from_image: bool = False) -> list[PipeMeasure]:
     """elevations: anchor_id -> list of {tag, value} elevation annotations attached to the anchor's label unit.
-    hatched_pt: physical_pipe_id -> length (pdf units) of the pipe inside hatched areas."""
+    hatched_pt: physical_pipe_id -> length (pdf units) of the pipe inside hatched areas.
+    from_image: the sheet was read from pixels (raster/), so what would be CONFIRMED is READ_FROM_IMAGE."""
     out: list[PipeMeasure] = []
     mpp = scale.meters_per_pt if scale.state in ("VERIFIED", "TEXT_ONLY", "BAR_ONLY", "CONFLICT", "FROM_THE_SET",
                                                 "GIVEN_BY_HAND", "DIMENSIONS_ONLY", "FROM_PIPES") and scale.meters_per_pt else None
@@ -246,7 +248,7 @@ def measure_pipes(own: OwnershipResult, scale: ScaleResult, elevations: dict[str
         # letats efter och inte funnits. Den ska säga var metrarna tog vägen.
         state = ("NO_SCALE" if hm is None else
                  HATCHED_ONLY if hpu <= 0.0 < p.length_pt else
-                 standing or "CONFIRMED")
+                 standing or (FROM_IMAGE if from_image else "CONFIRMED"))
         if p.frontier_reasons:
             reasons.extend(p.frontier_reasons)
         out.append(PipeMeasure(pipe=p, horizontal_pdf_units=hpu, horizontal_m=hm, vertical_m=vert, vertical_evidence=vev,
@@ -319,7 +321,7 @@ def aggregate(measures: list[PipeMeasure], ambiguous_pt: dict[str, float], mpp: 
                 r["inferred_m"] = r.get("inferred_m", 0.0) + m.horizontal_m   # named by the drawing's logic
             r["in_hatched_area_m"] += m.hatched_m or 0.0      # excluded from the horizontal quantity
             r["hatched_only_pipes"] = r.get("hatched_only_pipes", 0) + (1 if m.state == HATCHED_ONLY else 0)
-            if m.state in UNSETTLED_ROW_STATE.values() and r["state"] == "CONFIRMED":
+            if (m.state in UNSETTLED_ROW_STATE.values() or m.state == FROM_IMAGE) and r["state"] == "CONFIRMED":
                 r["state"] = m.state          # mätt under en skala bladet inte avgjort: ett förslag, inte ett besked
         else:
             r["state"] = "NO_SCALE"

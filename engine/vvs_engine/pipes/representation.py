@@ -90,9 +90,14 @@ class GraphTolerances:
 
 
 VECTOR_TOL = GraphTolerances()
+# A sheet read from its pixels (raster/) is exact to a pixel, not to an export's rounding: at 200 dpi a pixel is a
+# third of a point, and a centreline traced out of the ink may stand a pixel off its line or a degree askew.
+RASTER_TOL = GraphTolerances(ang_tol=4.0, off_tol=1.0)
 
 
 def graph_tolerances(page) -> GraphTolerances:
+    if ((getattr(page, "input_class", None) or {}).get("read_as")) == "raster":
+        return RASTER_TOL
     return VECTOR_TOL
 
 

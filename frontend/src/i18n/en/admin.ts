@@ -129,8 +129,8 @@ export const admin: Record<string, string> = {
   "Vad ett blad kostar kunden": "What a sheet costs the customer",
   "Vad ett blad kostar tjänsten": "What a sheet costs the service",
   "Marginal per typblad": "Margin per typical sheet",
-  "Credits per sida efter format, plus ett bläcktillägg för blad med många banor. Priset visas för kunden innan läsningen körs.":
-    "Credits per page by format, plus an ink surcharge for sheets with many paths. The price is shown to the customer before the reading runs.",
+  "Credits per sida efter format, plus ett bläcktillägg för blad med många banor och ett tillägg för sidor som läses ur en skanning eller bild. Priset visas för kunden innan läsningen körs.":
+    "Credits per page by format, plus an ink surcharge for sheets with many paths and a surcharge for pages read from a scan or an image. The price is shown to the customer before the reading runs.",
   "CPU-s fast per sida": "CPU-s fixed per page",
   "CPU-s per 1000 banor": "CPU-s per 1000 paths",
   "Frågor per 1000 banor": "Questions per 1000 paths",
@@ -169,4 +169,5 @@ export const admin: Record<string, string> = {
   "Var folk klickar": "Where people click",
   "Mest klickade": "Most clicked",
   "inga klick registrerade": "no clicks registered",
+  "Skannad sida": "Scanned page",
 };

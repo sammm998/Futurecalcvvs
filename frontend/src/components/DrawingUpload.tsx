@@ -64,8 +64,7 @@ export default function DrawingUpload({ onDone, verb = "Öppna" }: {
     <section className="card up-card">
       <h3 style={{ marginTop: 0 }}>{tr("Lägg upp en ritning")}</h3>
       <p className="muted small" style={{ marginTop: -4 }}>
-        Vektor-PDF, exporterad ur CAD. En skannad ritning går inte att mäta på – systemet läser ritningens egna
-        vektorkoder och gissar aldrig ur bildpunkter.
+        {tr("Helst vektor-PDF, exporterad ur CAD: då läses ritningens egna linjer och texter. En skannad PDF eller en bild (PNG, JPG, TIFF) läses ur bildpunkterna – allt därifrån ska granskas, och skalan måste bekräftas av en skalstock eller mått på bladet, eller anges.")}
       </p>
       <div className="up-row">
         <label className="adm-field">
@@ -83,10 +82,10 @@ export default function DrawingUpload({ onDone, verb = "Öppna" }: {
           </label>
         )}
         <div className="row" style={{ alignItems: "flex-end", gap: 8 }}>
-          <input type="file" accept="application/pdf" multiple ref={fileRef} id="up-pdf" className="file"
+          <input type="file" accept="application/pdf,.pdf,image/png,image/jpeg,image/tiff,.png,.jpg,.jpeg,.tif,.tiff" multiple ref={fileRef} id="up-pdf" className="file"
             onChange={(e) => setPicked(Array.from(e.target.files ?? []).map((f) => f.name))} />
           <label className="pick" htmlFor="up-pdf">
-            {picked.length === 0 ? "Välj PDF…" : picked.length === 1 ? picked[0] : `${picked.length} filer`}
+            {picked.length === 0 ? tr("Välj PDF eller bild…") : picked.length === 1 ? picked[0] : `${picked.length} filer`}
           </label>
           <button onClick={upload} disabled={!!busy || !picked.length}>
             {busy || `Ladda upp och ${verb.toLowerCase()}`}
