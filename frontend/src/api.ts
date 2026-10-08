@@ -84,6 +84,9 @@ export const api = {
   projectRooms: (projectId: string) => req(`/api/projects/${projectId}/rooms`),
   chooseRoomPage: (projectId: string, body: { drawing_id: string; page: number; counted: boolean }) =>
     req(`/api/projects/${projectId}/rooms/pages`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }),
+  projectUnits: (projectId: string) => req(`/api/projects/${projectId}/units`),
+  nameUnit: (projectId: string, code: string, name: string) =>
+    req(`/api/projects/${projectId}/units/names`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ code, name }) }),
   deleteProject: (id: string) => req(`/api/projects/${id}`, { method: "DELETE" }),
   upload: (projectId: string, file: File) => { const fd = new FormData(); fd.append("file", file); return req(`/api/projects/${projectId}/drawings`, { method: "POST", body: fd }); },
   drawing: (id: string) => req(`/api/drawings/${id}`),

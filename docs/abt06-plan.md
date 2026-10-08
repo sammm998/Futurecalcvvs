@@ -103,7 +103,7 @@ principscheman. Kalkylatorn räknar då enheter och ytor och multiplicerar med e
 Användaren har lämnat fyra handlingar från genomförda ABT 06-projekt (cirka 120 sidor; ligger lokalt, inte i
 repot). Varje handling börjar med en handlingsförteckning, följd av VVS-planer ritade på A-underlag: rumsnamn,
 rumsnummer och areor, lägenhetstyper, sanitetskoder och förklaringslistor. Några sidor har A-underlaget som
-inbäddad bild, och några blad är mycket stora.
+inbäddad bild, och några blad är mycket stora. Här kallas de handling A–D; namnen står inte i repot.
 
 De används till:
 1. **Fas 2** – rum, areor och enheter ur A-underlaget. Facit för areorna är ritningens egen text; antalen
@@ -168,11 +168,11 @@ testresultat, kända begränsningar och vad nästa fas behöver.
 
 | Handling | Etiketter | Rum | Lägenheter per typ | Sidor som upprepar en annan |
 |---|---|---|---|---|
-| Badskon 1 | 431 | 386 | 6 × 3 ROK | 1 |
-| Badskon 2 | 691 | 511 | 13 × 1 ROK, 7 × 2 ROK, 17 × 3 ROK, 3 × 4 ROK | 5 |
-| Badmössan | 444 | 371 | 6 × 1 ROK, 48 × 2 ROK, 8 × 3 ROK, 11 × 5 ROK | 0 |
+| A | 431 | 386 | 6 × 3 ROK | 1 |
+| B | 691 | 511 | 13 × 1 ROK, 7 × 2 ROK, 17 × 3 ROK, 3 × 4 ROK | 5 |
+| C | 444 | 371 | 6 × 1 ROK, 48 × 2 ROK, 8 × 3 ROK, 11 × 5 ROK | 0 |
 
-Bläckhornet har inga rumsetiketter, eftersom dess planer saknar A-underlag med rum.
+Handling D har inga rumsetiketter, eftersom dess planer saknar A-underlag med rum.
 
 **Kända begränsningar:**
 - Rummens polygoner läses inte än. Arean är den som står skriven, och någon kontroll mot geometrin görs inte.
@@ -180,7 +180,55 @@ Bläckhornet har inga rumsetiketter, eftersom dess planer saknar A-underlag med 
   avgör användaren per sida.
 - Antalen är inte kontrollerade mot en handräkning. Det behövs några blad som du räknat själv.
 
-**Nästa (fas 2b):** enheter och symboler.
-- Sanitetskoderna ur bladens egen förklaringslista, och de i referensdatan (`sanitary_fixtures.json`: TS, VK, DB, DM,
-  TM, BK, DK, UB …), räknas per sida och kopplas till rum.
-- Därefter upprepade CAD-block som en grupp. En grupp får namn bara av bladets förklaring eller av användaren.
+## 12. Fas 2b – genomförd: enheter ur koderna vid inredningen
+
+**Enhetsläsaren** (`engine/vvs_engine/abt/units.py`):
+- Det mesta i badrum och kök ritas i förenklat ritsätt: en kontur och en kod bredvid. En enhet är en sådan kod:
+  - två eller tre bokstäver, ensam på sin rad;
+  - satt med samma penna som bladets rumsetiketter, alltså arkitektens;
+  - inte en rad i en rumsetikett och inte ett ord som används som rumsnamn.
+- Installationens text ("ANSL.DB+DM") räknas inte. Inte heller enstaka bokstäver, som oftast är axlar, blad eller
+  konsulter.
+- Samma kod skriven två gånger tätt intill varandra är en enhet.
+- **Namnet tas, i den här ordningen,** från:
+  1. det användaren angett;
+  2. bladets förklaringslista – en tabell med kodkolumn och termkolumn, minst tre koder med fler än en bokstav,
+     där minst hälften används på bladet; en namnrutas konsult- eller revisionslista är ingen förklaringslista;
+  3. referensdatan för sanitetsinredning (TM Tvättmaskin, DM Diskmaskin, TS Tvättställ …).
+
+  Annars är koden okänd. Ingen betydelse hittas på.
+
+**I produkten:**
+- Enheterna läses samtidigt som rummen, till samma pris.
+- Varje enhet blir en räknemarkering på lagret "ABT enheter" i Mängda. Där kan den granskas, flyttas, avvisas eller
+  tas bort, och då räknas den inte längre. En ny läsning ersätter bara läsarens egna markeringar.
+- Fliken Enheter visar per kod: antal på de sidor som räknas, med (+N) för upprepade sidor, namnet och vem som gav
+  det, och sidorna. Där kan du namnge en kod.
+- Export till CSV med källtyp RÄKNAD.
+
+**Prövat:**
+
+| Handling | Enheter | Namngivna ur referensdatan |
+|---|---|---|
+| A | 265 | DM 26 |
+| B | 623 | DM 69, TM 58, TS 4 |
+| C | 189 | TM 6, SLH 1 |
+
+- Handling B med upprepade sidor borträknade: 488 enheter i 22 koder.
+- Handling D ritar sin inredning som symboler, utan koder. Dess förklaringslista ("DB Diskbänk", "VK Vattenklosett",
+  "VVB Varmvattenbredare" …) läses korrekt och väntar på symbolräkningen.
+- Stickprov på handling B sida 3 och 5 i webbläsaren: varje DM sitter vid diskmaskinen i köket, och TM och TT vid
+  tvättmaskin och torktumlare.
+
+**Kända begränsningar:**
+- Koder som ingen förklarar (KPH, KL, AK, VS, KM …) räknas men heter okänd tills du namnger dem. Arkitektens egen
+  förklaringslista finns inte i handlingarna.
+- Handling B:s komponentlista är ritad som streck eller bild och läses inte som text.
+- Koder med index (TS1, VK3, DB1, DM02) räknas inte. I handlingarna står de flesta med installationens penna och är
+  VVS-konsultens beteckningar; med arkitektens penna finns ett fåtal (34 mot 138). Att räkna bara de senare skulle
+  ge en ojämn räkning.
+- Enheterna kopplas inte till rum än, eftersom rummens polygoner saknas.
+- Antalen är inte kontrollerade mot en handräkning.
+
+**Nästa (fas 2c):** symboler, alltså upprepade CAD-block. En grupp får namn av bladets förklaring eller av
+användaren, och det behövs för handling D.

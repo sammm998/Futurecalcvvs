@@ -20,11 +20,13 @@ export function AbtPanel({ project }: { project: any }) {
       <h3 style={{ marginTop: 0 }}>{tr("ABT 06 – totalentreprenad")}</h3>
       <div className="tabs">
         <button className={tab === "rum" ? "active" : ""} onClick={() => setTab("rum")}>{tr("Rum och ytor")}</button>
+        <button className={tab === "enheter" ? "active" : ""} onClick={() => setTab("enheter")}>{tr("Enheter")}</button>
         {["Symboler", "Nyckeltal", "Schablon", "Krav"].map((t) => (
           <button key={t} disabled title={tr("Kommer i nästa del av ABT 06.")}>{tr(t)} · {tr("kommer")}</button>
         ))}
       </div>
       {tab === "rum" && <AbtRooms project={project} />}
+      {tab === "enheter" && <AbtUnits project={project} />}
     </section>
   );
 }
@@ -153,6 +155,68 @@ export default function AbtRooms({ project }: { project: any }) {
           </table>
         </div>
         {rows.length > 500 && <p className="muted small">{trf("Visar 500 av {0} rader – exporten har alla.", rows.length)}</p>}
+      </>}
+    </div>
+  );
+}
+
+/* Enheterna: koderna arkitekten skriver vid inredningen - TM, DM, TS - räknade på sidorna som räknas. Varje enhet
+ * är en räknemarkering på lagret "ABT enheter" i mängdningsverktyget, där den kan granskas, flyttas eller avvisas.
+ * En kod heter det du säger, det bladets förklaring säger eller det referensdatan säger - annars okänd. */
+const SOURCE: Record<string, string> = { "angiven": "angiven av dig", "bladets förklaring": "bladets förklaring",
+  "referensdata": "referensdata", "okänd": "okänd" };
+
+export function AbtUnits({ project }: { project: any }) {
+  const [data, setData] = useState<any>(null);
+  const [err, setErr] = useState("");
+  const [names, setNames] = useState<Record<string, string>>({});
+  const load = () => api.projectUnits(project.id).then(setData).catch((e) => setErr(e.message));
+  useEffect(() => { load(); }, [project.id]);
+  const save = async (code: string) => {
+    try { setData(await api.nameUnit(project.id, code, names[code] ?? "")); setNames({ ...names, [code]: undefined as any }); }
+    catch (e: any) { setErr(e.message); }
+  };
+  const csv = async () => {
+    const b = await api.fetchBlob(`/api/projects/${project.id}/units.csv`);
+    const a = document.createElement("a"); a.href = URL.createObjectURL(b);
+    a.download = `${(project.name || "projekt").replace(/[^\wåäöÅÄÖ-]+/g, "_")}-enheter.csv`; a.click();
+  };
+  const rows = data?.units ?? [];
+  return (
+    <div style={{ marginTop: 12 }}>
+      <p className="muted small">{tr("Enheterna räknas ur koderna arkitekten skriver vid inredningen – TM, DM, TS – på samma sidor som rummen. De läses när rummen läses. Varje enhet är en räknemarkering på lagret ”ABT enheter” i Mängda, där du kan granska, flytta eller avvisa den. En kod som varken bladets förklaring eller referensdatan förklarar namnger du själv.")}</p>
+      {err && <p className="error" role="alert">{err}</p>}
+      {data && rows.length === 0 && <p className="muted">{tr("Inga enheter än. Läs rummen i fliken Rum och ytor – enheterna läses samtidigt.")}</p>}
+      {rows.length > 0 && <>
+        <div className="kpi">
+          <div className="card"><div className="v">{data.totals.units}</div><div className="l">{tr("Enheter")}</div></div>
+          <div className="card"><div className="v">{data.totals.codes}</div><div className="l">{tr("Koder")}</div></div>
+          <div className="card"><div className="v">{data.totals.named}</div><div className="l">{tr("Med namn")}</div></div>
+        </div>
+        <div className="row" style={{ margin: "12px 0", gap: 8 }}>
+          <button className="secondary small" onClick={csv}>{tr("Exportera enheterna (CSV)")}</button>
+          {project.drawings[0] && <a className="small" href={`/mangda/${project.drawings[0].id}`}>{tr("Granska markeringarna i Mängda →")}</a>}
+        </div>
+        <div className="tablewrap">
+          <table className="qty">
+            <thead><tr><th>{tr("Källtyp")}</th><th>{tr("Kod")}</th><th>{tr("Namn")}</th><th>{tr("Namnet enligt")}</th><th className="num">{tr("Antal")}</th><th>{tr("Sidor")}</th><th></th></tr></thead>
+            <tbody>{rows.map((r: any) => (
+              <tr key={r.code}>
+                <td><span className="badge">{r.source_type}</span></td>
+                <td><b>{r.code}</b></td>
+                <td>
+                  <input value={names[r.code] ?? r.name ?? ""} placeholder={tr("Namnge koden")} style={{ minWidth: 160 }}
+                    onChange={(e) => setNames({ ...names, [r.code]: e.target.value })} />
+                </td>
+                <td className="muted small">{tr(SOURCE[r.name_source] ?? r.name_source)}{r.legend ? ` · ${r.legend.filename} ${tr("sida")} ${r.legend.page + 1}` : ""}</td>
+                <td className="num">{r.count}{r.not_counted ? <span className="muted small"> (+{r.not_counted})</span> : null}</td>
+                <td className="muted small">{r.pages.length}</td>
+                <td>{names[r.code] !== undefined && <button className="small" onClick={() => save(r.code)}>{tr("Spara")}</button>}</td>
+              </tr>
+            ))}</tbody>
+          </table>
+        </div>
+        <p className="muted small">{tr("(+N) är enheter på sidor som inte räknas – samma plan en gång till.")}</p>
       </>}
     </div>
   );

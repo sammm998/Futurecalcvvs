@@ -1781,3 +1781,47 @@ def test_abt_rooms_are_read_into_the_project_counted_once_chosen_by_page_and_exp
     assert client.delete(f"/api/drawings/{d2['id']}", headers=H).status_code == 200
     assert all(x["drawing_id"] != d2["id"] for x in client.get(f"/api/projects/{p['id']}/rooms", headers=H).json()["rooms"])
     assert client.delete(f"/api/projects/{p['id']}", headers=H).status_code == 200
+
+
+def test_abt_units_are_count_markers_counted_on_the_counted_pages_named_and_reviewed(client, tmp_path):
+    """The units of an ABT project: each a count marker on its own layer, counted on the pages that count, named by
+    the sheet, the reference or the person, and gone from the count when the person rejects the marker."""
+    import pymupdf
+    sys.path.insert(0, os.path.dirname(__file__))
+    from test_abt_units_are_the_codes_by_the_fittings import _sheet
+    r = client.post("/api/auth/register", json={"email": "enheter@example.com", "password": "hemligt1"}).json()
+    H = {"Authorization": f"Bearer {r['access_token']}"}
+    p = client.post("/api/projects", json={"name": "Enheter", "contract_form": "ABT06"}, headers=H).json()
+    with open(_sheet(tmp_path, pages=2), "rb") as fh:          # the same plan twice: the second is not counted
+        d = client.post(f"/api/projects/{p['id']}/drawings", files={"file": ("A-plan.pdf", fh, "application/pdf")}, headers=H).json()
+    got = client.post(f"/api/drawings/{d['id']}/rooms", headers=H).json()
+    assert got["units"] == 10
+    units = client.get(f"/api/projects/{p['id']}/units", headers=H).json()
+    by = {u["code"]: u for u in units["units"]}
+    assert (by["TM"]["count"], by["TM"]["not_counted"]) == (2, 2)
+    assert by["TM"]["name"] == "Tvättmaskin" and by["TM"]["name_source"] == "referensdata"
+    assert by["XQ"]["name"] == "Testenhet" and by["XQ"]["name_source"] == "bladets förklaring"
+    assert by["XQ"]["legend"]["filename"] == "A-plan.pdf" and by["XQ"]["source_type"] == "RÄKNAD"
+    named = client.put(f"/api/projects/{p['id']}/units/names", json={"code": "XR", "name": "Egen enhet"}, headers=H).json()
+    assert {u["code"]: u for u in named["units"]}["XR"]["name_source"] == "angiven"
+    marks = client.get(f"/api/drawings/{d['id']}/markups?all_pages=true", headers=H).json()
+    rows = marks["rows"] if isinstance(marks, dict) else marks
+    abt = [m for m in rows if m["layer"] == "ABT enheter"]
+    assert len(abt) == 10 and all(m["tool"] == "antal" for m in abt)
+    tm = next(m for m in abt if m["designation"] == "TM" and m["page"] == 0)
+    patched = client.patch(f"/api/drawings/{d['id']}/markups/{tm['id']}", json={"status": "avvisad"}, headers=H)
+    assert patched.status_code == 200, patched.text
+    after = {u["code"]: u for u in client.get(f"/api/projects/{p['id']}/units", headers=H).json()["units"]}
+    assert after["TM"]["count"] == 1, "a rejected marker is not a unit"
+    xq = next(m for m in abt if m["designation"] == "XQ" and m["page"] == 0)
+    assert client.delete(f"/api/drawings/{d['id']}/markups/{xq['id']}", headers=H).status_code == 200
+    after = {u["code"]: u for u in client.get(f"/api/projects/{p['id']}/units", headers=H).json()["units"]}
+    assert "XQ" not in after or after["XQ"]["count"] == 0, "a removed marker is not a unit"
+    csv = client.get(f"/api/projects/{p['id']}/units.csv", headers=H).content.decode("utf-8-sig")
+    assert csv.splitlines()[0] == "källtyp;kod;namn;namnet enligt;antal;sidor" and "RÄKNAD;XR;Egen enhet;angiven;1" in csv
+    # reading again replaces the reader's markers, never the person's own
+    client.post(f"/api/drawings/{d['id']}/markups", json={"tool": "antal", "page": 0, "points": [[5, 5]], "layer": "Mängdning"}, headers=H)
+    client.post(f"/api/drawings/{d['id']}/rooms", headers=H)
+    marks = client.get(f"/api/drawings/{d['id']}/markups?all_pages=true", headers=H).json()
+    rows = marks["rows"] if isinstance(marks, dict) else marks
+    assert sum(1 for m in rows if m["layer"] == "ABT enheter") == 10 and sum(1 for m in rows if m["layer"] == "Mängdning") == 1
