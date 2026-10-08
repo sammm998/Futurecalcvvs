@@ -188,3 +188,69 @@ begränsningar och vad nästa fas behöver.
   diagnosdetalj bortom en rörfront. Det beror på Pythons slumpade hash-ordning och påverkar aldrig mängden. Verktyget
   läser därför med fast `PYTHONHASHSEED`.
 - **Resultat för refaktoreringen:** 19 riktiga blad och 1102 artefakter, och läsningen är identisk före och efter.
+
+## 9. Spår C1 – genomförd: skannade blad och bilder läses ur bildpunkterna
+
+**Vad som händer.** En handling där ingen sida har vektorgeometri avvisas inte längre. Varje skannad sida eller
+bildsida läses ur sina bildpunkter (`engine/vvs_engine/raster`) och lämnas sedan till samma läsning som ett
+vektorblad: grammatik, hänvisningslinjer, koppling och mätning. Stegen per sida:
+
+1. Bladet ritas upp med skanningens egen upplösning, inom 150–300 dpi och högst 40 miljoner bildpunkter. Ojämn
+   belysning jämnas ut, och bläcket skiljs från papperet med Otsus tröskel. Damm försvinner.
+2. OCR (tesseract, svenska och engelska, en tråd) läser bara det bläck som är stort som bokstäver. Linjer, väggar
+   och symboler tas bort först, så att linjer inte läses som bokstäver. Tesseract körs i tre omgångar: glest
+   utspridd text, fristående tal (siffrorna under en skalstock och måttal) och text som är skriven uppåt. Ord som
+   har lästs lyfts ur linjebilden.
+3. Linjerna tunnas till en pixel och följs från knut till knut. Två armar som fortsätter rakt genom en korsning blir
+   samma linje, och övriga armar slutar på den linjen, så att en ledare landar mitt på röret. En linje delas där
+   strecket byter bredd, eftersom en ledare ritad mot ett rörs ände annars blir ett enda bläckdrag med röret. Varje
+   rak sträcka läggs på linjen genom alla sina pixlar, med skarpa hörn, så att skannerbrus inte blir små knyckar.
+4. Bredden mäts tvärs över strecket och knyts till pennor, och färgen tas ur strecket kärna i breda gråsteg. Ytor
+   som är för breda för att vara streck blir fyllda ytor.
+5. Bilder (PNG, JPG, TIFF) blir en PDF med bildens egna bildpunkter, i den storlek filen anger. En fil som inte
+   anger upplösning läggs ut vid 200 dpi.
+
+**Förtroende, enligt beslut:**
+- Varje rör från en bildsida är flaggat `read_from_image` och har nivån granska.
+- Varje rad står som `READ_FROM_IMAGE` (LÄST UR BILD), och omdömet säger `READ_FROM_IMAGE`.
+- Skalan gäller bara om den är mätt på bladet: `VERIFIED`, `BAR_ONLY`, `DIMENSIONS_ONLY` eller `CONFLICT` med den
+  uppmätta, eller om den anges för hand. En skaltext ensam räcker inte, eftersom en skanner kan ha krympt bladet
+  och 1:50 då inte längre stämmer på papperet. Det gäller också papperformat, rörbredder och omgångens skala.
+
+**Oförändrat för vektor-PDF:**
+- En handling med en enda vektorsida läses precis som förut, och dess skannade sidor hoppas över som förut.
+- Golden-testerna och den strikta jämförelsen på de 19 riktiga bladen är identiska.
+
+**Credits:** en sida som läses ur bildpunkter kostar `raster_page` (1 credit) utöver bladpriset. Admin kan ändra det.
+
+**Utvärdering.** De 15 facitbladen rastrerades vid 200 dpi i färg, utan påskrift. Sedan lästes de som
+produktionen läser och jämfördes med facit i bladets egna koordinater:
+
+| Facitmeter, viktat över bladen | rätt | fel DN | fel system | missad |
+|---|---|---|---|---|
+| Vektor (`corpus_baseline.json`) | 91,5 % | | | |
+| Bild vid 200 dpi, C1 (`corpus_baseline_raster.json`) | 10,7 % | 10,5 % | 13,3 % | 65,5 % |
+
+Per blad ligger bildläsningen mellan 0 och 54 % rätt. Den hittar rörens geometri och bladets beteckningar:
+- På A0011 läser OCR 163 beteckningar, varav 109 med DN.
+- Rörpennorna återfinns med ungefär rätt längd.
+
+Det som brister är vilka pennor som tas som rör, och kopplingen från etiketterna. Stigare räknas inte alls än.
+Bilden är alltså en första läsning att granska, och precisionen är arbetet i C2, mätt mot sin egen baslinje.
+
+Skalan stod på inget av facitbladen på en skalstock, bara som text. Ingen av de rastrerade versionerna fick därför
+någon skala förrän den angavs, vilket är precis vad beslutet om verifierad skala innebär. Facitjämförelsen görs i
+bladets egna koordinater och påverkas inte av det.
+
+Syntetiskt blad (två rör, skalstock): läst ur bild blir den totala längden 12,25 m vid 200 dpi och 12,07 m vid
+150 dpi. Bladet lutat 1,5° ger 12,10 m. Vektorläsningen ger 12,30 m. Med brus och JPEG-artefakter hittas båda
+rören, men den högra delen av T-knuten får ingen ägare.
+
+**Kända begränsningar (C2):**
+- Utan CAD-lagrens namn väljer läsningen rörpennor bara efter bredd, färg och etiketternas landningar. Tunna svarta
+  streckade linjer i arkitekturen tas därför ibland som rör, och en del etiketter hamnar på fel penna.
+- Ledare som slutar vid en symbol (stigarringar) kopplas sämre än i vektor. Stigare ur bild räknas inte än.
+- Ritningsnumret i namnrutan kan läsas som en beteckning.
+- Riktiga skanningar saknas. Lutning, brus och låg upplösning är bara provade syntetiskt.
+- Upp och nedvända blad, och text skriven uppifrån och ned, läses inte.
+- Fotografier med perspektiv rätas inte upp.

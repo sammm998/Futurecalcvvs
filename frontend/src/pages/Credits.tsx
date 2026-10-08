@@ -69,12 +69,13 @@ export default function CreditsPage() {
       </p>
       <div className="tablewrap">
         <table className="qty">
-          <thead><tr><th>Format</th><th>{tr("A3 och mindre")}</th><th>A2</th><th>A1</th><th>A0</th><th>{tr("Större än A0")}</th><th>Andra blick (syn)</th></tr></thead>
+          <thead><tr><th>Format</th><th>{tr("A3 och mindre")}</th><th>A2</th><th>A1</th><th>A0</th><th>{tr("Större än A0")}</th><th>Andra blick (syn)</th><th>{tr("Skannad sida")}</th></tr></thead>
           <tbody>
             <tr>
               <td>{tr("Credits per sida")}</td>
               {["A3", "A2", "A1", "A0", "A0+"].map((k) => <td key={k}>{fmtCredits(p.sheet[k])}</td>)}
               <td>{fmtCredits(p.vision_page)} per sida</td>
+              <td>+{fmtCredits(p.raster_page ?? 1)} per sida</td>
             </tr>
           </tbody>
         </table>

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { t as tr, locale } from "../i18n";
+import { t as tr, trf, locale } from "../i18n";
 import { Link } from "react-router-dom";
 import PublicFrame from "../components/PublicFrame";
 
@@ -98,6 +98,7 @@ export default function PricingPage() {
                 extra per påbörjat sådant steg, upp till {fmt(p.ink_cap_credits)} credits. Det syns i priset innan läsningen.
               </li>
               <li><b>{tr("Andra blick.")}</b> En granskning med syn av en färdig läsning kostar {fmt(p.vision_page)} credit per sida, och begärs bara när du ber om den.</li>
+              <li><b>{tr("Skannade blad och bilder.")}</b> {trf("En sida som läses ur en skanning eller en bild kostar {0} credit extra. Allt som läses ur bildpunkter ska granskas.", fmt(p.raster_page ?? 1))}</li>
               <li><b>{tr("Ingår.")}</b> {tr("Projektanalysen över hela handlingen, kalkylen och anbudet, mängdningsverktyget, CAD-rummet, exporter och akademin kostar inga credits.")}</li>
               {p.refund_when_unmeasured && <li><b>{tr("Återbetalning.")}</b> {tr("Saknar bladet skala, eller går läsningen fel, får du tillbaka priset utan att fråga. Skälet står i din reskontra.")}</li>}
             </ul>

@@ -1694,3 +1694,41 @@ def test_a_reading_records_the_discipline_it_was_made_in(client, source_api_pdf)
     with open(source_api_pdf, "rb") as fh:
         r = client.post(f"/api/projects/{p['id']}/drawings?discipline=kyla", files={"file": ("k.pdf", fh, "application/pdf")}, headers=H)
     assert r.status_code == 422                                     # a discipline that is not built is refused at upload
+
+
+def test_an_image_of_a_drawing_is_uploaded_as_a_pdf_and_read_as_one_to_be_reviewed(client, synthetic_pdf):
+    """A photo or a scan saved as an image is taken by the upload, kept as a PDF of its own pixels, and read from
+    them - every row it gives stands as read from an image, and the quality says why."""
+    import pymupdf
+    from vvs_engine import raster
+    if not raster.available() or not raster._lang():
+        pytest.skip("bildläsningen behöver OpenCV, scikit-image och tesseract")
+    with pymupdf.open(synthetic_pdf) as doc:
+        pix = doc[0].get_pixmap(dpi=200, colorspace=pymupdf.csGRAY)
+        pix.set_dpi(200, 200)
+        png = pix.tobytes("png")
+    r = client.post("/api/auth/register", json={"email": "bild@example.com", "password": "hemligt1"}).json()
+    H = {"Authorization": f"Bearer {r['access_token']}"}
+    p = client.post("/api/projects", json={"name": "Skannat"}, headers=H).json()
+    bad = client.post(f"/api/projects/{p['id']}/drawings", files={"file": ("plan.gif", b"GIF89a", "image/gif")}, headers=H)
+    assert bad.status_code == 400 and "bilder" in bad.json()["detail"]
+    liar = client.post(f"/api/projects/{p['id']}/drawings", files={"file": ("plan.png", b"%PDF-1.7", "image/png")}, headers=H)
+    assert liar.status_code == 400
+    d = client.post(f"/api/projects/{p['id']}/drawings", files={"file": ("plan.png", png, "image/png")}, headers=H).json()
+    assert d["filename"] == "plan.pdf" and d["n_pages"] == 1
+    again = client.post(f"/api/projects/{p['id']}/drawings", files={"file": ("plan.png", png, "image/png")}, headers=H).json()
+    assert again["id"] == d["id"] and again["duplicate"] is True, "the same image is the same drawing"
+    pdf = client.get(f"/api/drawings/{d['id']}/file", headers=H)
+    assert pdf.status_code == 200 and pdf.content.startswith(b"%PDF")
+    with pymupdf.open(stream=pdf.content, filetype="pdf") as doc:
+        assert abs(doc[0].rect.width - 842) < 1 and doc[0].get_images(), "the page is the paper the image states"
+    j = client.post(f"/api/drawings/{d['id']}/analyze", headers=H).json()
+    for _ in range(240):
+        j = client.get(f"/api/jobs/{j['id']}", headers=H).json()
+        if j["status"] in ("COMPLETED", "FAILED"):
+            break
+        time.sleep(0.5)
+    assert j["status"] == "COMPLETED", j
+    res = client.get(f"/api/jobs/{j['id']}/result", headers=H).json()
+    assert res["quantities"] and all(q["state"] == "READ_FROM_IMAGE" for q in res["quantities"])
+    assert "READ_FROM_IMAGE" in res["quality"]["reasons"] and res["quality"]["verdict"] != "VALID"

@@ -97,6 +97,28 @@ def scale_given_by_hand(known: float, sheet_said: str, source: str = "angiven av
                        reason=f"{source}; bladets eget besked: {sheet_said}")
 
 
+# Det en skala på ett blad läst ur bild får vila på: något som mäts på bladet självt. En skalstock och ett mått
+# krymper med bladet om skannern krympte det; en skaltext gör det inte - "1:50" står kvar fast bladet nu är
+# hälften så stort. Ett blad som inte når hit mäts inte förrän någon anger skalan.
+MEASURED_ON_THE_SHEET = ("VERIFIED", "BAR_ONLY", "DIMENSIONS_ONLY", "CONFLICT")
+
+
+def scale_read_from_image(found: ScaleResult) -> ScaleResult:
+    """Skalan för ett blad som är läst ur en bild: bladets eget besked när det är mätt på bladet, annars ingen.
+
+    En skannad ritning är en bild av papperet, och papperet kan ha krympts på vägen - en A1 skannad till A3, ett
+    foto taget på snedden. Skaltexten följer inte med i krympningen, så en skala som bara vilar på den, eller på
+    pappersformatet, kan vara fel med en faktor två utan att något på bladet säger det. Det som följer med är det
+    som är ritat i samma skala som rören: en skalstock och måttsatta avstånd. VERIFIED är alltid bekräftad av en
+    av dem; BAR_ONLY och DIMENSIONS_ONLY är dem; CONFLICT har valt den uppmätta. Allt annat - skaltext ensam,
+    rörbredder lästa ur bildpunkter - blir ingen skala, med skälet utskrivet och beskedet kvar som bevis, så att
+    den som anger skalan för hand ser vad bladet påstod."""
+    if found.meters_per_pt is None or found.state in MEASURED_ON_THE_SHEET:
+        return found
+    return ScaleResult(None, "none", "NONE", found.evidence,
+                       f"read_from_image_scale_not_measured_on_the_sheet (was {found.state}: {found.reason})")
+
+
 def ratio_to_meters_per_pt(ratio: float) -> float:
     """1:50 blir meter per PDF-punkt. En punkt är 25,4/72 mm på papperet, och skalan säger hur många gånger
     verkligheten är större."""

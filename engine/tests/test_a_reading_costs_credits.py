@@ -227,3 +227,26 @@ def test_local_member_can_analyze_without_balance_or_billing(client, source_api_
     assert client.get("/api/credits", headers=H).json() == before
     monkeypatch.setattr(settings, "local_installation", False)
     assert client.post(f"/api/drawings/{d['id']}/analyze", headers=H).status_code == 402
+
+
+def test_a_page_read_from_pixels_costs_its_surcharge_and_a_vector_page_does_not(client, synthetic_pdf, tmp_path):
+    """A scan is read from its pixels, and the price says so before the reading: the sheet's price and the
+    surcharge for a page read from an image. A scanned page among vector pages is not read, and costs nothing extra."""
+    H, _ = _user(client, "skanning@example.com")
+    prices = client.get("/api/public/pricing").json()
+    scan = str(tmp_path / "scan.pdf")
+    with pymupdf.open(synthetic_pdf) as src, pymupdf.open() as out:
+        pix = src[0].get_pixmap(dpi=150, colorspace=pymupdf.csGRAY)
+        page = out.new_page(width=src[0].rect.width, height=src[0].rect.height)
+        page.insert_image(page.rect, stream=pix.tobytes("png"))
+        out.save(scan)
+    q = client.get(f"/api/drawings/{_upload(client, H, scan)['id']}/price", headers=H).json()
+    surcharge = prices.get("raster_page", 1.0)
+    assert q["pages"][0]["raster"] == surcharge > 0
+    assert q["credits"] == prices["sheet"]["A3"] + surcharge and "skannad" in q["reason"]
+    mixed = str(tmp_path / "mixed.pdf")
+    with pymupdf.open(synthetic_pdf) as doc:
+        doc.insert_pdf(pymupdf.open(scan))
+        doc.save(mixed)
+    q = client.get(f"/api/drawings/{_upload(client, H, mixed)['id']}/price", headers=H).json()
+    assert [p["raster"] for p in q["pages"]] == [0, 0]

@@ -47,6 +47,7 @@ PRICE_DEFAULTS: dict[str, Any] = {
     "ink_step_credits": 0.5,           # ... och vad varje steg kostar
     "ink_cap_credits": 3.0,            # taket för bläcktillägget per sida
     "vision_page": 1.0,                # en andra blick med syn på en sida
+    "raster_page": 1.0,                # tillägg för en sida som läses ur bildpunkter: en skanning eller en bild
     "trial_credits": 5.0,              # vad ett nytt konto får att prova med
     "refund_when_unmeasured": True,    # en läsning utan en enda meter betalas tillbaka
     "packages": [
@@ -113,11 +114,19 @@ def measure_pages(path: str, sha: str | None = None) -> list[dict]:
     if sha and sha in _MEASURED:
         return _MEASURED[sha]
     import pymupdf
+    from vvs_engine.pdf.classify import classify_page
     out = []
     with pymupdf.open(path) as doc:
         for pg in doc:
             area = pg.rect.width * pg.rect.height * (25.4 / 72 / 1000) ** 2
-            out.append({"area_m2": round(area, 4), "paths": len(pg.get_drawings())})
+            drawings = pg.get_drawings()
+            out.append({"area_m2": round(area, 4), "paths": len(drawings),
+                        "mode": classify_page(pg, drawings=drawings).mode})
+    # Sidorna läses ur bildpunkterna bara när handlingen inte har en enda vektorsida (vvs_engine/raster): det är då
+    # skanningarna och bilderna kostar sitt tillägg. En skannad sida bland vektorsidor läses inte, och kostar inget extra.
+    from_pixels = not any(p["mode"] in ("vector", "mixed") for p in out)
+    for p in out:
+        p["raster"] = from_pixels and p.pop("mode") == "raster"
     if sha:
         _MEASURED[sha] = out
     return out
@@ -133,9 +142,11 @@ def quote_pages(pages: list[dict], pl: dict) -> dict:
         base = float((pl.get("sheet") or {}).get(sc, 2.0))
         steps = max(0, (int(p["paths"]) - 1) // step)
         ink = min(float(pl.get("ink_cap_credits") or 3.0), steps * float(pl.get("ink_step_credits") or 0.5))
+        raster = float(pl.get("raster_page", 1.0) or 0.0) if p.get("raster") else 0.0
         rows.append({"page": i, "size_class": sc, "area_m2": p["area_m2"], "paths": p["paths"],
-                     "base": base, "ink": round(ink, 2), "credits": round(base + ink, 2)})
-        total += base + ink
+                     "base": base, "ink": round(ink, 2), "raster": round(raster, 2),
+                     "credits": round(base + ink + raster, 2)})
+        total += base + ink + raster
     return {"credits": round(total, 2), "pages": rows}
 
 
@@ -144,7 +155,8 @@ def quote_drawing(db: Session, d: Drawing) -> dict:
     pages = measure_pages(storage.path(d.storage_key), d.sha256)
     q = quote_pages(pages, pl)
     q["drawing_id"] = d.id
-    q["reason"] = "; ".join(f"sida {r['page'] + 1}: {r['size_class']} {r['base']:g} + bläck {r['ink']:g}" for r in q["pages"])
+    q["reason"] = "; ".join(f"sida {r['page'] + 1}: {r['size_class']} {r['base']:g} + bläck {r['ink']:g}"
+                            + (f" + skannad {r['raster']:g}" if r.get("raster") else "") for r in q["pages"])
     return q
 
 

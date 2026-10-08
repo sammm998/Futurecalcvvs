@@ -91,8 +91,10 @@ def coverage_validity(cov: dict[str, Any], anchors: list, reconciliation: dict |
             "note": "konservering säger att inget dubbelräknas; giltighet säger om läsningen nådde bladet - två frågor"}
 
 
-def completion_checks(quality, quantities=(), source_assignment=None, review=None):
-    """Completion of checks is independent of how much pipe has an assigned name."""
+def completion_checks(quality, quantities=(), source_assignment=None, review=None, from_image: bool = False):
+    """Completion of checks is independent of how much pipe has an assigned name.
+
+    from_image: the sheet was read from pixels. Everything on it is to be reviewed, and the reading says so."""
     from copy import deepcopy
     result = deepcopy(quality or {'verdict': 'DEGRADED', 'reasons': [], 'measures': {}, 'accuracy_verified': False})
     reasons = result.setdefault('reasons', [])
@@ -107,6 +109,8 @@ def completion_checks(quality, quantities=(), source_assignment=None, review=Non
     findings = review.get('findings', []) if isinstance(review, dict) else []
     if any(f.get('code') in ('ocr_partial', 'ocr_failed', 'ocr_unavailable') for f in findings):
         checks.append('OCR_REVIEW_INCOMPLETE')
+    if from_image:
+        checks.append('READ_FROM_IMAGE')
     for reason in checks:
         if reason not in reasons:
             reasons.append(reason)

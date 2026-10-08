@@ -507,4 +507,6 @@ export const publikt: Record<string, string> = {
   "Fråga ritningen. Svaren kommer ur mängden, och sträckorna visas på bladet.": "Ask the drawing. The answers come from the takeoff, and the runs are shown on the sheet.",
   "Mängden blir material, normtid och anbudssumma, rad för rad.": "The quantity becomes material, standard time and a tender total, row by row.",
   "Rita väggar, dörrar, fönster och rum – i plan och 3D samtidigt.": "Draw walls, doors, windows and rooms – in plan and 3D at once.",
+  "Skannade blad och bilder.": "Scanned sheets and images.",
+  "En sida som läses ur en skanning eller en bild kostar {0} credit extra. Allt som läses ur bildpunkter ska granskas.": "A page read from a scan or an image costs {0} credit extra. Everything read from pixels must be reviewed.",
 };

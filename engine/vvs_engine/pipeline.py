@@ -1736,6 +1736,8 @@ def analyze_page(page: RawPage, progress: Callable[[str], None] | None = None, o
             _R("pipeline.DN_ROWS_ARE_VERTICAL_ONLY", DN_ROWS_ARE_VERTICAL_ONLY), legend=legend,
             unknown_codes=unknown_codes))
 
+    # a sheet read from pixels (raster/): every run on it is reviewed, and its scale must be measured on the sheet
+    from_image = (page.input_class or {}).get("read_as") == "raster"
     scale = discover_scale(page, lines)
     if scale.meters_per_pt is None:
         # nothing on the sheet states its size: measure it on the pipes, whose labels say how wide they are
@@ -1747,7 +1749,10 @@ def analyze_page(page: RawPage, progress: Callable[[str], None] | None = None, o
             # a flow or principle diagram is drawn without a scale on purpose: its lines say what connects to
             # what, not how long anything is
             scale = ScaleResult(None, "none", scale.state, scale.evidence, "schematic_not_to_scale")
-    if known_scale is not None and scale.state in ("NONE", "CONFLICT") and scale.meters_per_pt is None:
+    if from_image:
+        from .measure.scale import scale_read_from_image
+        scale = scale_read_from_image(scale)
+    if known_scale is not None and not from_image and scale.state in ("NONE", "CONFLICT") and scale.meters_per_pt is None:
         # the rest of the set agreed about how big it is, and this sheet's own stamp did not settle it
         scale = scale_from_the_set(known_scale, f"ritningsomgången är enig; bladets eget besked: {scale.reason}",
                                    known_scale_pages)
@@ -1879,7 +1884,13 @@ def analyze_page(page: RawPage, progress: Callable[[str], None] | None = None, o
                                              sg.y0 + (sg.y1 - sg.y0) * (i + 0.5) / n) is not None)
                 tot += sg.length * inside / n
             hatched_pt[pp.physical_pipe_id] = tot
-    measures = measure_pipes(ownership, scale, elevations, hatched_pt)
+    if from_image:
+        from .raster import RASTER_FLAG
+        for pp in ownership.pipes:
+            pp.needs_review = True
+            if RASTER_FLAG not in pp.flags:
+                pp.flags.append(RASTER_FLAG)
+    measures = measure_pipes(ownership, scale, elevations, hatched_pt, from_image=from_image)
     risers = _riser_symbols(page, ann_layers, glyph_pids, graphs, ownership, anchors, identities)
     label_risers = _risers_from_dn_rows(designations, anchors, leaders, identities)
     # En stigare inne i en skraffering hör till den del bladet inte redovisar, precis som röret där: mängdaren

@@ -362,11 +362,11 @@ def run_job(job_id: str) -> None:
         # and shown already; what the agent changes arrives as corrections marked as its own.
         _agent.submit(_run_agent, job_id, out_dir, pdf_path, ai_model)
     except UnsupportedInputError as e:
-        # not a defect: the PDF carries no vector drawing, so there is nothing to read
+        # not a defect: no page carries a drawing - no vector geometry, and no scan or image to read either
         _set(job_id, status="FAILED", stage="FAILED", finished_at=dt.datetime.now(dt.timezone.utc),
-             error="Ritningen är inte en vektor-PDF. Systemet läser ritningens egna vektorkoder och gissar aldrig "
-                   "utifrån bildpunkter, så en skannad eller bildbaserad PDF kan inte mängdas. Ladda upp filen som "
-                   f"vektor-PDF (exporterad från CAD, inte skannad). Klassificering: {e}")
+             error="Ritningen innehåller inget som går att läsa: ingen sida har vektorgeometri, och ingen är en "
+                   "skanning eller bild att läsa ur bildpunkterna. Kontrollera att rätt fil laddades upp. "
+                   f"Klassificering: {e}")
     except Exception as e:  # noqa: BLE001
         # Felet som skrivs på jobbet visas för den som laddade upp ritningen. En stackspårning där är två fel
         # på en gång: den säger ingenting till en mängdare, och den lämnar ut serverns filvägar och moduler.

@@ -1,4 +1,6 @@
-"""Only vector drawings are analysed: a scanned page is classified as such, skipped and reported."""
+"""Vector drawings are read from their own geometry. A scanned page among vector pages is classified as such,
+skipped and reported; a document with no vector page at all is read from its pixels (vvs_engine/raster) and says
+so on every page."""
 import os
 
 import pymupdf
@@ -28,13 +30,32 @@ def test_classification_vector_vs_scanned(synthetic_pdf, tmp_path):
     assert classify_page(pymupdf.open(scan)[0]).mode == "raster"
 
 
-def test_scanned_pdf_is_rejected_not_guessed(synthetic_pdf, tmp_path):
-    """A scan carries no geometry to read. The engine says so instead of producing measurements from pixels."""
+def test_without_reading_pixels_a_scan_is_refused_not_guessed(synthetic_pdf, tmp_path):
+    """Asked not to read pixels, the engine refuses a scan instead of producing measurements from it."""
     scan = os.path.join(tmp_path, "scan.pdf")
     _rasterise(synthetic_pdf, scan)
     with pytest.raises(UnsupportedInputError) as ex:
-        extract_document(scan)
+        extract_document(scan, raster=False)
     assert ex.value.classifications and ex.value.classifications[0]["mode"] == "raster"
+
+
+def test_a_scan_is_read_from_its_pixels_and_says_so(synthetic_pdf, tmp_path):
+    """A document of scans only is read from its pixels: lines traced out of the ink, words read by OCR - and the
+    page carries that it was, so everything downstream can say so."""
+    scan = os.path.join(tmp_path, "scan.pdf")
+    _rasterise(synthetic_pdf, scan)
+    for eager in (True, False):
+        rd = extract_document(scan, eager=eager)
+        assert len(rd.pages) == 1 and not rd.skipped_pages
+        pg = rd.pages[0]
+        assert pg.input_class["mode"] == "raster" and pg.input_class["read_as"] == "raster"
+        assert any(r.startswith("READ_FROM_IMAGE") for r in pg.input_class["reasons"])
+        assert pg.paths and all(p.layer == "" for p in pg.paths)
+        # the dashed pipes come back at their pen, the leaders at theirs
+        widths = {round(p.width, 2) for p in pg.paths if p.kind == "s"}
+        assert any(abs(w - 1.44) <= 0.2 for w in widths) and any(abs(w - 0.72) <= 0.2 for w in widths), widths
+        if pg.input_class["ocr"].get("lang"):
+            assert "KV01-X7-40-W40" in {s.text for s in pg.spans}
 
 
 def test_vector_pages_are_read_and_scanned_pages_skipped(synthetic_pdf, tmp_path):

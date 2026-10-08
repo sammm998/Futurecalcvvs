@@ -18,7 +18,7 @@ import AnalysisFilm from "../components/AnalysisFilm";
 import LearnWizard from "../components/LearnWizard";
 import Boundary from "../components/Boundary";
 import DrawingQuality from "../components/DrawingQuality";
-import AnalysisQuality from "../components/AnalysisQuality";
+import AnalysisQuality, { ReadFromImage } from "../components/AnalysisQuality";
 import DrawingDeclarations from "../components/DrawingDeclarations";
 import ReferenceComparison from "../components/ReferenceComparison";
 import Markups, { type MarkDraft, type MarkTool } from "../components/Markups";
@@ -615,6 +615,7 @@ export default function AnalysisPage() {
         </div>
         {tab === "mangder" && (
           <div className="card">
+            <ReadFromImage quality={result.quality} />
             <SourceAssignment report={result.source_assignment} />
             <div className="row" style={{ marginBottom: 18 }}>
               <button className="secondary small" disabled={rescaling} onClick={async () => {
@@ -923,6 +924,7 @@ export default function AnalysisPage() {
           const risers = calc.reduce((t: number, r: any) => t + (r.risers_calc || 0), 0);
           return (
           <div className="card">
+            <ReadFromImage quality={result.quality} />
             <SourceAssignment report={result.source_assignment} />
             <div className="row" style={{ marginBottom: 18 }}>
               <button className="secondary small" disabled={rescaling} onClick={async () => {

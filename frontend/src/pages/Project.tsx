@@ -57,7 +57,7 @@ export default function ProjectPage() {
         failed.forEach(f => remaining.items.add(f));
         fileRef.current.files = remaining.files;
       }
-      setPicked(failed.length ? trf("{0} PDF-filer valda", failed.length) : "");
+      setPicked(failed.length ? trf("{0} filer valda", failed.length) : "");
       setErr(errors.join("\n"));
       setNotice(trf("{0} uppladdade · {1} fanns redan · {2} misslyckades", uploaded, duplicates, failed.length));
       await load();
@@ -98,9 +98,10 @@ export default function ProjectPage() {
           </div>
         </div>
         <div className="row">
-          <input type="file" accept="application/pdf,.pdf" multiple disabled={busy} ref={fileRef} id="pdf" className="file"
-            onChange={(e) => { const files = e.target.files; setPicked(files?.length === 1 ? files[0].name : files?.length ? trf("{0} PDF-filer valda", files.length) : ""); }} />
-          <label className="pick" htmlFor="pdf">{picked || "Välj PDF…"}</label>
+          <input type="file" accept="application/pdf,.pdf,image/png,image/jpeg,image/tiff,.png,.jpg,.jpeg,.tif,.tiff" multiple disabled={busy} ref={fileRef} id="pdf" className="file"
+            title={tr("Vektor-PDF läses ur ritningens egna linjer. En skanning eller bild läses ur bildpunkterna och ska granskas.")}
+            onChange={(e) => { const files = e.target.files; setPicked(files?.length === 1 ? files[0].name : files?.length ? trf("{0} filer valda", files.length) : ""); }} />
+          <label className="pick" htmlFor="pdf">{picked || tr("Välj PDF eller bild…")}</label>
           <button onClick={upload} disabled={busy || !picked}>{busy ? tr("Laddar upp…") : tr("Ladda upp")}</button>
           {/* En ritning i taget svarar med meter. Hela handlingen svarar med vad den består av. */}
           <Link to={`/projects/${project.id}/analys`}><button className="secondary">{tr("Analysera projektet")}</button></Link>

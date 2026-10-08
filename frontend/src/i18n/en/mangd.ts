@@ -249,4 +249,8 @@ export const mangd: Record<string, string> = {
   "Granska läsningen": "Review the reading",
   "Vad kan ritas in?": "What can be drawn in?",
   "Hur lästes skalan?": "How was the scale read?",
+  "LÄST UR BILD": "READ FROM IMAGE",
+  "Ritningen är läst ur en bild – en skanning eller ett foto. Linjer och text är tolkade ur bildpunkter, så varje rad ska granskas mot ritningen.": "The drawing was read from an image – a scan or a photo. Lines and text are interpreted from pixels, so every row must be reviewed against the drawing.",
+  "Läst ur en bild – allt ska granskas": "Read from an image – everything must be reviewed",
+  "Ritningen är en skanning eller ett foto. Linjer och text är tolkade ur bildpunkter, så varje rad står som LÄST UR BILD tills du har granskat den mot ritningen. Skalan gäller bara om en skalstock eller mått på bladet bekräftar den – annars anger du den.": "The drawing is a scan or a photo. Lines and text are interpreted from pixels, so every row stands as READ FROM IMAGE until you have reviewed it against the drawing. The scale holds only if a scale bar or dimensions on the sheet confirm it – otherwise you enter it.",
 };
