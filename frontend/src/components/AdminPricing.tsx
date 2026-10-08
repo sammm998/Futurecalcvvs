@@ -41,7 +41,7 @@ export function Pricing() {
         <p className="muted small">{tr("Credits per sida efter format, plus ett bläcktillägg för blad med många banor och ett tillägg för sidor som läses ur en skanning eller bild. Priset visas för kunden innan läsningen körs.")}</p>
         <div className="tablewrap">
           <table className="qty pricegrid">
-            <thead><tr><th>{tr("A3 och mindre")}</th><th>A2</th><th>A1</th><th>A0</th><th>{tr("Större än A0")}</th><th>Bläcksteg (banor)</th><th>{tr("Per steg")}</th><th>Tak</th><th>{tr("Andra blick")}</th><th>{tr("Skannad sida")}</th><th>Provcredits</th></tr></thead>
+            <thead><tr><th>{tr("A3 och mindre")}</th><th>A2</th><th>A1</th><th>A0</th><th>{tr("Större än A0")}</th><th>Bläcksteg (banor)</th><th>{tr("Per steg")}</th><th>Tak</th><th>{tr("Andra blick")}</th><th>{tr("Skannad sida")}</th><th>{tr("Rum (ABT 06), andel")}</th><th>Provcredits</th></tr></thead>
             <tbody>
               <tr>
                 {["A3", "A2", "A1", "A0", "A0+"].map((k) => <td key={k}><Num value={prices.sheet[k]} onChange={(v) => setSheet(k, v)} /></td>)}
@@ -50,6 +50,7 @@ export function Pricing() {
                 <td><Num value={prices.ink_cap_credits} onChange={(v) => setPrices({ ...prices, ink_cap_credits: v })} /></td>
                 <td><Num value={prices.vision_page} onChange={(v) => setPrices({ ...prices, vision_page: v })} /></td>
                 <td><Num value={prices.raster_page ?? 1} onChange={(v) => setPrices({ ...prices, raster_page: v })} /></td>
+                <td><Num value={prices.rooms_factor ?? 1} onChange={(v) => setPrices({ ...prices, rooms_factor: v })} /></td>
                 <td><Num value={prices.trial_credits} step={1} onChange={(v) => setPrices({ ...prices, trial_credits: v })} /></td>
               </tr>
             </tbody>

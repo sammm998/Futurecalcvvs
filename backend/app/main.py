@@ -17,9 +17,9 @@ from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy.orm import Session
 
-from . import (academy as academy_legacy, academy_api, admin as admin_api, cad as cad_api, calc as calc_api,
-               credits as credits_api, desk as desk_api, exports, jobs, markups as markups_api, projects_api,
-               public as public_api)
+from . import (abt as abt_api, academy as academy_legacy, academy_api, admin as admin_api, cad as cad_api,
+               calc as calc_api, credits as credits_api, desk as desk_api, exports, jobs, markups as markups_api,
+               projects_api, public as public_api)
 from vvs_engine.output.schema import upgrade
 from vvs_engine.coverage import completion_checks
 from vvs_engine.corrections import KINDS as CORRECTION_KINDS, apply as apply_corrections
@@ -118,6 +118,7 @@ app.include_router(markups_api.presets)
 app.include_router(calc_api.router)
 app.include_router(cad_api.router)
 app.include_router(credits_api.router)
+app.include_router(abt_api.router)
 app.include_router(desk_api.router)
 
 
@@ -371,6 +372,7 @@ def delete_project(project_id: str, user: User = Depends(current_user), db: Sess
     for d in p.drawings:
         storage.delete_prefix(f"results/{d.id}")
         storage.delete_prefix(f"drawings/{d.id}")
+    abt_api.forget_project(db, p.id)
     db.delete(p); db.commit()
     return {"ok": True}
 
@@ -495,6 +497,7 @@ def drawing_page_image(drawing_id: str, page: int = 0, x0: float = 0, y0: float 
 def delete_drawing(drawing_id: str, user: User = Depends(current_user), db: Session = Depends(get_db)):
     d = _drawing(db, user, drawing_id)
     storage.delete_prefix(f"results/{d.id}"); storage.delete_prefix(f"drawings/{d.id}")
+    abt_api.forget_drawing(db, d.id)
     db.delete(d); db.commit()
     return {"ok": True}
 

@@ -48,6 +48,7 @@ PRICE_DEFAULTS: dict[str, Any] = {
     "ink_cap_credits": 3.0,            # taket för bläcktillägget per sida
     "vision_page": 1.0,                # en andra blick med syn på en sida
     "raster_page": 1.0,                # tillägg för en sida som läses ur bildpunkter: en skanning eller en bild
+    "rooms_factor": 1.0,               # ABT 06: rumsläsning av en A-plan, som andel av bladpriset
     "trial_credits": 5.0,              # vad ett nytt konto får att prova med
     "refund_when_unmeasured": True,    # en läsning utan en enda meter betalas tillbaka
     "packages": [

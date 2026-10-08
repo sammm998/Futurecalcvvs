@@ -1732,3 +1732,52 @@ def test_an_image_of_a_drawing_is_uploaded_as_a_pdf_and_read_as_one_to_be_review
     res = client.get(f"/api/jobs/{j['id']}/result", headers=H).json()
     assert res["quantities"] and all(q["state"] == "READ_FROM_IMAGE" for q in res["quantities"])
     assert "READ_FROM_IMAGE" in res["quality"]["reasons"] and res["quality"]["verdict"] != "VALID"
+
+
+def test_abt_rooms_are_read_into_the_project_counted_once_chosen_by_page_and_exported(client, tmp_path):
+    """The project's rooms from its A-plans: a page that repeats another is not counted twice, the person decides
+    which pages are counted, the list exports with its source type, and the rooms go with their drawing."""
+    import pymupdf
+    sys.path.insert(0, os.path.dirname(__file__))
+    from test_abt_rooms_are_read_from_their_labels import _floor
+    r = client.post("/api/auth/register", json={"email": "abt@example.com", "password": "hemligt1"}).json()
+    H = {"Authorization": f"Bearer {r['access_token']}"}
+    p = client.post("/api/projects", json={"name": "Totalentreprenad", "contract_form": "ABT06"}, headers=H).json()
+    path = str(tmp_path / "a-plan.pdf")
+    doc = pymupdf.open()
+    _floor(doc.new_page(width=842, height=595), "1")
+    _floor(doc.new_page(width=842, height=595), "1")
+    _floor(doc.new_page(width=842, height=595), "2")
+    doc.save(path); doc.close()
+    with open(path, "rb") as fh:
+        d = client.post(f"/api/projects/{p['id']}/drawings", files={"file": ("A-40-1-01.pdf", fh, "application/pdf")}, headers=H).json()
+    got = client.post(f"/api/drawings/{d['id']}/rooms", headers=H)
+    assert got.status_code == 200, got.text
+    pages = {x["page"]: x for x in got.json()["pages"]}
+    assert pages[1]["same_as"] == 0 and pages[1]["counted"] is False
+    rooms = client.get(f"/api/projects/{p['id']}/rooms", headers=H).json()
+    assert rooms["contract_form"] == "ABT06" and rooms["source_type"] == "RÄKNAD"
+    numbered = sorted(x["number"] for x in rooms["rooms"] if x["number"] and x["kind"] == "rum" and x["counted"])
+    assert numbered == ["1-101", "1-102", "1-103", "2-101", "2-102", "2-103"]
+    by_page = {x["page"]: x for x in rooms["pages"]}
+    assert by_page[1]["same_as"]["page"] == 0 and by_page[1]["counted"] is False
+    before = rooms["register"]["totals"]["rooms"]
+    # the person says page 2 is a floor of its own after all
+    chosen = client.patch(f"/api/projects/{p['id']}/rooms/pages", json={"drawing_id": d["id"], "page": 1, "counted": True}, headers=H).json()
+    assert {x["page"]: x for x in chosen["pages"]}[1]["counted"] is True
+    assert chosen["register"]["totals"]["rooms"] > before
+    csv = client.get(f"/api/projects/{p['id']}/rooms.csv", headers=H)
+    assert csv.status_code == 200
+    text = csv.content.decode("utf-8-sig")
+    assert text.splitlines()[0].startswith("källtyp;ritning;sida") and "RÄKNAD;A-40-1-01.pdf;1;rum;1-101;SOVRUM" in text
+    # a second drawing with the same plan: its page is the same plan as one already read, and is not counted
+    with open(path, "rb") as fh:
+        data = fh.read()
+    other = pymupdf.open(stream=data, filetype="pdf"); other.delete_page(2); other.delete_page(1)
+    d2 = client.post(f"/api/projects/{p['id']}/drawings", files={"file": ("V-50-1-01.pdf", other.tobytes(), "application/pdf")}, headers=H).json()
+    got2 = client.post(f"/api/drawings/{d2['id']}/rooms", headers=H).json()
+    assert got2["pages"][0]["counted"] is False and got2["pages"][0]["same_as_elsewhere"]["filename"] == "A-40-1-01.pdf"
+    # the rooms go with their drawing, and the project with its rooms
+    assert client.delete(f"/api/drawings/{d2['id']}", headers=H).status_code == 200
+    assert all(x["drawing_id"] != d2["id"] for x in client.get(f"/api/projects/{p['id']}/rooms", headers=H).json()["rooms"])
+    assert client.delete(f"/api/projects/{p['id']}", headers=H).status_code == 200
