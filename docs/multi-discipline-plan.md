@@ -250,7 +250,94 @@ rören, men den högra delen av T-knuten får ingen ägare.
 - Utan CAD-lagrens namn väljer läsningen rörpennor bara efter bredd, färg och etiketternas landningar. Tunna svarta
   streckade linjer i arkitekturen tas därför ibland som rör, och en del etiketter hamnar på fel penna.
 - Ledare som slutar vid en symbol (stigarringar) kopplas sämre än i vektor. Stigare ur bild räknas inte än.
-- Ritningsnumret i namnrutan kan läsas som en beteckning.
+- Ritningsnumret i namnrutan kan läsas som en beteckning. Åtgärdat i C2, se avsnitt 10.
 - Riktiga skanningar saknas. Lutning, brus och låg upplösning är bara provade syntetiskt.
 - Upp och nedvända blad, och text skriven uppifrån och ned, läses inte.
 - Fotografier med perspektiv rätas inte upp.
+
+## 10. Spår C2 – första steget: fler rätta meter och färre falska
+
+C2 mäter bildläsningen åt två håll. Det första är facits meter: hur många som läses rätt, med fel DN eller system,
+eller inte alls. Det andra är läsningens egna meter: hur många som ligger där facit inte har något rör.
+Korpusverktyget räknade tidigare bara det första. En ändring kunde därför se bättre ut samtidigt som den mätte
+tusentals meter som inte finns. Därför visar verktyget nu också **utanför facit**, per blad och som andel av facits
+meter. Siffran sparas med baslinjen.
+
+Utanför facit är inte alltid fel. En mängdning tar inte alltid med allt som är ritat: vektorläsningen har 16,4 %
+utanför facit, och på A0014 77,5 %. Därför jämförs varje blad bara med sig självt, och spärren nekar inte på
+siffran än. Ingen vet ännu hur mycket den varierar mellan två körningar.
+
+**Två ändringar, båda bara för sidor lästa ur bild:**
+
+1. **En sida läst ur bild läses en gång.**
+   - Vektorbladet läses en andra gång med de pennor undantagna som den första läsningens hänvisningslinjer var
+     ritade med. Tanken är att vissa pennor skriver och andra ritar.
+   - En skanning kan inte pröva den tanken. Där är en penna en bredd mätt i bildpunkter, och vid 200 dpi är en
+     bildpunkt 0,36 pt. Hänvisningslinjernas penna kommer ut som två eller tre bredder, och husets tunna linjer
+     delar dem.
+   - Den andra läsningen sökte då hänvisningslinjer bara i en av bredderna. Etiketterna vars linjer mättes i de
+     andra blev utan rör, och rören de pekade på mättes inte alls.
+2. **Ett ritningsnummer på en sida läst ur bild namnger inget rör.**
+   - Namnrutans linjer kommer ur bildpunkterna som linjer som löper vidare under numret. Bladets eget nummer, med
+     ett tal där en dimension brukar stå, lästes därför som ett rör längs hela namnrutan: 5 400–5 800 pt på fem
+     av bladen och 90–1 100 pt på två till.
+   - Formen känns igen så som handlingsläsningen redan läser ritningsnummer (`handling.py`): en ensam
+     disciplinbokstav, en tvåsiffrig grupp och minst ett led till.
+   - Inget av facits 64 rörnamn har den formen. Av de 683 beteckningstexter som läsningarna av bladen hittat har
+     bara ritningsnummer den: bladens egna och en hänvisning till en arkitektritning.
+   - I vektorläsningarna av bladen har numret aldrig nått en linje, och den läsningen är orörd.
+
+**Resultat.** De 15 facitbladen är rastrerade vid 200 dpi som i C1. Alla siffror är procent av bladets facitmeter.
+
+| Blad | rätt C1 | rätt C2 | utanför facit C1 | utanför facit C2 |
+|---|---|---|---|---|
+| A0011 | 22,0 | 22,0 | 55,7 | 7,6 |
+| A0013 | 54,0 | 54,0 | 7,5 | 7,5 |
+| A0014 | 11,3 | 27,3 | 2,0 | 7,5 |
+| A0111 | 7,4 | 7,4 | 15,7 | 15,7 |
+| A0114 | 6,6 | 6,6 | 7,3 | 6,8 |
+| A0213 | 3,6 | 21,2 | 1,9 | 6,2 |
+| A0222 | 9,1 | 15,2 | 8,6 | 10,6 |
+| A0223 | 10,7 | 10,4 | 1,2 | 2,1 |
+| A0233 | 1,2 | 2,7 | 1,2 | 3,5 |
+| A0311 | 31,9 | 31,9 | 14,9 | 14,9 |
+| A0314 | 0,0 | 0,0 | 0,0 | 0,0 |
+| W0023 | 0,0 | 0,0 | 0,0 | 0,0 |
+| W0024 | 31,5 | 35,8 | 0,2 | 0,2 |
+| W0122 | 4,3 | 11,3 | 4,3 | 9,1 |
+| W0123 | 5,4 | 5,4 | 40,2 | 7,5 |
+
+Viktat över bladen:
+
+| Facitmeter | rätt | fel DN | fel system | missad | utanför facit |
+|---|---|---|---|---|---|
+| C1 | 10,7 % | 10,5 % | 13,3 % | 65,5 % | 14,2 % |
+| C2 | 13,7 % | 12,4 % | 16,3 % | 57,6 % | 8,7 % |
+
+Av det läsningen själv mäter ligger nu 27,2 % på en facitlinje med samma namn (22,4 % i C1), 55,5 % på en
+facitlinje med ett annat namn (47,9 %) och 17,3 % där facit inte har något rör (29,7 %).
+
+**Vägt mot varandra:**
+- Vinsten i rätta meter kommer helt från att den andra läsningen inte görs: A0213 +17,7, A0014 +16,0, W0122
+  +7,0 och A0222 +6,2 procentenheter.
+- Utan regeln om ritningsnummer kostade det mer än det gav. Läsningen mätte då 38,6 % av sina meter utanför
+  facit, och därför skickas ändringarna tillsammans.
+- Regeln om ritningsnummer kostar inga rätta meter på något blad.
+- A0223 tappar 0,3 procentenheter rätt och får 0,9 mer utanför facit. A0233 får 1,6 mer rätt och 2,3 mer utanför
+  facit. Det är vanliga fel, inte en ny felklass: en ledning som läses en bit förbi facit, och en avkortad
+  etikett (`S2-P5-1`) på tunna grå linjer.
+
+**Oförändrat:** vektorläsningen. Båda ändringarna gäller bara sidor med `read_as == "raster"`, och golden-testerna
+är identiska. Vektorkorpusen läser alla 15 blad precis som main gör.
+
+Baslinjen för A0111 var äldre än main: där stod 79,98 % rätt, medan main läser 80,24 %. Det kommer av en tidigare
+ändring. Baslinjen är nu uppdaterad, och varje blad har fått sin andel utanför facit.
+
+**Kända begränsningar (kvar till nästa steg i C2):**
+- Mer än hälften av läsningens meter ligger på ett rör som facit kallar något annat, med fel DN eller fel
+  system. Fler etiketter når nu sina rör, men en del når grannens.
+- OCR tappar en del av CAD-typsnittens ord under konfidensgränsen 60. Bladens förklaringslistor och texter som
+  `CL 3196` blir skenbeteckningar.
+- Tunna linjer tas fortfarande som rör på några blad (A0111 och A0311 har 15 % utanför facit).
+- Stigare räknas inte ur bild.
+- Riktiga skanningar saknas fortfarande. Allt här är mätt på rastrerade vektorblad.

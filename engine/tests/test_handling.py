@@ -15,7 +15,7 @@ de verkar vara i stället.
 import pymupdf
 import pytest
 
-from vvs_engine.handling import Handling, Field, as_report, pair_versions, read_handling
+from vvs_engine.handling import Handling, Field, as_report, pair_versions, read_handling, reads_as_a_drawing_number
 
 
 def _doc(path, lines, w=842, h=595):
@@ -130,6 +130,18 @@ def test_a_pipe_designation_is_not_a_drawing_number(tmp_path):
     h = read_handling(p)
     assert h.number.value == "V-50-1-020"
     assert h.discipline.value == "VVS"
+
+
+def test_a_drawing_number_reads_as_one_and_a_pipe_label_never_does():
+    """Formen själv, så som rörläsningen frågar efter den: ett blads nummer namnger aldrig ett rör.
+
+    Numren är exemplet ur referensdatan (`drawing_numbering.json`) och nummer som andra prov redan bär;
+    rörbeteckningarna är sådana som proven och förklaringslistorna här använder."""
+    for number in ("V-56-1-124", "V-50-1-020", "K-20-2-001", "V-50-1-A0111", "W-50-1-A-0022", " W-50-1-A-0022 "):
+        assert reads_as_a_drawing_number(number), number
+    for label in ("S13-12", "KV01-X7-16", "KV01-X7-40-W40", "VS21-S13", "VS1-S13-15/W", "S2-P5-50", "KV1-X31-16",
+                  "S1-P2-110", "VP1-S13-35/WB", "FJV1-S6-50/W", "SE K-20-2-001 FOR BJALKLAG", "V-124", "", None):
+        assert not reads_as_a_drawing_number(label), label
 
 
 def test_a_reference_to_another_drawing_is_not_this_one(tmp_path):

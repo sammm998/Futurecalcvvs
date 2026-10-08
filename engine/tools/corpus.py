@@ -2,6 +2,10 @@
 the result held against the last accepted run.
 
 A change to the reading is judged sheet by sheet, never on a total: a gain on one sheet can hide a loss on another.
+Beside the facit's metres - right, under the wrong size or system, missed - each sheet reports what the reading
+measured where the facit has no pipe, as a share of the facit's metres. That share is shown and kept with the
+baseline, and the gate does not refuse on it yet: a takeoff does not always take off everything the sheet draws,
+and what the share does from one run to the next has not been measured.
 The manifest names the sheets and their facit PDFs (the drawings themselves are client material and stay outside
 the repository); the baseline is the per-sheet result of the last run that was accepted.
 
@@ -63,6 +67,7 @@ def score(sheet, run):
     rf, ro, off = facit_gap.riser_gap(sheet["facit"], run)
     return {"right": round(100 * out["right"] / f, 2), "wrong_dn": round(100 * out["wrong_dn"] / f, 2),
             "wrong_system": round(100 * out["wrong_system"] / f, 2), "missed": round(100 * out["missed"] / f, 2),
+            "outside": round(100 * out["outside"] / f, 2),
             "facit_pt": round(out["facit"], 1), "risers_facit": rf, "risers_ours": ro, "risers_off": off}
 
 
@@ -92,12 +97,16 @@ def report(sheets, base=None):
             print(f"{name:8} FAILED")
             continue
         b = (base or {}).get(name) or {}
-        d = f"  ({s['right'] - b['right']:+.1f}, stigare {s['risers_off'] - b['risers_off']:+d})" if "right" in b else ""
+        o = f", utanför {s['outside'] - b['outside']:+.1f}" if "outside" in b and "outside" in s else ""
+        d = f"  ({s['right'] - b['right']:+.1f}{o}, stigare {s['risers_off'] - b['risers_off']:+d})" if "right" in b else ""
+        u = f"  utanför facit {s['outside']:4.1f}" if "outside" in s else ""
         print(f"{name:8} rätt {s['right']:5.1f} %  fel DN {s['wrong_dn']:4.1f}  fel system {s['wrong_system']:4.1f}  "
-              f"missad {s['missed']:4.1f}  stigare {s['risers_ours']}/{s['risers_facit']} (fel {s['risers_off']}){d}")
+              f"missad {s['missed']:4.1f}{u}  stigare {s['risers_ours']}/{s['risers_facit']} (fel {s['risers_off']}){d}")
     ok = [s for s in sheets.values() if not s.get("failed")]
     f = sum(s["facit_pt"] for s in ok) or 1
-    print(f"TOTALT rätt {sum(s['right'] * s['facit_pt'] for s in ok) / f:.1f} %  "
+    u = (f"utanför facit {sum(s['outside'] * s['facit_pt'] for s in ok) / f:.1f} %  "
+         if all("outside" in s for s in ok) else "")
+    print(f"TOTALT rätt {sum(s['right'] * s['facit_pt'] for s in ok) / f:.1f} %  {u}"
           f"stigare fel {sum(s['risers_off'] for s in ok)} av {sum(s['risers_facit'] for s in ok)}")
 
 
