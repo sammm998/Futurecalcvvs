@@ -174,6 +174,9 @@ export const projekt: Record<string, string> = {
   "OpenAI:s billigare modell avgör de rör där beläggen ger flera möjliga beteckningar.": "OpenAI's cheaper model decides the pipes where the evidence allows several designations.",
   "Googles senaste Pro-modell avgör de rör där beläggen ger flera möjliga beteckningar.": "Google's latest Pro model decides the pipes where the evidence allows several designations.",
   "Beteckningar som ritningen skriver men som inte fick meter": "Designations the drawing writes that got no metres",
+  "Komponenter som ritningen skriver ut": "Components the drawing writes out",
+  "Ventiler och andra komponenter räknas i antal. De mäts inte i meter och räknas inte som missade rör.":
+    "Valves and other components are counted by number. They are not measured in metres and are not counted as missed pipes.",
   "kontroll av missade": "check for missed labels",
   "rör namngivna, att granska": "pipes named, to review",
   "anrop": "requests",

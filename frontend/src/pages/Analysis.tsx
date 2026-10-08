@@ -723,6 +723,22 @@ export default function AnalysisPage() {
                 </div>
               </details>
             )}
+            {(nm.components?.length ?? 0) > 0 && (
+              <details className="settings">
+                <summary>{tr("Komponenter som ritningen skriver ut")} · {nm.components.reduce((n: number, c: any) => n + (c.count ?? 0), 0)} {tr("st")}</summary>
+                <div className="body">
+                  <p className="muted small">{tr("Ventiler och andra komponenter räknas i antal. De mäts inte i meter och räknas inte som missade rör.")}</p>
+                  <div className="row" style={{ flexWrap: "wrap", gap: 8 }}>
+                    {nm.components.map((c: any) => (
+                      <button key={c.name} className="link small" onClick={() => {
+                        const r = c.rects?.[0];
+                        if (r) viewer.current?.zoomTo([r[0] - 40, r[1] - 40, r[2] + 40, r[3] + 40]);
+                      }}>{c.name} · {c.count} {tr("st")}</button>
+                    ))}
+                  </div>
+                </div>
+              </details>
+            )}
             {(() => {
               const flags = (result.source_assignment?.consistency_flags ?? []).filter((f: any) => f.model_verdict !== "dismiss");
               if (!flags.length) return null;
