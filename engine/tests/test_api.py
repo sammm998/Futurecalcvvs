@@ -1628,3 +1628,25 @@ def test_a_learned_rule_from_gate_to_every_reading(client, source_api_pdf, tmp_p
     assert abs(after["KV01-X7-40-W40"] - (own["KV01-X7-40-W40"] + 2.2)) < 0.3
     for x in (rid, tid):
         client.post(f"/api/admin/learned-rules/{x}/deactivate", headers=H)
+
+
+def test_a_published_page_text_reaches_the_public_page(client):
+    """What an admin publishes for "Om oss" is what the public page fetches; unpublished, the page keeps its own text
+    and the answer is empty rather than an error in every visitor's console."""
+    tok = client.post("/api/auth/register", json={"email": "innehall@example.com", "password": "hemligt1"}).json()["access_token"]
+    A = {"Authorization": f"Bearer {tok}"}
+    from app.db import SessionLocal, User
+    with SessionLocal() as db:
+        db.query(User).filter(User.email == "innehall@example.com").first().role = "admin"
+        db.commit()
+    r = client.get("/api/content/om-oss")
+    assert r.status_code == 200 and r.json() is None
+    assert client.put("/api/admin/content/om-oss", json={"title": "Om oss", "body": "Utkast"}, headers=A).status_code == 200
+    assert client.get("/api/content/om-oss").json() is None                       # a draft is never public
+    client.put("/api/admin/content/om-oss?publish=true", json={"title": "Om oss", "body": "Vi mäter."}, headers=A)
+    got = client.get("/api/content/om-oss").json()
+    assert got["title"] == "Om oss" and got["body"] == "Vi mäter."
+    # the page asks the same path the API serves (the hook used to ask /api/public/content, which does not exist)
+    import pathlib
+    hook = (pathlib.Path(__file__).parents[2] / "frontend/src/components/PublicFrame.tsx").read_text(encoding="utf-8")
+    assert "fetch(`/api/content/${slug}`)" in hook

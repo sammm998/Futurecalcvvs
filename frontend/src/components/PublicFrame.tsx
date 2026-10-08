@@ -136,7 +136,7 @@ export function PubSection({ id, kicker, title, lede, children, tight }: {
 export function usePublished(slug: string): { title: string; body: string } | null {
   const [c, setC] = useState<{ title: string; body: string } | null>(null);
   useEffect(() => {
-    fetch(`/api/public/content/${slug}`).then((r) => (r.ok ? r.json() : null)).then((j) => j && setC(j)).catch(() => { /* inbyggd text */ });
+    fetch(`/api/content/${slug}`).then((r) => (r.ok ? r.json() : null)).then((j) => j && setC(j)).catch(() => { /* inbyggd text */ });
   }, [slug]);
   return c;
 }
