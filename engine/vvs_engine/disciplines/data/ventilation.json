@@ -1,0 +1,5 @@
+{
+ "id": "ventilation", "name": "Ventilation", "status": "planned", "kind": "duct", "measures": ["LENGTH", "AREA", "COUNT"], "order": 4,
+ "engine": {},
+ "notes": "Kanaler med Ø och b×h; meter per system och dimension, m² plåt och isolering härledda; don, spjäll och aggregat räknade."
+}

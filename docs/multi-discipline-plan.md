@@ -169,3 +169,22 @@ begränsningar och vad nästa fas behöver.
 - Sprinkler – [SBF 120](https://www.brandskyddsforeningen.se/webbshop/normer-och-regelverk/sbf-1208-rules-for-automatic-sprinkler-systems/) (gäller tillsammans med SS-EN 12845). Ingen svensk sprinklerritning hittades som exempel.
 - Ventilation – T/F för tilluft/frånluft, TD/FD för don, TA/FA för aggregat, TF/FF för fläktar enligt ett svenskt [symbolblad](https://www.yumpu.com/sv/document/view/63511785/flik-26-ritningssymboler); märkbeteckningar i [Jönköpings kommuns anvisning](https://www.jonkoping.se/download/18.18363ea31862b16dbb8212f8/1676357560481/Bilaga%201.2%20M%C3%A4rkbeteckningar.pdf); termer i [EN 12792](https://genorma.com/en/standards/en-12792-2003/amp).
 - Allmänt – [AMA VVS & Kyla 25](https://byggtjanstcms.byggtjanst.se/globalassets/bokhandeln/provlas/ama-vvs-kyla-25_6361461.pdf).
+
+## 8. Fas 1 – genomförd: så hålls VVS stilla
+
+- **Golden-test i CI** (`engine/tests/test_golden_readings.py`): de syntetiska bladen läses som i produktionen,
+  och längder, system, dimensioner, stigare och flaggor jämförs rad för rad med `engine/tests/golden/*.json`.
+  En avsiktlig ändring av läsningen skriver om filerna med `VVS_GOLDEN_UPDATE=1`, och diffen är ändringen.
+- **Strikt jämförelse lokalt** (`engine/tools/golden.py`): varje JSON-artefakt på korpusens blad, läst före och
+  efter en ändring, med tider, sökvägar och versionsstämplar borttagna. Klientritningarna och jämförelserna ligger
+  utanför repot.
+
+      python engine/tools/golden.py run manifest.json before   # före ändringen
+      python engine/tools/golden.py run manifest.json after    # efter
+      python engine/tools/golden.py digest before before.json; python engine/tools/golden.py digest after after.json
+      python engine/tools/golden.py compare before.json after.json
+
+- **Determinism:** två identiska läsningar skiljer sig bara i ordningen mellan två lika nära kontaktpunkter, och i en
+  diagnosdetalj bortom en rörfront. Det beror på Pythons slumpade hash-ordning och påverkar aldrig mängden. Verktyget
+  läser därför med fast `PYTHONHASHSEED`.
+- **Resultat för refaktoreringen:** 19 riktiga blad och 1102 artefakter, och läsningen är identisk före och efter.

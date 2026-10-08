@@ -1,0 +1,5 @@
+{
+ "id": "sprinkler", "name": "Sprinkler", "status": "planned", "kind": "pipe", "measures": ["LENGTH", "COUNT"], "order": 2,
+ "engine": {},
+ "notes": "Rör mäts som i VVS; huvuden och ventilstationer räknas där de kan identifieras säkert. Systemkoderna verifieras mot riktiga ritningar innan något byggs (SBF 120 tillsammans med SS-EN 12845)."
+}

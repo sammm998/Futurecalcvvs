@@ -19,6 +19,7 @@ from ..pdf.extract import RawPage, RawPath
 from ..pipes.representation import stroke_family
 from ..profile.layers import layer_tokens
 from .annotation import AnnotationBlock, Designation
+from .. import disciplines as _disciplines
 from .leaders import Leader
 
 from .. import rules as _rules
@@ -118,6 +119,11 @@ MATCH_EXACT, MATCH_PATTERN, MATCH_ALPHA, MATCH_CLASS_AND_TAIL, MATCH_CLASS, MATC
 LAYER_CLASS = {"52BB": "KV", "52BC": "VV", "52BD": "VVC"}
 
 
+def _layer_class() -> dict:
+    """The layer classes of the discipline being read; VVS reads the table above as it stands."""
+    return _disciplines.value("attachment.LAYER_CLASS", LAYER_CLASS)
+
+
 def system_layer_rank(system_token: str, layer: str, spelled_out: frozenset[str] = frozenset()) -> tuple[int, str] | None:
     """The strongest statement the layer name makes about this system: (how exactly it names it, the token).
 
@@ -151,8 +157,8 @@ def system_layer_rank(system_token: str, layer: str, spelled_out: frozenset[str]
             r = MATCH_PATTERN
         elif TU == alpha and len(alpha) >= 2:
             r = MATCH_ALPHA
-        elif TU.replace(".", "") in LAYER_CLASS:
-            cls = LAYER_CLASS[TU.replace(".", "")]
+        elif TU.replace(".", "") in _layer_class():
+            cls = _layer_class()[TU.replace(".", "")]
             if alpha == cls:
                 r = MATCH_CLASS
             elif alpha.startswith(cls):
@@ -1159,7 +1165,7 @@ def _system_conflict(d: Designation, family: str, tokens: set[str], spelled_out:
     m0 = re.match(r"([A-ZÅÄÖ]+)", d.system_token.upper())
     alpha = m0.group(1) if m0 else d.system_token.upper()
     for T in layer_tokens(layer):
-        cls = LAYER_CLASS.get(T.upper().replace(".", ""))
+        cls = _layer_class().get(T.upper().replace(".", ""))
         if cls and not alpha.startswith(cls):
             return f"layer_class_{T.upper()}_is_{cls}_not_{alpha}"
     if system_layer_match(d.system_token, layer, spelled_out):

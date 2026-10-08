@@ -2259,7 +2259,8 @@ def _is_an_apparatus_tag(d, legend) -> bool:
     if len(tokens) != 2 or not tokens[1].isdigit():
         return False
     m = re.match(r"^([A-ZÅÄÖ]+)\d+$", tokens[0].upper())
-    if not m or m.group(1) not in APPARATUS_HEADS:
+    from . import disciplines
+    if not m or m.group(1) not in disciplines.value("pipeline.APPARATUS_HEADS", APPARATUS_HEADS):
         return False
     return not (legend is not None and legend.role_of_head(tokens[0].upper()) == "system")
 

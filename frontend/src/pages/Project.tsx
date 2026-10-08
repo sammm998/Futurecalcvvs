@@ -6,6 +6,7 @@ import { api, fileSize } from "../api";
 import { StatusBadge } from "../components/Status";
 import Tilted from "../components/Tilted";
 import { PriceTag } from "./Credits";
+import { ContractFormChoice, DisciplineChoice, Discipline, FALLBACK_DISCIPLINES, ProjectBadges } from "../components/ProjectForm";
 
 const DATE = new Intl.DateTimeFormat(locale(), { day: "2-digit", month: "short", year: "numeric" });
 
@@ -19,7 +20,16 @@ export default function ProjectPage() {
   const [notice, setNotice] = useState("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const fileRef = useRef<HTMLInputElement>(null);
+  const [disciplines, setDisciplines] = useState<Discipline[]>(FALLBACK_DISCIPLINES);
+  // changing the contract form or the discipline afterwards: chosen here, said back, and only then sent
+  const [changing, setChanging] = useState<{ contract_form: string; discipline: string } | null>(null);
+  useEffect(() => { api.disciplines().then((d) => d?.length && setDisciplines(d)).catch(() => { /* bara VVS */ }); }, []);
   const load = () => api.project(id!).then(setProject).catch((e) => setErr(e.message));
+  const saveForm = async () => {
+    if (!changing) return;
+    try { await api.setProjectForm(id!, { ...changing, confirm: true }); setChanging(null); await load(); }
+    catch (ex: any) { setErr(ex.message); }
+  };
   // the list only changes while a reading is running, or just after an upload; otherwise it can sit still
   const live = (project?.drawings ?? []).some((d: any) =>
     d?.latest_job && d.latest_job.status !== "COMPLETED" && d.latest_job.status !== "FAILED");
@@ -81,7 +91,11 @@ export default function ProjectPage() {
       <div className="head">
         <div>
           <h1>{project.name}</h1>
-          <p className="lead">{project.description || "Ritningar i projektet"}</p>
+          <p className="lead">{project.description || tr("Ritningar i projektet")}</p>
+          <div className="row" style={{ gap: 8, marginTop: 8 }}>
+            <ProjectBadges project={project} disciplines={disciplines} />
+            {!changing && <button className="ghost small" onClick={() => setChanging({ contract_form: project.contract_form, discipline: project.discipline })}>{tr("Ändra")}</button>}
+          </div>
         </div>
         <div className="row">
           <input type="file" accept="application/pdf,.pdf" multiple disabled={busy} ref={fileRef} id="pdf" className="file"
@@ -92,6 +106,22 @@ export default function ProjectPage() {
           <Link to={`/projects/${project.id}/analys`}><button className="secondary">{tr("Analysera projektet")}</button></Link>
         </div>
       </div>
+      {changing && (
+        <div className="card" style={{ marginTop: 18, maxWidth: 640 }}>
+          <ContractFormChoice value={changing.contract_form} onChange={(v) => setChanging({ ...changing, contract_form: v })} name="contract-change" />
+          <DisciplineChoice value={changing.discipline} onChange={(v) => setChanging({ ...changing, discipline: v })} disciplines={disciplines} name="discipline-change" />
+          <p className="muted small">{tr("Bytet gäller nya läsningar i projektet. Läsningar som redan är gjorda ändras inte.")}</p>
+          <div className="row" style={{ gap: 8 }}>
+            <button onClick={saveForm} disabled={changing.contract_form === project.contract_form && changing.discipline === project.discipline}>{tr("Bekräfta ändringen")}</button>
+            <button className="secondary" onClick={() => setChanging(null)}>{tr("Avbryt")}</button>
+          </div>
+        </div>
+      )}
+      {project.contract_form === "ABT06" && (
+        <p className="badge warn" style={{ marginTop: 14 }}>
+          {tr("ABT 06: läsning av rum, ytor och enheter samt kalkyl med nyckeltal byggs nu. Blad med ritade installationer mäts som vanligt.")}
+        </p>
+      )}
       {progress && <p role="status" aria-live="polite">{progress}</p>}
       {notice && <p role="status">{notice}</p>}
       {err && <p className="error" style={{ marginTop: 18, whiteSpace: "pre-line" }}>{err}</p>}

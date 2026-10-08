@@ -1,0 +1,5 @@
+{
+ "id": "el", "name": "El", "status": "later", "kind": "symbol", "measures": ["COUNT", "LENGTH"], "order": 5,
+ "engine": {},
+ "notes": "Symbolräkning och linjära kabelstegar. Inte påbörjad."
+}

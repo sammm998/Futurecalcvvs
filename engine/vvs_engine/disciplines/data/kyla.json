@@ -1,0 +1,5 @@
+{
+ "id": "kyla", "name": "Kyla", "status": "planned", "kind": "pipe", "measures": ["LENGTH", "COUNT"], "order": 3,
+ "engine": {},
+ "notes": "Köldbärare och kylmedel (KB, KM, KP i dagens systemtabell). Koderna verifieras mot riktiga kylritningar innan något byggs."
+}

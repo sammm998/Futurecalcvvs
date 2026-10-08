@@ -439,7 +439,10 @@ def slab_riser_height(row: dict[str, Any]) -> float | None:
         return None
     system = "".join(c for c in parts[0] if c.isalpha())
     dn = row.get("dn")
-    if system == SLAB_RISER_SYSTEM and parts[1].startswith(SLAB_RISER_MATERIAL) and isinstance(dn, (int, float)) \
+    from .. import disciplines
+    if system == disciplines.value("measure.SLAB_RISER_SYSTEM", SLAB_RISER_SYSTEM) \
+            and parts[1].startswith(disciplines.value("measure.SLAB_RISER_MATERIAL", SLAB_RISER_MATERIAL)) \
+            and isinstance(dn, (int, float)) \
             and 0 < dn <= SLAB_RISER_MAX_DN:
         return SLAB_RISER_M
     return None

@@ -1,0 +1,5 @@
+{
+ "id": "vvs", "name": "VVS", "status": "active", "kind": "pipe", "measures": ["LENGTH"], "order": 1,
+ "engine": {},
+ "notes": "Dagens läsning, oförändrad. Inga avvikelser: varje konstant i motorn gäller som den står i koden."
+}

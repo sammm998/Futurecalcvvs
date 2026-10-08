@@ -1,0 +1,5 @@
+{
+ "id": "bygg", "name": "Bygg", "status": "later", "kind": "area", "measures": ["AREA", "VOLUME"], "order": 6,
+ "engine": {},
+ "notes": "Areor och volymer (A-K). Inte påbörjad."
+}

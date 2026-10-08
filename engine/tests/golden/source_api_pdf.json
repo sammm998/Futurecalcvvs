@@ -1,0 +1,225 @@
+{
+ "root": {
+  "coverage": [
+   {
+    "names": 2,
+    "with_metres": 2,
+    "without": []
+   }
+  ],
+  "flags": [],
+  "issues": [
+   [
+    "no_designation_list",
+    null,
+    "advisory"
+   ]
+  ],
+  "pipes": [
+   [
+    "KV01-X7-32-W40",
+    32,
+    0.908,
+    "CONFIRMED",
+    false,
+    []
+   ],
+   [
+    "KV01-X7-32-W40",
+    32,
+    2.593,
+    "CONFIRMED",
+    true,
+    []
+   ],
+   [
+    "KV01-X7-32-W40",
+    32,
+    2.619,
+    "CONFIRMED",
+    true,
+    []
+   ],
+   [
+    "KV01-X7-40-W40",
+    40,
+    0.0,
+    "CONFIRMED",
+    false,
+    []
+   ],
+   [
+    "KV01-X7-40-W40",
+    40,
+    2.417,
+    "CONFIRMED",
+    false,
+    []
+   ],
+   [
+    "KV01-X7-40-W40",
+    40,
+    2.822,
+    "CONFIRMED",
+    false,
+    []
+   ],
+   [
+    "VS21-S13-15",
+    15,
+    0.882,
+    "CONFIRMED",
+    false,
+    []
+   ]
+  ],
+  "rows": [
+   [
+    "KV01-X7-32-W40",
+    32,
+    6.121,
+    "UNKNOWN",
+    0.0,
+    0.0,
+    0,
+    0,
+    "CONFIRMED"
+   ],
+   [
+    "KV01-X7-40-W40",
+    40,
+    5.239,
+    "UNKNOWN",
+    0.0,
+    0.0,
+    0,
+    0,
+    "CONFIRMED"
+   ],
+   [
+    "VS21-S13-15",
+    15,
+    0.882,
+    "UNKNOWN",
+    0.0,
+    0.0,
+    0,
+    1,
+    "CONFIRMED"
+   ]
+  ],
+  "scale": {
+   "mpp": 0.017638889,
+   "reason": "scale_text_and_scale_bar_agree",
+   "state": "VERIFIED"
+  }
+ },
+ "sheet 0": {
+  "flags": [],
+  "issues": [
+   [
+    "no_designation_list",
+    null,
+    "advisory"
+   ]
+  ],
+  "pipes": [
+   [
+    "KV01-X7-32-W40",
+    32,
+    0.908,
+    "CONFIRMED",
+    false,
+    []
+   ],
+   [
+    "KV01-X7-32-W40",
+    32,
+    2.593,
+    "CONFIRMED",
+    true,
+    []
+   ],
+   [
+    "KV01-X7-32-W40",
+    32,
+    2.619,
+    "CONFIRMED",
+    true,
+    []
+   ],
+   [
+    "KV01-X7-40-W40",
+    40,
+    0.0,
+    "CONFIRMED",
+    false,
+    []
+   ],
+   [
+    "KV01-X7-40-W40",
+    40,
+    2.417,
+    "CONFIRMED",
+    false,
+    []
+   ],
+   [
+    "KV01-X7-40-W40",
+    40,
+    2.822,
+    "CONFIRMED",
+    false,
+    []
+   ],
+   [
+    "VS21-S13-15",
+    15,
+    0.882,
+    "CONFIRMED",
+    false,
+    []
+   ]
+  ],
+  "rows": [
+   [
+    "KV01-X7-32-W40",
+    32,
+    6.121,
+    "UNKNOWN",
+    0.0,
+    0.0,
+    0,
+    0,
+    "CONFIRMED"
+   ],
+   [
+    "KV01-X7-40-W40",
+    40,
+    5.239,
+    "UNKNOWN",
+    0.0,
+    0.0,
+    0,
+    0,
+    "CONFIRMED"
+   ],
+   [
+    "VS21-S13-15",
+    15,
+    0.882,
+    "UNKNOWN",
+    0.0,
+    0.0,
+    0,
+    1,
+    "CONFIRMED"
+   ]
+  ],
+  "scale": {
+   "mpp": 0.017638889,
+   "reason": "scale_text_and_scale_bar_agree",
+   "state": "VERIFIED"
+  }
+ }
+}

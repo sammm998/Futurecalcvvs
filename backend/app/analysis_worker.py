@@ -49,7 +49,8 @@ def _child(connection, args, kwargs, rule_values):
     try:
         label_audit = kwargs.pop('label_audit', False)
         from vvs_engine.cli import analyze_pdf
-        from vvs_engine import rules
+        from vvs_engine import rules, disciplines
+        discipline = kwargs.pop('discipline', None)
         if kwargs.pop('second_reader_enabled', False):
             from tools.readers import panel_transport
             kwargs['second_reader'] = panel_transport()
@@ -69,7 +70,7 @@ def _child(connection, args, kwargs, rule_values):
                                                         revision, rule_values)
         kwargs['progress']=lambda *a:connection.send(('progress',a))
         kwargs['film_sink']=lambda *a:connection.send(('film',a))
-        with rules.using(rule_values):
+        with rules.using(rule_values), disciplines.using(discipline):
             result=analyze_pdf(*args,**kwargs)
         # Annotations were removed before inference; this report is never fed back.
         # a sheet the reading turned upright was read from the turned copy, and that copy is what is checked

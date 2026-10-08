@@ -3321,3 +3321,14 @@ button.d3-open:hover { box-shadow: 0 6px 20px rgba(18, 158, 176, 0.45), inset 0 
 .agentbtns { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
 .agentbtns > button { height: 36px; padding: 0 10px; border-radius: 999px; justify-content: center; }
 .agentbar .ask { padding: 0 10px; }
+
+/* ---------- the project's modes: contract form and discipline ---------- */
+.choice { border: 0; padding: 0; margin: 0 0 16px; display: grid; gap: 8px; }
+.choice legend { font-family: var(--mono); font-size: 10px; letter-spacing: 0.11em; text-transform: uppercase; color: var(--faint); margin-bottom: 6px; }
+.choice-card { display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border: 1px solid var(--line); border-radius: 14px; cursor: pointer; }
+.choice-card.on { border-color: var(--ink); box-shadow: var(--e1); }
+.choice-card > span { display: grid; gap: 3px; }
+.choice .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.choice-chip { display: inline-flex; gap: 6px; align-items: center; padding: 7px 12px; border: 1px solid var(--line); border-radius: 999px; cursor: pointer; }
+.choice-chip.on { border-color: var(--ink); }
+.choice-chip.off { opacity: 0.55; cursor: not-allowed; }

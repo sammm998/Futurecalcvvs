@@ -70,7 +70,13 @@ export const api = {
   me: () => req("/api/auth/me"),
   knowledge: () => req("/api/knowledge"),
   projects: () => req("/api/projects"),
-  createProject: (name: string, description: string) => req("/api/projects", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name, description }) }),
+  createProject: (name: string, description: string, contract_form = "AB04", discipline = "vvs") =>
+    req("/api/projects", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name, description, contract_form, discipline }) }),
+  // the disciplines the service knows, built or not: the choice shows them all and lets the built ones be chosen
+  disciplines: () => req("/api/disciplines"),
+  // contract form and discipline after the fact: the server refuses a change that is not confirmed
+  setProjectForm: (id: string, body: { contract_form?: string; discipline?: string; confirm: boolean }) =>
+    req(`/api/projects/${id}/form`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }),
   project: (id: string) => req(`/api/projects/${id}`),
   deleteProject: (id: string) => req(`/api/projects/${id}`, { method: "DELETE" }),
   upload: (projectId: string, file: File) => { const fd = new FormData(); fd.append("file", file); return req(`/api/projects/${projectId}/drawings`, { method: "POST", body: fd }); },
