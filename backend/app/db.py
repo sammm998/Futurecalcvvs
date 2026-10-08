@@ -180,6 +180,52 @@ class AgentRecipe(Base):
     correction_ids: Mapped[list] = mapped_column(JSON, default=list)
     report: Mapped[str | None] = mapped_column(Text, nullable=True)
     uses: Mapped[int] = mapped_column(Integer, default=0)
+    # each later reading the recipe was shown on, and what the agent recorded there: {job_id, drawing_id,
+    # user_id, correction_ids} - whether those stand is how good the recipe is, across every account
+    outcomes: Mapped[list | None] = mapped_column(JSON, nullable=True, default=list)
+    created_at: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True), default=_now)
+
+
+class LearnedRule(Base):
+    """A solution the agent wrote as a rule: a function that names actions for one kind of problem.
+
+    It reads other accounts' drawings only after it has reproduced its own sheet, passed the gate of sheets
+    customers have checked, and an admin has activated it; it is switched off by itself when people undo too
+    much of what it does. The code is the method, never the drawing it was learned on."""
+    __tablename__ = "learned_rules"
+    id: Mapped[str] = mapped_column(String(32), primary_key=True, default=_uuid)
+    name: Mapped[str] = mapped_column(String(160), default="")
+    problem_type: Mapped[str] = mapped_column(String(64), index=True)
+    description: Mapped[str] = mapped_column(Text, default="")
+    code: Mapped[str] = mapped_column(Text, default="")
+    state: Mapped[str] = mapped_column(String(24), default="kandidat", index=True)
+    recipe_id: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    origin: Mapped[dict] = mapped_column(JSON, default=dict)        # job, page, what it reproduced there
+    gate_results: Mapped[list | None] = mapped_column(JSON, nullable=True, default=list)
+    gate_passed: Mapped[bool] = mapped_column(Boolean, default=False)
+    gate_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    gate_at: Mapped[dt.datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    applied_ids: Mapped[list | None] = mapped_column(JSON, nullable=True, default=list)
+    applied_count: Mapped[int] = mapped_column(Integer, default=0)
+    undone_count: Mapped[int] = mapped_column(Integer, default=0)
+    off_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    activated_by: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    created_at: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True), default=_now)
+
+
+class ConfirmedTakeoff(Base):
+    """A sheet whose owner says the takeoff is right: the corrected metres per designation at that moment.
+
+    These are the facit the learned rules are tested against - real drawings, read by the engine and put right by
+    the person who priced them. Withdrawn, it stops counting; the newest per drawing and sheet is the one used."""
+    __tablename__ = "confirmed_takeoffs"
+    id: Mapped[str] = mapped_column(String(32), primary_key=True, default=_uuid)
+    job_id: Mapped[str] = mapped_column(ForeignKey("analysis_jobs.id"), index=True)
+    drawing_id: Mapped[str] = mapped_column(ForeignKey("drawings.id"), index=True)
+    page: Mapped[int] = mapped_column(Integer, default=0)
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id"), index=True)
+    rows: Mapped[dict] = mapped_column(JSON, default=dict)          # designation -> horizontal metres
+    withdrawn: Mapped[bool] = mapped_column(Boolean, default=False)
     created_at: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True), default=_now)
 
 
@@ -591,6 +637,7 @@ _ADDED_COLUMNS = (
     ("users", "name", "VARCHAR(255) DEFAULT ''"),
     ("users", "last_seen_at", "TIMESTAMP"),
     ("projects", "analysis_mode", "VARCHAR(16) DEFAULT ''"),
+    ("agent_recipes", "outcomes", "JSON"),
 )
 
 

@@ -210,4 +210,15 @@ export const projekt: Record<string, string> = {
   "körd": "ran",
   "fel": "error",
   "materialet byts rakt genom ett T-rör, utan etikett": "the material changes straight through a tee, without a label",
+  "tidigare lösningar provade": "earlier solutions tried",
+  "regler föreslagna": "rules proposed",
+  "Lärda regler": "Learned rules",
+  "körda": "run",
+  "Kontrollerad mängd": "Checked takeoff",
+  "Ångra kontrollerad": "Undo checked",
+  "Markera mängden som kontrollerad": "Mark the takeoff as checked",
+  "Mängden på bladet är markerad som kontrollerad och används som facit när systemets lärda regler prövas.":
+    "The takeoff on this sheet is marked as checked and is used as the answer key when the system's learned rules are tested.",
+  "Säg att mängden på bladet stämmer efter dina rättelser. Den sparas som facit, och systemets lärda regler prövas mot den innan de får gälla alla ritningar.":
+    "Confirm that the takeoff on this sheet is right after your corrections. It is kept as an answer key, and the system's learned rules are tested against it before they apply to every drawing.",
 };

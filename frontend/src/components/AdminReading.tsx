@@ -333,19 +333,21 @@ export function AgentRecipes() {
           </table>
         ) : <p className="muted">{tr("Agenten har inte sparat några recept än.")}</p>}
         <p className="muted small">
-          Ett recept som håller används igen av agenten på samma kontos ritningar. Det blir en regel för alla ritningar
-          först när någon skrivit om det till motorkod och korpusspärren (engine/tools/corpus.py gate) visat att inget
-          blad blir sämre.
+          Ett recept som håller visas för agenten på alla konton - koden och verktygens ordning, aldrig ritningens text.
+          Recept som håller sämre än 60 % efter tre försök visas inte längre. När agenten skriver en lösning som regel
+          hamnar den under Lärda regler.
         </p>
       </div>
       <div className="card">
         <table className="table">
           <thead><tr><th>{tr("Skapat")}</th><th>{tr("Konto")}</th><th>{tr("Problem")}</th><th>{tr("Läge")}</th>
+            <th className="num">{tr("Höll")}</th><th className="num">{tr("Konton")}</th>
             <th className="num">{tr("Kod")}</th><th className="num">{tr("Rättelser")}</th><th className="num">{tr("Använt")}</th></tr></thead>
           <tbody>{(d.recipes ?? []).map((r: any) => (
             <tr key={r.id} onClick={() => api.adm(`agent-recipes/${r.id}`).then(setOpen)} style={{ cursor: "pointer" }}>
               <td className="muted">{r.created_at.slice(0, 10)}</td><td>{r.user}</td><td>{(r.problem_types ?? []).join(", ")}</td>
               <td><span className={`badge small ${r.state === "kept" ? "ok" : "warn"}`}>{r.state === "kept" ? tr("håller") : tr("ångrat")}</span></td>
+              <td className="num">{Math.round((r.score ?? 0) * 100)} % / {r.outcomes ?? 1}</td><td className="num">{r.accounts ?? 0}</td>
               <td className="num">{r.code_runs}</td><td className="num">{r.corrections}</td><td className="num">{r.uses}</td>
             </tr>
           ))}</tbody>
@@ -357,6 +359,88 @@ export function AgentRecipes() {
           <p className="muted">{(open.tools ?? []).join(" → ")}</p>
           {open.report && <pre style={{ whiteSpace: "pre-wrap" }}>{open.report}</pre>}
           {(open.code ?? []).map((c: string, i: number) => <pre key={i} style={{ maxHeight: 260, overflow: "auto", fontSize: 11 }}>{c}</pre>)}
+        </div>
+      )}
+    </>
+  );
+}
+
+
+const RULE_STATE: Record<string, [string, string]> = {
+  kandidat: ["kandidat", "warn"], klarat_sparren: ["klarat spärren", "ok"], underkand: ["underkänd", "bad"],
+  aktiv: ["aktiv", "ok"], avstangd: ["avstängd", "bad"],
+};
+const VERDICT: Record<string, string> = {
+  battre: "bättre", samre: "sämre", lika: "oförändrat", inte_aktuell: "inte aktuell", fel: "regeln föll",
+};
+
+/* Lärda regler: agentens lösningar skrivna som regler. De prövas mot blad kunderna markerat som kontrollerade;
+ * en regel som klarat spärren aktiveras här och körs sedan på varje läsning, även utan AI. */
+export function LearnedRules() {
+  const [d, setD] = useState<any>(null);
+  const [err, setErr] = useState("");
+  const [open, setOpen] = useState<any>(null);
+  const load = () => api.adm("learned-rules").then(setD).catch((e) => setErr(e.message));
+  useEffect(() => { load(); }, []);
+  if (err) return <p className="error">{err}</p>;
+  if (!d) return <p className="muted">{tr("Laddar…")}</p>;
+  const act = async (id: string, what: string) => {
+    try { await api.admPost(`learned-rules/${id}/${what}`, {}); await load();
+      if (open?.id === id) setOpen(await api.adm(`learned-rules/${id}`)); }
+    catch (e: any) { setErr(e.message); }
+  };
+  return (
+    <>
+      <div className="card">
+        <p className="muted" style={{ marginTop: 0 }}>
+          {d.checked_sheets} {tr("kontrollerade blad finns att pröva reglerna mot.")}{" "}
+          En regel klarar spärren när inget kontrollerat blad blir sämre med den och den gör minst ett bättre (eller
+          receptet bakom har hållit på tre ritningar från två konton). Först då kan den aktiveras. En aktiv regel
+          stängs av av sig själv om användare ångrar minst 30 % av det den gör.
+        </p>
+        <table className="table">
+          <thead><tr><th>{tr("Skapad")}</th><th>{tr("Regel")}</th><th>{tr("Problem")}</th><th>{tr("Läge")}</th>
+            <th className="num">{tr("Bättre")}</th><th className="num">{tr("Sämre")}</th><th className="num">{tr("Prövad på")}</th>
+            <th className="num">{tr("Tillämpad")}</th><th className="num">{tr("Ångrad")}</th><th></th></tr></thead>
+          <tbody>{(d.rules ?? []).map((r: any) => {
+            const [label, cls] = RULE_STATE[r.state] ?? [r.state, "warn"];
+            return (
+              <tr key={r.id}>
+                <td className="muted">{(r.created_at ?? "").slice(0, 10)}</td>
+                <td><a href="#" onClick={async (e) => { e.preventDefault(); setOpen(await api.adm(`learned-rules/${r.id}`)); }}>{r.name || r.id}</a></td>
+                <td>{r.problem_type}</td>
+                <td><span className={`badge small ${cls}`} title={r.off_reason || r.gate_reason || ""}>{tr(label)}</span></td>
+                <td className="num">{r.better}</td><td className="num">{r.worse}</td><td className="num">{r.checked_sheets}</td>
+                <td className="num">{r.applied}</td><td className="num">{r.undone}</td>
+                <td style={{ whiteSpace: "nowrap" }}>
+                  <button className="small secondary" onClick={() => act(r.id, "gate")}>{tr("Kör spärren")}</button>{" "}
+                  {r.state === "aktiv"
+                    ? <button className="small secondary" onClick={() => act(r.id, "deactivate")}>{tr("Stäng av")}</button>
+                    : <button className="small" disabled={!r.gate_passed} title={r.gate_reason || ""}
+                        onClick={() => act(r.id, "activate")}>{tr("Aktivera")}</button>}
+                </td>
+              </tr>
+            );
+          })}</tbody>
+        </table>
+        {!(d.rules ?? []).length && <p className="muted">{tr("Agenten har inte föreslagit några regler än.")}</p>}
+      </div>
+      {open && (
+        <div className="card">
+          <h3 style={{ marginTop: 0 }}>{open.name}</h3>
+          <p>{open.description}</p>
+          <p className="muted">{open.gate_reason}{open.off_reason ? ` · ${open.off_reason}` : ""}</p>
+          {(open.gate_results ?? []).length > 0 && (
+            <table className="table">
+              <thead><tr><th>{tr("Kontrollerat blad")}</th><th>{tr("Utfall")}</th><th className="num">{tr("Fel före m")}</th>
+                <th className="num">{tr("Fel efter m")}</th><th className="num">{tr("Ändringar")}</th></tr></thead>
+              <tbody>{open.gate_results.map((g: any, i: number) => (
+                <tr key={i}><td className="muted">{g.kontrollerad} · {tr("blad")} {g.page + 1}</td><td>{tr(VERDICT[g.verdict] ?? g.verdict)}</td>
+                  <td className="num">{g.fore_m ?? "–"}</td><td className="num">{g.efter_m ?? "–"}</td><td className="num">{g.andringar ?? "–"}</td></tr>
+              ))}</tbody>
+            </table>
+          )}
+          <pre style={{ maxHeight: 360, overflow: "auto", fontSize: 11 }}>{open.code}</pre>
         </div>
       )}
     </>

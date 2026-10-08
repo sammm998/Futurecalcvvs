@@ -133,11 +133,13 @@ def remove_superseded_runs(keep: int = KEEP_RUNS_PER_DRAWING) -> int:
     A drawing analysed ten times while its reading was being tuned holds ten full results, and only the newest
     are the ones anyone opens. The newest `keep` completed runs of every drawing, and every run still in
     progress, are never touched; the job rows stay, only their stored files go."""
-    from .db import AnalysisJob, SessionLocal
+    from .db import AnalysisJob, ConfirmedTakeoff, SessionLocal
     from .storage import storage
     saved = 0
     try:
         with SessionLocal() as db:
+            # a run a customer marked as checked is the facit the learned rules are tested against: it stays
+            facit = {jid for (jid,) in db.query(ConfirmedTakeoff.job_id).filter(ConfirmedTakeoff.withdrawn == False).all()}  # noqa: E712
             by_drawing: dict = {}
             for job in db.query(AnalysisJob).filter(AnalysisJob.status == "COMPLETED",
                                                     AnalysisJob.result_key.isnot(None)).all():
@@ -145,6 +147,8 @@ def remove_superseded_runs(keep: int = KEEP_RUNS_PER_DRAWING) -> int:
             for jobs in by_drawing.values():
                 jobs.sort(key=_when, reverse=True)
                 for job in jobs[keep:]:
+                    if job.id in facit:
+                        continue
                     path = storage.path(job.result_key)
                     if os.path.isdir(path):
                         saved += sum(f.stat().st_size for f in Path(path).rglob("*") if f.is_file())

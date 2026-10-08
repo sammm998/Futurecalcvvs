@@ -124,6 +124,11 @@ export const api = {
     req(`/api/drawings/${drawingId}/corrections`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }),
   undoCorrection: (drawingId: string, id: string) =>
     req(`/api/drawings/${drawingId}/corrections/${id}`, { method: "DELETE" }),
+  // "Kontrollerad mängd": bladets rättade mängd sparad som facit för de lärda reglerna
+  confirmTakeoff: (jobId: string, page: number) =>
+    req(`/api/jobs/${jobId}/kontrollerad`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ page }) }),
+  withdrawConfirmed: (jobId: string, page: number) =>
+    req(`/api/jobs/${jobId}/kontrollerad?page=${page}`, { method: "DELETE" }),
   lessons: () => req("/api/lessons"),
   rules: () => req("/api/rules"),
   settings: () => req("/api/settings"),

@@ -254,3 +254,22 @@ def foresla_skala(m: DrawingModel, matningar=None, skal: str = "") -> dict:
                            meters_per_pdf_point=mpp, ratio=ratio, measurements=matningar, reason=skal or None,
                            source="agent")]
     return _offer(forslag, f"Skalan blir 1:{ratio} ({len(vals)} mätningar). Alla rader räknas om ur sina punkter.")
+
+
+@tool("foresla_regel",
+      "Gör din lösning till en regel som systemet kan lära sig: Python som definierar def regel(problem, blad) och "
+      "returnerar åtgärder ({gor: rita|byt_beteckning|radera|skala, ...}). Regeln körs direkt på det här bladet och "
+      "sparas bara om den gör samma sak som du har gjort här. Den testas sedan mot kontrollerade ritningar och "
+      "gäller andra ritningar först när en admin godkänt den.",
+      {"kod": {"type": "string", "description": "Python med def regel(problem, blad).", "required": True},
+       "problemtyp": {"type": "string", "description": "Typen av problem regeln löser, som i listan (t.ex. "
+                      "beteckning_utan_ror).", "required": True},
+       "beskrivning": {"type": "string", "description": "Vad regeln känner igen och gör, i en eller två meningar.",
+                       "required": True}})
+def foresla_regel(m: DrawingModel, kod: str = "", problemtyp: str = "", beskrivning: str = "") -> dict:
+    propose = getattr(m, "propose_rule", None)
+    if propose is None:
+        return {"fel": "regler kan bara föreslås medan agenten löser ett blad"}
+    if "def regel" not in (kod or ""):
+        return {"fel": "koden måste definiera def regel(problem, blad)"}
+    return propose(kod, str(problemtyp or "").strip(), str(beskrivning or "").strip())

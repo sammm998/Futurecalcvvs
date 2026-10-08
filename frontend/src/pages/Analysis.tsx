@@ -5,7 +5,7 @@ import { extension, withPipeExtensions } from "../live/gestures";
 import type { DrawingAction } from "../live/LiveDrawingAgent";
 import SourceAssignment from "../components/SourceAssignment";
 import { Suspense, lazy, useEffect, useMemo, useRef, useState } from "react";
-import { t as tr } from "../i18n";
+import { num, t as tr } from "../i18n";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { api } from "../api";
 import { pipeRuns } from "../runs";
@@ -621,7 +621,29 @@ export default function AnalysisPage() {
               }}>{tr("Analysera ritningen")}</button>
             </div>
             <AiUsage usage={job?.summary?.ai_usage} />
-            <AgentReport agent={job?.summary?.agent} />
+            <AgentReport agent={job?.summary?.agent} rules={job?.summary?.learned_rules} />
+            {/* Kontrollerad mängd: den som äger ritningen säger att bladets mängd stämmer. Den sparas som facit
+                och är vad systemets lärda regler prövas mot innan de får gälla någon annans ritningar. */}
+            <div className="row" style={{ gap: 8, alignItems: "center", margin: "6px 0 10px" }}>
+              {result.confirmed ? (
+                <>
+                  <span className="badge ok" title={tr("Mängden på bladet är markerad som kontrollerad och används som facit när systemets lärda regler prövas.")}>
+                    {tr("Kontrollerad mängd")} · {num(result.confirmed.total_m, 1)} m · {result.confirmed.created_at.slice(0, 10)}
+                  </span>
+                  <button className="secondary small" onClick={async () => {
+                    try { await api.withdrawConfirmed(id!, page); setResult(await api.result(id!, page)); }
+                    catch (e: any) { setActionErr(e.message); }
+                  }}>{tr("Ångra kontrollerad")}</button>
+                </>
+              ) : (
+                <button className="secondary small"
+                  title={tr("Säg att mängden på bladet stämmer efter dina rättelser. Den sparas som facit, och systemets lärda regler prövas mot den innan de får gälla alla ritningar.")}
+                  onClick={async () => {
+                    try { await api.confirmTakeoff(id!, page); setResult(await api.result(id!, page)); }
+                    catch (e: any) { setActionErr(e.message); }
+                  }}>{tr("Markera mängden som kontrollerad")}</button>
+              )}
+            </div>
             {staff && <AnalysisQuality quality={result.quality} />}
             {actionErr && <p className="error" role="alert">{actionErr}</p>}
             {job?.motor?.foraldrad && (
