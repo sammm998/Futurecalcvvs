@@ -325,6 +325,8 @@ def validate_document(body: ValidateIn, user: User = Depends(current_user)):
 @router.delete("/sheets/{sheet_id}")
 def delete_sheet(sheet_id: str, user: User = Depends(current_user), db: Session = Depends(get_db)):
     s = _sheet(db, user, sheet_id)
+    # the sheet's saved revisions go with it: the database keeps its foreign keys, and a revision of nothing is nothing
+    db.query(CadRevision).filter(CadRevision.sheet_id == s.id).delete(synchronize_session=False)
     db.delete(s); db.commit()
     return {"deleted": sheet_id}
 

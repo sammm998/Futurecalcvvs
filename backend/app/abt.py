@@ -143,14 +143,6 @@ def _signatures(db: Session, project_id: str) -> dict[str, dict]:
     return out
 
 
-def forget_drawing(db: Session, drawing_id: str) -> None:
-    """The rooms read from a drawing go with it."""
-    db.query(Space).filter(Space.drawing_id == drawing_id).delete(synchronize_session=False)
-
-
-def forget_project(db: Session, project_id: str) -> None:
-    db.query(Space).filter(Space.project_id == project_id).delete(synchronize_session=False)
-
 
 def _room_out(s: Space, filename: str) -> dict[str, Any]:
     p = s.props or {}
