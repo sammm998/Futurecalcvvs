@@ -1458,7 +1458,7 @@ def analyze_page(page: RawPage, progress: Callable[[str], None] | None = None, o
                 if not rows:
                     continue        # leader belongs to a non-designation label unit (component tag, note)
                 rows = _rows_owning_leader(block, rows, ld)
-            contacts = leader_contacts(ld, gidx, pf, paths)
+            contacts = leader_contacts(ld, gidx, pf, paths, ticks_across=not from_image)
             if not contacts and ld.length < 2.5 * max(block.height, 1.0) and not ld.end_marks:
                 continue        # dangling frame stub, not a leader
             anchors.extend(resolve_block(block, rows, ld, contacts, system_tokens, spelled_out, paths, gidx))

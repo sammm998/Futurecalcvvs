@@ -131,6 +131,25 @@ Tre ritkonventioner som läsningen läser som geometri, inte som antaganden (`pi
   dit: på ett referensblad tog textläsningen streck i en streckad rörlinje för bindestreck, och de kom bara
   tillbaka genom de två vägarna. Och det gäller inte en sida läst ur bild: där är en spårad hänvisningslinje en
   del av skelettet, och den kan fortsätta in i röret den pekar på.
+* **Ett tick-streck draget över två rör markerar båda.** Ticken är ritarens besked om vilket rör etiketten menar,
+  draget tvärs över röret. Ett rör ritat i skala är två linjer, och två rör sida vid sida är det också. Korsar
+  ticken - vid linjens ände eller längs den - exakt två parallella rörlinjer får båda en kontakt där ticken
+  korsar dem (`_tick_across`), oavsett om linjen själv slutar på den ena eller mellan dem, och oavsett om
+  linjerna är ritade med olika pennor. Ticken själv blir aldrig röret, inte heller där den är ritad med en
+  rörpenna. Korsar ticken en linje gäller det som förut, tre eller fler är en bunt där varje rad har sin egen
+  tick, och två linjer som möts under ticken är ett hörn - en radiators anslutning som svänger in i sin stump -
+  som också läses som förut. Två kanter av samma rör räknas en gång av dubbellinjeregeln. Förut gjordes ticken
+  till en punkt, och slutade linjen mellan kanterna togs ticken för en samlingslinje som nådde flera rör:
+  etiketten blev tvetydig och inget rör fick namnet. Regeln gäller inte en sida läst ur bild, där ticken och
+  linjerna är spårade ur pixlar: där tog den 1,4 och 2,4 procentenheter rätt längd från två rasterblad.
+* **Ett rör som slutar mot en linje ger inte linjen sitt namn.** Där ett namngivet rör tar slut mot en linje som
+  går rakt igenom korsningen - en apparats hölje, ett golv, kanten på ett annat rör - går namnet inte vidare in i
+  linjen. Linjen som passerar är ingen gren av röret och får inte heller rörets namn som kandidat
+  (`_resolve_family` i `pipes/ownership.py`), och den andra läsaren lämnar den också (`ends_against` i
+  `native_assignment._settle_unowned`). En gren som lämnar ett rör som fortsätter genom korsningen tar som förut
+  rörets namn. Utan regeln förde ett rör som gick in i en värmepump sitt namn runt hela värmepumpens hölje. Den
+  andra läsarens del gäller inte en sida läst ur bild, där en spårad linje bryts upp i sådana korsningar som inte
+  finns på ritningen: där tog den 0,7 procentenheter rätt längd från ett rasterblad.
 
 ## 3. Vilka AI-modeller som används, och exakt hur
 

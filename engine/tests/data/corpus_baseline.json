@@ -15,11 +15,11 @@
    "facit_pt": 6417.8,
    "missed": 0.03,
    "outside": 3.14,
-   "right": 95.69,
+   "right": 95.77,
    "risers_facit": 24,
    "risers_off": 1,
    "risers_ours": 23,
-   "wrong_dn": 4.27,
+   "wrong_dn": 4.19,
    "wrong_system": 0.01
   },
   "A0014": {
@@ -36,29 +36,29 @@
   "A0111": {
    "facit_pt": 29476.1,
    "missed": 1.62,
-   "outside": 13.42,
-   "right": 80.24,
+   "outside": 13.44,
+   "right": 80.16,
    "risers_facit": 90,
    "risers_off": 79,
    "risers_ours": 115,
-   "wrong_dn": 9.47,
-   "wrong_system": 8.67
+   "wrong_dn": 9.45,
+   "wrong_system": 8.78
   },
   "A0114": {
    "facit_pt": 18450.9,
    "missed": 0.04,
-   "outside": 47.77,
-   "right": 93.14,
+   "outside": 46.1,
+   "right": 93.19,
    "risers_facit": 39,
    "risers_off": 27,
    "risers_ours": 58,
-   "wrong_dn": 1.94,
+   "wrong_dn": 1.89,
    "wrong_system": 4.88
   },
   "A0213": {
    "facit_pt": 12007.5,
    "missed": 0.05,
-   "outside": 7.58,
+   "outside": 7.24,
    "right": 94.65,
    "risers_facit": 46,
    "risers_off": 13,
@@ -80,13 +80,13 @@
   "A0223": {
    "facit_pt": 8507.6,
    "missed": 0.9,
-   "outside": 19.56,
+   "outside": 19.53,
    "right": 90.42,
    "risers_facit": 21,
-   "risers_off": 9,
-   "risers_ours": 24,
-   "wrong_dn": 6.05,
-   "wrong_system": 2.62
+   "risers_off": 8,
+   "risers_ours": 25,
+   "wrong_dn": 6.15,
+   "wrong_system": 2.52
   },
   "A0233": {
    "facit_pt": 13948.2,
@@ -146,23 +146,23 @@
   "W0122": {
    "facit_pt": 18921.4,
    "missed": 0.18,
-   "outside": 13.65,
+   "outside": 13.6,
    "right": 93.42,
    "risers_facit": 64,
    "risers_off": 27,
    "risers_ours": 73,
-   "wrong_dn": 0.18,
-   "wrong_system": 6.22
+   "wrong_dn": 0.21,
+   "wrong_system": 6.18
   },
   "W0123": {
    "facit_pt": 16700.3,
-   "missed": 0.01,
+   "missed": 0.04,
    "outside": 11.6,
-   "right": 91.12,
+   "right": 91.16,
    "risers_facit": 47,
    "risers_off": 29,
    "risers_ours": 48,
-   "wrong_dn": 6.11,
+   "wrong_dn": 6.05,
    "wrong_system": 2.76
   }
  }
