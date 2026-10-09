@@ -38,6 +38,8 @@ NEAR_ONE = 2.5            # pt: ...and how close the candidates must lie to each
 EDGES_APART_MIN = 1.5     # pt: a pipe's two drawn edges never lie closer than the pen allows
 EDGES_APART_MAX = 8.0     # pt: ...nor further apart than a pipe's outer diameter is ever drawn
 EDGES_PARALLEL = 2.0      # degrees: the two edges of one pipe run the same way
+TICK_ACROSS_ANGLE = 20.0  # degrees: a tick is drawn across a pipe; a stroke that runs along it does not cross it
+TICK_ACROSS = "tick_across"   # a contact the tick's own stroke made, where it crosses a pipe line
 SYMBOL_EDGE_TOL = 0.2    # PDF points: export rounding at a symbol's actual contour
 
 
@@ -439,6 +441,71 @@ def _between_edges_hits(pt: tuple[float, float], gidx: "GeometryIndex", pipe_fam
     return [(a[0], a[1], a[2])]
 
 
+def _tick_across(ld: Leader, mid: str | None, pt: tuple[float, float], gidx: "GeometryIndex",
+                 pipe_families: set[str] | None, skip: set[str]) -> list[tuple[RawPath, int, float, tuple[float, float]]]:
+    """The two pipe lines one of a leader's ticks is drawn across, and where it crosses each.
+
+    The tick is the drawing's own mark of the pipe a label means, drawn across it. A pipe drawn to scale is two
+    lines, and so are two pipes side by side: a tick drawn across both marks both, wherever the leader itself
+    happens to stop - on one of them or between them. Reduced to a single point, the tick reached one line at
+    most, and where that point touched neither it was taken for a collector whose ends reached several pipes,
+    and the label was left to no pipe at all.
+
+    Exactly two parallel lines, or nothing: one is what the point finds already, three or more is a bundle,
+    where every row has its own tick, and two that meet under the tick are a corner. Runs only once the sheet's
+    pipe pens are known."""
+    mark = next((m for m in ld.end_marks + ld.crossing_marks if m.mid == mid), None)
+    if not pipe_families or mark is None:
+        return []
+    tol = _R("semantics.attachment.CONTACT_TOL", CONTACT_TOL)
+    least = math.sin(math.radians(TICK_ACROSS_ANGLE))
+    own = skip | set(getattr(mark, "path_ids", ()))      # the tick is drawn across the pipe, never as it
+    found: dict[tuple[str, int], tuple[RawPath, int, tuple[float, float]]] = {}
+    for ts in getattr(mark, "segs", ()):
+        tl = ts.length
+        if tl < 1e-6:
+            continue
+        ux, uy = (ts.x1 - ts.x0) / tl, (ts.y1 - ts.y0) / tl
+        x0, y0, x1, y1 = ts.bbox()
+        for i in gidx.idx.query((x0 - tol, y0 - tol, x1 + tol, y1 + tol)):
+            p, k, sg = gidx.items[i]
+            if p.pid in own or family_of(p) not in pipe_families or sg.length < 1e-6:
+                continue
+            vx, vy = (sg.x1 - sg.x0) / sg.length, (sg.y1 - sg.y0) / sg.length
+            sin = ux * vy - uy * vx
+            if abs(sin) < least:
+                continue                     # runs along the tick: not crossed by it
+            dx, dy = sg.x0 - ts.x0, sg.y0 - ts.y0
+            along_tick = (dx * vy - dy * vx) / sin
+            along_pipe = (dx * uy - dy * ux) / sin
+            if -tol <= along_tick <= tl + tol and 0.0 <= along_pipe <= sg.length:
+                found.setdefault((p.pid, k), (p, k, (sg.x0 + along_pipe * vx, sg.y0 + along_pipe * vy)))
+    # the same line split at a node is one line
+    deg = _R("semantics.attachment.COLLINEAR_DEG", COLLINEAR_DEG)
+    gap = _R("semantics.attachment.COLLINEAR_OFF", COLLINEAR_OFF)
+    lines: list[tuple[float, float, list]] = []
+    for p, k, cp in found.values():
+        sg = p.segs[k]
+        a = sg.angle
+        th = math.radians(a)
+        off = sg.x0 * -math.sin(th) + sg.y0 * math.cos(th)
+        for la, lo, hits in lines:
+            if min(abs(a - la), 180.0 - abs(a - la)) <= deg and abs(off - lo) <= gap:
+                hits.append((p, k, cp))
+                break
+        else:
+            lines.append((a, off, [(p, k, cp)]))
+    if len(lines) != 2:
+        return []
+    # two parallel lines: a pipe's two edges, or two pipes side by side. Two lines meeting under the tick - a
+    # radiator's connection turning into its stub - are a corner, and the leader's own end says which it means.
+    da = abs(lines[0][0] - lines[1][0])
+    if min(da, 180.0 - da) > _R("semantics.attachment.EDGES_PARALLEL", EDGES_PARALLEL):
+        return []
+    return [(p, k, point_seg_distance(pt[0], pt[1], p.segs[k])[0], cp)
+            for _, _, hits in lines for p, k, cp in hits]
+
+
 def _paired_symbol_ports(points, gidx, pipe_families, skip):
     """Two explicit circles terminating two parallel, spatially distinct pipes.
 
@@ -494,14 +561,19 @@ def _paired_symbol_ports(points, gidx, pipe_families, skip):
     return ports
 
 
-def leader_contacts(ld: Leader, gidx: GeometryIndex, pipe_families: set[str] | None, all_paths: dict[str, RawPath]) -> list[Contact]:
+def leader_contacts(ld: Leader, gidx: GeometryIndex, pipe_families: set[str] | None, all_paths: dict[str, RawPath],
+                    ticks_across: bool = True) -> list[Contact]:
     """Contacts at each attachment point.
 
     A leader whose end lies inside a small closed symbol (riser mark, end circle, fitting) points at that symbol:
     pipe geometry through the symbol or ending at the symbol group is a 'via_symbol' contact (a weak seed - the
     label describes the symbol's object; DN ticks on the line outrank it). Otherwise the end / tick points give
     direct contacts; tiny markers at the end bridge to pipe ends (via_marker); small symbols touched by the leader
-    bridge to pipes touching them (via_fitting)."""
+    bridge to pipes touching them (via_fitting).
+
+    ticks_across: whether a tick drawn across two pipe lines marks both (_tick_across). A page read from an image
+    has its ticks and lines traced out of pixels, and there a tick that crosses two traced lines did more harm than
+    good: on the raster corpus it took 1.4 and 2.4 points of right length off two sheets."""
     out: list[Contact] = []
     skip = set(ld.path_ids)
     seen: set[tuple[str, int]] = set()
@@ -574,6 +646,17 @@ def leader_contacts(ld: Leader, gidx: GeometryIndex, pipe_families: set[str] | N
                         seen.add((q.pid, kk))
                         out.append(Contact(point=ep, kind="via_symbol", family=family_of(q), pid=q.pid, seg_index=kk, distance=de, mark_id=mid, via=p.pid))
             continue
+        if kind in ("end_tick", "crossing_tick"):
+            # A tick drawn across two pipes marks both - the one the leader meets as well as the other.
+            across = _tick_across(ld, mid, pt, gidx, pipe_families, skip) if ticks_across else []
+            for p, k, d, cp in across:
+                if (p.pid, k) in seen:
+                    continue
+                seen.add((p.pid, k))
+                out.append(Contact(point=cp, kind=kind, family=family_of(p), pid=p.pid, seg_index=k,
+                                   distance=d, mark_id=mid, via=TICK_ACROSS))
+            if across:
+                continue
         # En samlingslinje - ett kort, rakt, öppet streck på ledarens EGEN penna som ledaren landar på - är
         # ingen kontakt utan en väg. I den första läsningen, där pennorna ännu röstas fram, räknas varje träff,
         # och då röstade ledaren på samlingslinjens skrivpenna som rör medan pennan strecket faktiskt leder
@@ -1145,6 +1228,11 @@ def resolve_block(block: AnnotationBlock, rows: list[Designation], ld: Leader, c
             if q is not None:
                 return [q]
             return [mk(d, "VERIFIED_PIPE_ATTACHMENT", "single_row_layer_token_match", groups[g], {"layer_token_match": g})]
+        # A leader whose every contact is where its tick crosses a pipe line has said which pipes it means: all of
+        # them, whatever pen each is drawn with.
+        if (all(c.via == TICK_ACROSS for c in contacts)
+                and not any(_system_conflict(d, g, system_tokens_in_drawing, spelled_out) for g in gkeys)):
+            return [mk(d, "VERIFIED_PIPE_ATTACHMENT", "single_row_ticks_across_pipes", contacts)]
         return [mk(d, "AMBIGUOUS_PIPE_ATTACHMENT", "several_vector_families_at_leader_no_token_discrimination", [c for g in gkeys for c in groups[g]])]
     # multi-row block: bijection through token matches; fallback: unique bijection by parallel-line count
     # (a 'k x' multiplier must equal the number of distinct parallel primitives of a group)

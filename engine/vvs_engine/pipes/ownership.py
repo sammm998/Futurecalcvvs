@@ -1408,8 +1408,15 @@ def _resolve_family(g: PipeGraph, st: dict[int, PrimState], seeds, ambiguous_run
                                      and angle_diff(g.prims[q].seg.angle, g.prims[u].seg.angle) <= 3.0
                                      and _opposite_sides(g, n, q, u)
                                      for q in unresolved)
+                if passes_through:
+                    # Den som passerar är ingen gren, och den får inte heller korsningens namn som kandidat. Som
+                    # tvetydig med det namnet räknades den inte längre som en linje som passerar vid nästa
+                    # korsning, och den andra läsaren gjorde ett ensamt kandidatnamn till namn
+                    # (host_reading_single_candidate): på ett sektionsblad slutade ett rörs två kanter mot en
+                    # värmepumps vägg, och väggen tog rörets namn och förde det runt hela höljet.
+                    continue
                 only = next(iter(cands)) if len(cands) == 1 else None
-                if only is not None and only.dn is not None and not groups_of.get(ci) and not passes_through:
+                if only is not None and only.dn is not None and not groups_of.get(ci):
                     support = _branch_support(g, st, ch, chain_nodes, ci, nid, only, end_evidence)
                     if support:
                         reach = set(_up_to_transition(g, ch[ci], from_end=(ch[ci] and ch[ci][-1] == u)))

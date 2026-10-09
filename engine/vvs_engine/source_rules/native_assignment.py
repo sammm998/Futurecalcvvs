@@ -43,7 +43,7 @@ def _dump(A,L,R,result,page):
                    'assignments':(result or {}).get('assignments')},fh,default=str)
 
 
-def project(graphs, native, result, page, elevations, host_reading=None):
+def project(graphs, native, result, page, elevations, host_reading=None, traced=False):
     from .swedish import label_facts, lookup, designation_text
     A,L,R=native['graph'],native['labels'],native['association']
     _dump(A,L,R,result,page)
@@ -162,7 +162,7 @@ def project(graphs, native, result, page, elevations, host_reading=None):
     # same one; where it joins two different pipes it is a junction the drawing does not settle, and it stays
     # unnamed. Only ink in the same pen counts as joined: across pens, on the reference sheets, it mostly reached
     # walls and fittings. Measured there, the same-pen pieces were named right on all of their length.
-    continued=(_settle_unowned(graphs,states,set_aside,host if host_reading is not None else None,native_pens)
+    continued=(_settle_unowned(graphs,states,set_aside,host if host_reading is not None else None,native_pens,traced)
                if _on('settle') else {})
     landed=_landed_labels(graphs,A,R,labels)
     continued['same_line_larger_on_both_sides']=_undo_a_smaller_size_between_larger(graphs,states,landed) if _on('larger') else 0
@@ -273,7 +273,8 @@ def analyze(graphs,native,page,ask,elevations,raw_page,host_reading=None):
                 if b.get('rule')=='astra_final':
                     b['rule']='rules_final'
                     b['reason']="Final pipe assignment by the drawing's own evidence (no AI model)"
-    ownership,result=project(graphs,native,result,page,elevations,host_reading)
+    traced=((getattr(raw_page,'input_class',None) or {}).get('read_as')=='raster')
+    ownership,result=project(graphs,native,result,page,elevations,host_reading,traced)
     flags=result.get('consistency_flags') or []
     if flags and ask is not by_rules and not result.get('model_fallback') and hasattr(ask,'review_flags'):
         # the model looks at what the checks flagged and may dismiss a flag the drawing explains (consistency.py)
@@ -399,7 +400,7 @@ def _outline_strokes(g):
     return out
 
 
-def _settle_unowned(graphs,states,set_aside,host,pens=None):
+def _settle_unowned(graphs,states,set_aside,host,pens=None,traced=False):
     """Give drawn pipe no label reached the name the drawing gives it, and guess where the drawing makes it plain.
 
     Rules, in the order they are trusted, repeated until nothing changes - a piece named by one can let the next
@@ -419,6 +420,11 @@ def _settle_unowned(graphs,states,set_aside,host,pens=None):
     (_outline_strokes). On a section drawn in one pen the floor a pipe stands on, a column and a tank's casing
     are joined to the pipes, and the whole of that ink took the name of the one pipe it touched - a floor
     measured as cold water.
+
+    And a named piece that ends against a line running straight through the joint gives that line nothing
+    (ends_against): a pipe runs into a casing, a wall or the edge of another pipe there, it does not turn into it.
+    Not on a page read from an image (traced): a traced line breaks into such joints where the drawing has none,
+    and on the raster corpus the rule took 0.7 points of right length off a sheet.
     """
     counts={'continues_the_connected_pipe':0,'host_reading_single_candidate':0,'straight_through_the_junction':0}
     for fk,g in graphs.items():
@@ -438,6 +444,28 @@ def _settle_unowned(graphs,states,set_aside,host,pens=None):
         def drawn_as(pid):
             pr=g.prims.get(pid)
             return pr is not None and pr.pid in outline
+
+        def ends_against(q,pid,node):
+            """Whether named q ends against the line pid runs on, at a joint that line passes straight through.
+
+            A pipe that meets a line running across its end does not go on into it: the line is the wall of what
+            the pipe runs into - a heat pump's casing, a tank, the floor - or the edge of the pipe it joins, which
+            has its own name. Two such lines crossing are no joint at all. The host reading keeps the same rule
+            (a line that passes a junction is no branch of it); without it here, a pipe drawn as two edges that
+            both end against a casing gave the casing its name, and the name ran round the whole casing."""
+            n=g.nodes.get(node)
+            if n is None:
+                return False
+            u=_direction_away(g.prims[pid].seg,n.x,n.y);w=_direction_away(g.prims[q].seg,n.x,n.y)
+            if not u or not w or abs(u[0]*w[0]+u[1]*w[1])>=-STRAIGHT_COS:
+                return False                    # q lies along pid's line: it goes on into it
+            for r in n.prims:
+                if r in (pid,q):
+                    continue
+                v=_direction_away(g.prims[r].seg,n.x,n.y)
+                if v and u[0]*v[0]+u[1]*v[1]<=STRAIGHT_COS:
+                    return True                 # pid's line goes on through the joint on the other side
+            return False
         partner=defaultdict(set)
         for br in g.bridges or []:
             a,b=br.get('from_node'),br.get('to_node')
@@ -468,6 +496,9 @@ def _settle_unowned(graphs,states,set_aside,host,pens=None):
                                     continue        # an outline goes on as an outline, a line as a line
                                 if s.state=='UNOWNED' and q not in seen and (fk,q) not in set_aside:
                                     seen.add(q);comp.append(q)
+                                elif (s.state=='CONFIRMED' and s.identity is not None and not traced and nn==node
+                                      and ends_against(q,pid,nn)):
+                                    continue        # the pipe ends against this line; it does not run into it
                                 elif s.state=='CONFIRMED' and s.identity is not None:
                                     touch.setdefault(s.identity.key,[]).append(s)
                                     joints.append((pid,nn,q))
