@@ -128,6 +128,7 @@ class PageAnalysis:
     vision: dict | None = None              # what a look at the rendered page said the reading may have missed
     source_assignment: dict | None = None
     frontiers: list[dict] = field(default_factory=list)   # var varje rör slutar och varför (pipes/frontier.py)
+    register: dict | None = None            # varje beteckning bladet skriver, i läget "Alla" (register.py)
 
 
 # A label over a bundle has found its pipes - the leader landed on as many drawn parallel lines as the block has
@@ -1946,13 +1947,20 @@ def analyze_page(page: RawPage, progress: Callable[[str], None] | None = None, o
     film.measured(quantities, scale)
     t0 = _t(timings, "measurement_ms", t0)
     timings.update({f"text_{k}": v for k, v in vt_timing.items()})
-    return PageAnalysis(page=page, legend=legend, declarations=declarations, second_reader=second, source_assignment=source_assignment, layer_stats=layer_stats, vtext=vtext, srows=srows, lines=lines, blocks=blocks,
-                        designations=designations, grammar=grammar, ann_layers=ann_layers, leaders=leaders,
-                        pipe_families=pipe_families, prims=prims, graphs=graphs, anchors=anchors, contact_stats=contact_stats,
-                        ownership=ownership, scale=scale, measures=measures, quantities=quantities, elevations=elevations,
-                        timings=timings, hatch_families=hatch, risers=risers, ocr_assist=ocr_report,
-                        crosscheck=crosscheck, review_findings=review_findings,
-                        frontiers=[f.as_dict() for f in frontiers])
+    pa = PageAnalysis(page=page, legend=legend, declarations=declarations, second_reader=second, source_assignment=source_assignment, layer_stats=layer_stats, vtext=vtext, srows=srows, lines=lines, blocks=blocks,
+                      designations=designations, grammar=grammar, ann_layers=ann_layers, leaders=leaders,
+                      pipe_families=pipe_families, prims=prims, graphs=graphs, anchors=anchors, contact_stats=contact_stats,
+                      ownership=ownership, scale=scale, measures=measures, quantities=quantities, elevations=elevations,
+                      timings=timings, hatch_families=hatch, risers=risers, ocr_assist=ocr_report,
+                      crosscheck=crosscheck, review_findings=review_findings,
+                      frontiers=[f.as_dict() for f in frontiers])
+    # Den som valt "Alla" får varje beteckning bladet skriver, inte bara rören. Rören är VVS-läsningens egna, och
+    # en VVS-läsning får ingenting av det här - den ser ut exakt som förut.
+    from . import disciplines as _disciplines
+    if _disciplines.current().id == "alla":
+        from .register import register_of_designations
+        pa.register = register_of_designations(pa)
+    return pa
 
 
 SAME_RISER = 15.0        # pt: a label's leader ends at the riser symbol it names, not exactly on its centre

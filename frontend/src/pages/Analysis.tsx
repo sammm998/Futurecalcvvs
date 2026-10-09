@@ -24,6 +24,7 @@ import ReferenceComparison from "../components/ReferenceComparison";
 import Markups, { type MarkDraft, type MarkTool } from "../components/Markups";
 import Corrections, { Draft } from "../components/Corrections";
 import LegendView from "../components/LegendView";
+import AllDesignations from "../components/AllDesignations";
 import Reasoning from "../components/Reasoning";
 import { frontierColor, frontierText } from "../frontier";
 import AgentChat from "../components/AgentChat";
@@ -85,7 +86,7 @@ export default function AnalysisPage() {
   // The three things a reader comes here for, and they are not the same thing: what the drawing says its codes
   // mean, the sheet with the reading drawn on it, and how the reading got there. Each had to be dug out of the
   // side panel before; each is a view of its own now.
-  const [view, setView] = useState<"forklaring" | "analys" | "resonemang">("analys");
+  const [view, setView] = useState<"forklaring" | "analys" | "resonemang" | "alla">("analys");
   const [selIdent, setSelIdent] = useState<string | null>(null);
   const lastSaid = useRef<string | null>(null);
   // Läsningens interna kontroller - täckning, oidentifierad geometri, annoteringar - är till för den som driver
@@ -390,6 +391,11 @@ export default function AnalysisPage() {
         {tr("Förklaringslista")}{result.legend?.entries?.length ? ` (${result.legend.entries.length})` : ""}
       </button>
       <button className={view === "analys" ? "active" : ""} onClick={() => setView("analys")}>{tr("Analys")}</button>
+      {result.all_designations && (
+        <button className={view === "alla" ? "active" : ""} onClick={() => setView("alla")}>
+          {tr("Alla beteckningar")} ({result.all_designations.totals?.entries ?? result.all_designations.entries?.length ?? 0})
+        </button>
+      )}
       <button className={view === "resonemang" ? "active" : ""} onClick={() => setView("resonemang")}>{tr("Agenternas resonemang")}</button>
       <span className="spacer" />
       <StatusBadge job={job} />
@@ -404,11 +410,38 @@ export default function AnalysisPage() {
       </div>
     );
   }
+  /* Från en annan flik till bladet. Visaren monteras först när analysvyn visas, och en utpekning innan den har
+   * lagt ut sitt blad gör ingenting - så den görs om tills visaren tar emot den. */
+  const zoomWhenShown = (bbox: number[] | null) => {
+    if (!bbox) return;
+    let tries = 0;
+    const attempt = () => { if (viewer.current?.zoomTo(bbox) || ++tries > 40) return; window.setTimeout(attempt, 100); };
+    window.setTimeout(attempt, 60);
+  };
+  if (view === "alla" && result.all_designations) {
+    return (
+      <div className="workspace">
+        {viewtabs}
+        <AllDesignations register={result.all_designations}
+          onZoom={(b) => { setView("analys"); zoomWhenShown(b); }}
+          onShowPipe={(name) => {
+            // one name can be several rows, one per size: the one with the most metres is the run to show
+            const row = result.quantities.filter((r: any) => (r.designation || "").toUpperCase() === name.toUpperCase())
+              .sort((a: any, b: any) => (b.confirmed_total_m || 0) - (a.confirmed_total_m || 0))[0];
+            setView("analys");
+            if (!row) return;
+            const key = identityKey(row);
+            setSelIdent(key); setSelPipe(null); setWhy(null);
+            zoomWhenShown(spanOf(result.pipes.filter((p: any) => p.identity === key && (p.page ?? 0) === page)));
+          }} />
+      </div>
+    );
+  }
   if (view === "resonemang") {
     return (
       <div className="workspace">
         {viewtabs}
-        <Reasoning jobId={id!} result={result} onZoom={(b) => { setView("analys"); setTimeout(() => viewer.current?.zoomTo(b), 60); }} />
+        <Reasoning jobId={id!} result={result} onZoom={(b) => { setView("analys"); zoomWhenShown(b); }} />
       </div>
     );
   }

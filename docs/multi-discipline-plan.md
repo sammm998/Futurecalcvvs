@@ -341,3 +341,54 @@ Baslinjen för A0111 var äldre än main: där stod 79,98 % rätt, medan main l�
 - Tunna linjer tas fortfarande som rör på några blad (A0111 och A0311 har 15 % utanför facit).
 - Stigare räknas inte ur bild.
 - Riktiga skanningar saknas fortfarande. Allt här är mätt på rastrerade vektorblad.
+
+## 11. Disciplinen "Alla" – Fas 1 genomförd: varje beteckning på bladet
+
+"Alla" väljs när projektet skapas, som VVS. Rören läses och mäts av VVS-läsningen, oförändrad. Bredvid mängden
+skrivs ett register över varje beteckning bladet skriver, oavsett disciplin, med slag, platser och mängd:
+ledningar i meter, komponenter och klasser i styck och rum i m². Reglerna står i `docs/SYSTEMET.md` (5b).
+
+**Så hålls VVS stilla.** Registret räknas fram efter läsningen och bara i läget "Alla". Det ändrar ingen rad i
+mängden. En VVS-läsning skriver ingen ny fil, och dess exporter har inget nytt blad.
+
+**Resultat på de 15 facitbladen, lästa i läget "Alla".** På varje blad är `quantities.json` och
+`physical-pipes.json` byte för byte VVS-läsningens på main, och registrets meter är mängdens. Enda skillnaden är
+avrundningen av A0233:s 237,005 m: 237,01 i registret och 237,00 i mängdtabellen.
+
+| Blad | beteckningar | ledning | komponent | okänd | granskas |
+|---|---|---|---|---|---|
+| A0011 | 20 | 9 | 4 | 7 | 10 |
+| A0013 | 24 | 11 | 6 | 7 | 13 |
+| A0014 | 10 | 3 | 1 | 6 | 7 |
+| A0111 | 114 | 51 | 36 | 27 | 79 |
+| A0114 | 87 | 37 | 26 | 24 | 65 |
+| A0213 | 49 | 14 | 17 | 18 | 37 |
+| A0222 | 45 | 16 | 12 | 17 | 35 |
+| A0223 | 44 | 16 | 11 | 17 | 34 |
+| A0233 | 55 | 20 | 15 | 20 | 39 |
+| A0311 | 42 | 18 | 5 | 19 | 29 |
+| A0314 | 38 | 6 | 6 | 26 | 33 |
+| W0023 | 10 | 3 | 1 | 6 | 7 |
+| W0024 | 11 | 3 | 0 | 8 | 9 |
+| W0122 | 67 | 26 | 18 | 23 | 51 |
+| W0123 | 47 | 22 | 9 | 16 | 38 |
+| **Summa** | **663** | **255** | **167** | **241** | **486** |
+
+**Vad "okänd" är på de här bladen.** Bladen skriver sin text med streck, och 241 av 663 beteckningar är okända:
+- stomlinjernas beteckningar (`A200` i en cirkel)
+- radiatorer (`RAD101-11-400X1000`): varken bladens listor eller referensdatan har en kod för radiator, bara en
+  symbol
+- arkitektens hänvisningar (`AA1:112`)
+- ord och tecken som streckläsningen läst fel
+
+Alla står som granskas. Ingen av dem får meter.
+
+**På en planritning med textlager** finns varje kodlik ord i textlagret i registret, med samma antal förekomster.
+Två står där med dimensionen på raden under (`KV1-X32` som `KV1-X32-16`). Ett ord i textlagret ligger utanför
+ritningens vyfönster och syns inte på bladet, och det räknas inte.
+
+**Kvar till Fas 2:**
+- Andra discipliners ledningar mäts i meter. Formfamiljer utan DN och koder som förklaringslistan inte nämner läses
+  i en andra, vidgad läsning, och det den mäter på geometri som rörläsningen inte äger blir egna rader som granskas.
+- Stomlinjernas beteckningar känns igen som stomlinjer.
+- Symboler utan text räknas inte.

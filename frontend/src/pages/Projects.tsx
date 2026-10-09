@@ -81,7 +81,7 @@ export default function Projects() {
               <Link className="ttl" to={`/projects/${p.id}`}>{p.name}</Link>
               <div className="sub">{p.description || "—"}
                 {p.contract_form === "ABT06" && <> · <span className="badge small">{CONTRACT_LABEL.ABT06}</span></>}
-                {p.discipline && p.discipline !== "vvs" && <> · <span className="badge small">{p.discipline}</span></>}
+                {p.discipline && p.discipline !== "vvs" && <> · <span className="badge small">{tr(disciplines.find((d) => d.id === p.discipline)?.name ?? p.discipline)}</span></>}
               </div>
             </div>
             <div className="meta">

@@ -3332,3 +3332,21 @@ button.d3-open:hover { box-shadow: 0 6px 20px rgba(18, 158, 176, 0.45), inset 0 
 .choice-chip { display: inline-flex; gap: 6px; align-items: center; padding: 7px 12px; border: 1px solid var(--line); border-radius: 999px; cursor: pointer; }
 .choice-chip.on { border-color: var(--ink); }
 .choice-chip.off { opacity: 0.55; cursor: not-allowed; }
+
+/* läget "Alla": varje beteckning på bladet, med sina förekomster */
+.rolepill.klass { border-color: #6b3fa0; color: #6b3fa0; background: #f6f1fb; }
+.rolepill.rum { border-color: #1d5c8c; color: #1d5c8c; background: #eef5fb; }
+.rolepill.unknown { border-style: dashed; }
+.alldesignations .legendtable tbody tr:not(.detailrow) { cursor: pointer; }
+.alldesignations .legendtable tbody tr:not(.detailrow):hover td { cursor: pointer; }
+.alldesignations .legendtable tr.open td { background: #f6f6f4; border-bottom-color: transparent; }
+.alldesignations .legendtable tr.detailrow td { background: #fafaf8; padding: 4px 10px 14px; }
+.alldesignations .note { font-size: 11.5px; margin-top: 3px; }
+.alldesignations .placeactions { display: flex; gap: 8px; flex-wrap: wrap; margin: 6px 0 8px; }
+.alldesignations ul.places { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 4px 6px; }
+.alldesignations button.placebtn { padding: 3px 8px; font-family: var(--mono); font-size: 11px; text-transform: none;
+  letter-spacing: 0; border: 1px solid var(--line); border-radius: 999px; color: var(--ink); }
+.alldesignations .legendfilters { flex-wrap: wrap; }
+@media (max-width: 720px) {
+  .alldesignations .legendfilters input { width: 100%; }
+}

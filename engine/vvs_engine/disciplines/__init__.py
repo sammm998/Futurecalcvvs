@@ -25,7 +25,7 @@ DATA = Path(__file__).with_name("data")
 DEFAULT = "vvs"
 ACTIVE, BETA, PLANNED, LATER = "active", "beta", "planned", "later"
 STATUSES = (ACTIVE, BETA, PLANNED, LATER)
-KINDS = ("pipe", "duct", "symbol", "area")
+KINDS = ("pipe", "duct", "symbol", "area", "all")     # all: every designation on the sheet, whatever it names
 
 
 @dataclass(frozen=True)

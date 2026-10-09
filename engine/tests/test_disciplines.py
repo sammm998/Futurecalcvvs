@@ -9,13 +9,20 @@ from vvs_engine import disciplines as D  # noqa: E402
 from vvs_engine.disciplines import measures as M  # noqa: E402
 
 
-def test_every_discipline_is_described_and_only_vvs_is_built():
+def test_every_discipline_is_described_and_vvs_and_alla_are_built():
     reg = D.registry()
-    assert list(reg)[:4] == ["vvs", "sprinkler", "kyla", "ventilation"] and {"el", "bygg"} <= set(reg)
+    assert list(reg)[:4] == ["vvs", "sprinkler", "kyla", "ventilation"] and {"el", "bygg", "alla"} <= set(reg)
     for d in reg.values():
         assert d.status in D.STATUSES and d.kind in D.KINDS and set(d.measures) <= set(M.UNITS)
-    assert [d.id for d in reg.values() if d.status == D.ACTIVE] == ["vvs"]
-    assert D.selectable("vvs") and D.selectable("") and not D.selectable("ventilation") and not D.selectable("x")
+    assert [d.id for d in reg.values() if d.status == D.ACTIVE] == ["vvs", "alla"]
+    assert D.selectable("vvs") and D.selectable("") and D.selectable("alla")
+    assert not D.selectable("ventilation") and not D.selectable("x")
+
+
+def test_alla_reads_the_pipes_as_vvs_does():
+    """"Alla" lists every designation beside the takeoff; the pipes under it are VVS's reading, unchanged."""
+    assert D.get("alla").engine == {} and D.get("alla").kind == "all"
+    assert set(D.get("alla").measures) == {"LENGTH", "COUNT", "AREA"}
 
 
 def test_vvs_overrides_nothing_so_the_reading_sees_its_own_constants():

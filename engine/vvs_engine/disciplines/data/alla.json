@@ -1,0 +1,5 @@
+{
+ "id": "alla", "name": "Alla", "status": "active", "kind": "all", "measures": ["LENGTH", "COUNT", "AREA"], "order": 7,
+ "engine": {},
+ "notes": "Varje beteckning på bladet, oavsett disciplin. Rören läses och mäts exakt som i VVS; allt annat bladet skriver listas, markeras och räknas i styck, och rum med area i texten får m². Det bladet själv inte förklarar märks granskas."
+}

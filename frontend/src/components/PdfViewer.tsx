@@ -158,7 +158,7 @@ export function markupColor(status?: string): string {
 
 export interface ViewerHandle {
   zoomIn(): void; zoomOut(): void; fitPage(): void; fitWidth(): void; fullscreen(): void;
-  zoomTo(bbox: number[]): void;
+  zoomTo(bbox: number[]): boolean;   // false while the sheet has no page laid out to zoom on
   panBy(dx: number, dy: number): void;
   zoomBy(factor: number): void;
   snapshot(): string | null;
@@ -342,7 +342,7 @@ const PdfViewer = forwardRef<ViewerHandle, ViewerProps>(function PdfViewer(props
      */
     zoomTo: (bbox: number[]) => {
       const el = container.current;
-      if (!el || !vp || !bbox) return;
+      if (!el || !vp || !bbox) return false;
       auto.current = false;
       const cw = el.clientWidth, ch = el.clientHeight;
       const bw = Math.max(bbox[2] - bbox[0], 8), bh = Math.max(bbox[3] - bbox[1], 8);
@@ -356,11 +356,12 @@ const PdfViewer = forwardRef<ViewerHandle, ViewerProps>(function PdfViewer(props
       const mid = { x: (bbox[0] + bbox[2]) / 2, y: (bbox[1] + bbox[3]) / 2 };
       setFlash({ x: mid.x, y: mid.y, r: Math.max(bw, bh) / 2 + 6, at: Date.now() });
       hold.current = null;
-      if (s === scale) { centreOn(mid, scale, true); return; }
+      if (s === scale) { centreOn(mid, scale, true); return true; }
       // centred the moment the new size is laid out - measured then, not guessed two frames later
       centreAfter.current = mid;
       scaleRef.current = s;
       setScale(s);
+      return true;
     },
   }), [vp, fit, scale]);
 

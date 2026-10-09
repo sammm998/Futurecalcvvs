@@ -1068,6 +1068,7 @@ def _result_dir(j: AnalysisJob) -> str:
 
 
 ARTIFACTS = ["reference-comparison.json", "label-audit-status.json", "label-audit.json", "drawing-style.json", "pdf-visibility.json", "drawing-profile.json", "drawing-profile-report.md", "raw-vector-inventory.json", "cad-layer-map.json", "vector-designations.json",
+             "all-designations.json",
              "drawing-legend.json", "ocr-assisted-characters.json",
              "designation-overlay.pdf", "leader-forensics.json", "leader-family-report.json", "pipe-code-anchors.json",
              "endpoint-pipe-attachment-overlay.pdf", "pipe-representation-families.json", "pipe-geometry-inventory.json", "declined-geometry.json", "pipe-topology.json",
@@ -1308,6 +1309,9 @@ def job_result(job_id: str, page: int | None = Query(default=None, ge=0), user: 
         # the drawing's own designation list, as the reading understood it: which codes it took for systems,
         # which for fittings, which for materials, and whether the page itself showed that or its own grouping did
         "legend": _load_optional(rd, "drawing-legend.json") or {"n_entries": 0, "entries": []},
+        # every designation this sheet writes, with its kind, its places and its quantity - only in "Alla"
+        "all_designations": next((s for s in ((_load_optional(root, "all-designations.json") or {}).get("sheets") or [])
+                                  if s.get("page") == (page_no or 0)), None),
     }
 
 
@@ -1610,7 +1614,9 @@ def export(job_id: str, fmt: str, floor_height: float | None = None, include_hat
     if fmt == "csv":
         return Response(exports.to_csv(rd, fh, include_hatched, rows, riser_source, include_declared).encode("utf-8-sig"), media_type="text/csv", headers=_attachment(f"{base}-mangder.csv"))
     if fmt == "json":
-        return Response(json.dumps({**quantities, "rows": rows, "corrections_applied": len(corr), "markups": marks},
+        everything = _load_optional(rd, "all-designations.json")      # only in "Alla"
+        return Response(json.dumps({**quantities, "rows": rows, "corrections_applied": len(corr), "markups": marks,
+                                    **({"all_designations": everything} if everything else {})},
                                    ensure_ascii=False, indent=1).encode("utf-8"),
                         media_type="application/json",
                         headers=_attachment(f"{base}-quantities.json"))

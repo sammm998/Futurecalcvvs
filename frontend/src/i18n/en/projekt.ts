@@ -412,4 +412,8 @@ export const projekt: Record<string, string> = {
   "t.ex. eget utfall, projekt och år": "e.g. own outcome, project and year",
   "Krav": "Requirements",
   "{0} står vid koden {1} och räknas en gång": "{0} stand by the code {1} and are counted once",
+
+  // disciplinen "Alla"
+  "Alla": "All",
+  "Varje beteckning på bladet, oavsett disciplin. Rören läses och mäts exakt som i VVS; allt annat bladet skriver listas, markeras och räknas i styck, och rum med area i texten får m². Det bladet själv inte förklarar märks granskas.": "Every designation on the sheet, whatever the discipline. The pipes are read and measured exactly as in HVAC; everything else the sheet writes is listed, marked and counted in pieces, and rooms with an area in their text get m². Whatever the sheet itself does not explain is marked for review.",
 };

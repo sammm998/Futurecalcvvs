@@ -312,6 +312,59 @@ har inte alltid rätt.
 
 ---
 
+## 5b. Läget "Alla": varje beteckning på bladet
+
+Ett projekt kan läsas i disciplinen **Alla** i stället för VVS (`disciplines/data/alla.json`). Rören läses och
+mäts exakt som i VVS, och en VVS-läsning får ingenting av det här. Bredvid mängden skrivs ett register över varje
+beteckning bladet skriver, oavsett disciplin (`register.py`, filen `all-designations.json`):
+
+- **ledning**, i meter: det VVS-läsningen mätte på rören under just den beteckningen, med samma status
+- **komponent**, i styck: en per skriven etikett. Ett antal framför koden räknas som det antalet (`4*TV103`)
+- **klass**, i styck: en brandklass (`EI60`), eller en material- eller isolerklass som förklaringslistan förklarar
+  och som står för sig själv. En tagg som börjar med en sådan kod och ett nummer (`SHG613-V52`) är en komponent.
+- **rum**, i m²: den area rumsetiketten själv skriver (`abt/rooms.py`)
+- **okänd**, i styck: det som varken bladet eller motorns referensdata säger vad det är
+
+Det bladets egen förklaringslista inte förklarar står som **granskas**. Känner motorns svenska referensdata
+koden visas dess ord bredvid, sagt som referensdata och aldrig som bladets besked.
+
+En kod hör till den rad i listan som skriver den:
+1. koden själv, eller den kod ett rörnamn börjar med (`KV1` i `KV1-K1-22`)
+2. annars den familj listan skriver med platshållare, så att `B12ML` är listans `BXXX GOLVBRUNN`
+3. annars, för ett rörnamn, systemkoden följd av systemets nummer (`KV` + `1`)
+
+En kod som står ensam är aldrig en längre form av en kortare. En stomlinjes `A200` är inte listans `A`, och
+`BL101` är inget `B`. En rad vars bokstäver lästs en och en ur streck förklarar ingenting.
+
+Det som inte räknas:
+- förklaringslistans egna rader
+- ritningsnummer och filnamn
+- mallar som `XX`
+- mätvärden, eftersom ett decimaltal är ett värde och aldrig ett namn
+- höjder: ett höjdord ur referensdatan (`level_references.json`: CL, VG, UK, ÖK, FG …) följt av ett tal, som
+  `CL3441` för "CL 3441 ÖFG"
+- ord: ett led med åtta bokstäver eller fler, även när ett bindestreck fäster det vid en kod (en rubriks
+  `VS-INSTALLATIONER`)
+- text som ligger utanför ritningens vyfönster och inte syns på bladet
+
+Där bladet skriver sina etiketter som text kan strecken läsa fram en kod som inte finns, till exempel en mätares
+ring läst som `O1`. En sådan kod räknas bara där bladet ger den stöd: den återkommer, den står också som text, eller
+ett rör är mätt under den. Hur ett blad skriver avgörs av de flesta av dess etiketter ute på bladet. Ett blad ritat
+med streck kan ha stomlinjernas bokstäver som text, och det gör inte strecken tvivelaktiga.
+
+En not bredvid ett namn hör inte till namnet. `S3-P5-110 (L)` är `S3-P5-110`, och noten står kvar på raden där den
+skrivs.
+
+Ur streck läses ett tecken ibland som sin tvilling. I en kod läst ur streck är ett O mellan två siffror en nolla, så
+`RAD1O1` är `RAD101`, och en nolla mellan två bokstäver är ett O. `M0BIL` är alltså ordet MOBIL och ingen kod.
+
+Registret visas i analysvyns flik "Alla beteckningar", där varje förekomst kan pekas ut på bladet. Det ritas som
+rutor på den markerade PDF:en och exporteras som bladet "Alla beteckningar" i Excel och i JSON-exporten. Andra
+discipliners ledningar, som kanaler, kabelstegar och sprinklerrör, mäts ännu inte i meter. Deras etiketter står i
+registret i styck och märks granskas.
+
+---
+
 ## 6. Mängda för hand (mät, räkna, markera)
 
 **Mängda** är en egen flik i sidomenyn och ett eget arbetsbord (`/mangda`, `frontend/src/pages/Takeoff.tsx`):
