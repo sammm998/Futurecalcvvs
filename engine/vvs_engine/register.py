@@ -249,17 +249,23 @@ def register_of_designations(pa) -> dict[str, Any]:
         e["sources"].add(source)
 
     # 1. The reading's own designations: the names the takeoff uses, a dimension on the row below joined on.
-    #    Where the sheet writes its labels as text, a code read out of strokes is more often a symbol drawn with
-    #    lines - a gauge's ring read as O1 - than a label. It is weighed with the words below.
-    writes_text = any(getattr(d, "source", "text") == "text" for d in pa.designations)
+    #    A note written beside the name - S1-P2-75 (L) - stays on the line where it stands and is not part of
+    #    the name. Where the sheet writes its labels as text, a code read out of strokes is more often a symbol
+    #    drawn with lines - a gauge's ring read as O1 - than a label, and it is weighed with the words below.
+    #    Which way a sheet writes is what most of its labels out on the drawing show: a sheet drawn in strokes
+    #    can still carry its grid lines' letters as text.
     taken = []
     stroked = []
+    read = []
     for d in pa.designations:
         if legend.holds(d.bbox):
             excluded["legend_rows"] += 1
             continue
-        name = (d.display_text or d.text or "").strip()
-        if getattr(d, "source", "text") != "text":
+        line = (d.display_text or d.text or "").strip()
+        aside = (getattr(d, "aside", "") or "").strip()
+        name = line[: -len(aside)].strip() if aside and line.endswith(aside) else line
+        drawn = getattr(d, "source", "text") != "text"
+        if drawn:
             name = _untwin(name)
         why = _not_a_name(name) if name else "empty"
         if not why and not any(ch.isdigit() for ch in name) and any(ch.isdigit() for ch in (d.display_text or "")):
@@ -267,11 +273,14 @@ def register_of_designations(pa) -> dict[str, Any]:
         if why:
             excluded[why] += 1
             continue
+        read.append((d, name, line, drawn))
+    writes_text = sum(1 for r in read if not r[3]) > sum(1 for r in read if r[3])
+    for d, name, line, drawn in read:
         taken.append(d.bbox)
-        if writes_text and getattr(d, "source", "text") != "text":
-            stroked.append((name, d.bbox, name, max(int(d.multiplier or 1), 1)))
+        if writes_text and drawn:
+            stroked.append((name, d.bbox, line, max(int(d.multiplier or 1), 1)))
             continue
-        add(name, d.bbox, name, max(int(d.multiplier or 1), 1))
+        add(name, d.bbox, line, max(int(d.multiplier or 1), 1))
 
     # 2. What the sheet writes that the reading did not take for a label: a radiator's type beside its size, a
     #    count written in front of a fixture's code, a tag beside an apparatus.
@@ -390,8 +399,12 @@ def register_of_designations(pa) -> dict[str, Any]:
             reasons.append("ingen sträcka nådd")
         elif _is_fire_class(name):
             kind, quantity, sure = "klass", count, False
-        elif role == "material":
+        elif role == "material" and "-" not in name:
+            # a material or insulation class written on its own; inside a pipe's name it is the second part, so a
+            # tag that opens with the code and a number (SHG613-V52) is a thing, whatever the list's role says
             kind, quantity, sure = "klass", count, explained
+        elif role == "material":
+            kind, quantity, sure = "komponent", count, explained
         elif role == "component" or ref is not None or _is_an_apparatus_tag(
                 _Named(name, head, tokens=[t for t in name.split("/")[0].split("-") if t]), legend):
             kind, quantity, sure = "komponent", count, explained

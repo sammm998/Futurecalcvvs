@@ -321,6 +321,7 @@ beteckning bladet skriver, oavsett disciplin (`register.py`, filen `all-designat
 - **ledning**, i meter: det VVS-läsningen mätte på rören under just den beteckningen, med samma status
 - **komponent**, i styck: en per skriven etikett. Ett antal framför koden räknas som det antalet (`4*TV103`)
 - **klass**, i styck: en brandklass (`EI60`), eller en material- eller isolerklass som förklaringslistan förklarar
+  och som står för sig själv. En tagg som börjar med en sådan kod och ett nummer (`SHG613-V52`) är en komponent.
 - **rum**, i m²: den area rumsetiketten själv skriver (`abt/rooms.py`)
 - **okänd**, i styck: det som varken bladet eller motorns referensdata säger vad det är
 
@@ -348,7 +349,11 @@ Det som inte räknas:
 
 Där bladet skriver sina etiketter som text kan strecken läsa fram en kod som inte finns, till exempel en mätares
 ring läst som `O1`. En sådan kod räknas bara där bladet ger den stöd: den återkommer, den står också som text, eller
-ett rör är mätt under den.
+ett rör är mätt under den. Hur ett blad skriver avgörs av de flesta av dess etiketter ute på bladet. Ett blad ritat
+med streck kan ha stomlinjernas bokstäver som text, och det gör inte strecken tvivelaktiga.
+
+En not bredvid ett namn hör inte till namnet. `S3-P5-110 (L)` är `S3-P5-110`, och noten står kvar på raden där den
+skrivs.
 
 Ur streck läses ett tecken ibland som sin tvilling. I en kod läst ur streck är ett O mellan två siffror en nolla, så
 `RAD1O1` är `RAD101`, och en nolla mellan två bokstäver är ett O. `M0BIL` är alltså ordet MOBIL och ingen kod.
