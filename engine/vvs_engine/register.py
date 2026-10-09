@@ -41,6 +41,7 @@ TEMPLATE = re.compile(r"^[XO0/.\-]+$")             # XXOO-X00-000/X00: letters a
 VALUE = re.compile(r"\d[.,]\d")                     # a decimal number is a value, never a name
 FILE = re.compile(r"\.(?:dwg|dxf|pdf|png|jpe?g|tiff?)$", re.I)
 EDGE = ",.;:()[]\"'"
+NOTE = re.compile(r"\s*\([^)]*\)$")               # a note set beside a name: S3-P5-160 (L)
 HEAD = re.compile(r"^[A-ZÅÄÖ]+")
 
 KINDS = ("ledning", "komponent", "klass", "rum", "okänd")
@@ -351,16 +352,27 @@ def register_of_designations(pa) -> dict[str, Any]:
     for q in pa.quantities:
         if q.get("designation"):
             by_name[q["designation"].upper()].append(q)
+    # ...and the runs of other disciplines the widened reading measured on lines the takeoff left alone. They are
+    # rows of the register only, never of the takeoff, and every one of them is for review: their state is never
+    # the takeoff's CONFIRMED.
+    for w in getattr(pa, "wide_runs", None) or []:
+        by_name[w["designation"].upper()].append({"designation": w["designation"], "dn": w.get("size"),
+                                                  "confirmed_total_m": w["metres"], "state": "WIDE",
+                                                  "wide": True, "runs": w.get("runs") or []})
     claimed: set[str] = set()
 
     def name_for(name: str) -> str | None:
         """The takeoff's name for a written name: the same name, or the same name with or without the suffix
-        after the slash (VS2-S13-12 written, VS2-S13-12/S4 measured). A name gives its metres to one entry."""
+        after the slash (VS2-S13-12 written, VS2-S13-12/S4 measured), or with the note a reading kept beside it
+        (S3-P5-160 (L)). A name gives its metres to one entry."""
         key = name.upper()
         if key in by_name and key not in claimed:
             return key
+        bare = [k for k in by_name if NOTE.sub("", k) == key and k not in claimed]
+        if len(bare) == 1:
+            return bare[0]
         base = key.split("/")[0]
-        same = [k for k in by_name if k.split("/")[0] == base and k not in claimed]
+        same = [k for k in by_name if NOTE.sub("", k).split("/")[0] == base and k not in claimed]
         return same[0] if len(same) == 1 else None
 
     def metres(q) -> float:
@@ -382,6 +394,7 @@ def register_of_designations(pa) -> dict[str, Any]:
         description, said_by = ((lentry.description, "förklaringslistan") if readable
                                 else (ref[0], "referensdata") if ref else (None, None))
         reasons = []
+        wide = any(q.get("wide") for q in qs or [])
         if qs:
             # a pipe's metres are the VVS reading's, and so is how sure they are
             kind = "ledning"
@@ -390,6 +403,8 @@ def register_of_designations(pa) -> dict[str, Any]:
             sure = quantity > 0 and not review and all(q.get("state") == "CONFIRMED" for q in qs if metres(q) > 0)
             if quantity <= 0:
                 reasons.append("ingen sträcka nådd")
+            elif wide:
+                reasons.append("mätt i den vidgade läsningen, utan referensmängd")
             elif review:
                 reasons.append(f"{review:.2f} m att granska")
             elif not sure:
@@ -424,6 +439,8 @@ def register_of_designations(pa) -> dict[str, Any]:
             "discipline": _discipline_of(lentry) or ("vvs" if (qs or ref) else None),
             "places": places,
             "variants": [{"line": ln, "labels": n} for ln, n in sorted(lines.items())] if len(lines) > 1 else [],
+            # the lines a run of another discipline was measured on: the takeoff has no pipe for them to light
+            **({"runs": [r for q in qs for r in q.get("runs") or []]} if wide else {}),
         }
 
     # the same name first, so that a name written in full keeps its own rows; then the near ones
@@ -455,8 +472,10 @@ def register_of_designations(pa) -> dict[str, Any]:
     totals = {
         "entries": len(entries),
         "by_kind": {k: sum(1 for x in entries if x["kind"] == k) for k in KINDS},
-        # the takeoff's own sum, not a sum of rounded rows: the two tables beside each other say the same
+        # the takeoff's own sum, not a sum of rounded rows, so that the two tables beside each other say the same -
+        # with the other disciplines' runs on top, and said apart
         "metres": round(sum(metres(q) for q in used), 2),
+        "wide_metres": round(sum(metres(q) for q in used if q.get("wide")), 2),
         "pieces": int(sum(x["quantity"] for x in entries if x["unit"] == "st")),
         "square_metres": round(sum(x["quantity"] for x in entries if x["unit"] == "m²"), 2),
         "to_review": sum(1 for x in entries if x["state"] == "granskas"),

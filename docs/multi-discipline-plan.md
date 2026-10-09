@@ -392,3 +392,60 @@ ritningens vyfönster och syns inte på bladet, och det räknas inte.
   i en andra, vidgad läsning, och det den mäter på geometri som rörläsningen inte äger blir egna rader som granskas.
 - Stomlinjernas beteckningar känns igen som stomlinjer.
 - Symboler utan text räknas inte.
+
+## 12. Disciplinen "Alla" – Fas 2 genomförd: andra discipliners ledningar i meter
+
+Bladet läses en gång till, vidgad (`widened_runs` i `pipeline.py`), på samma förberedda sida. Värdena under `wide`
+i `disciplines/data/alla.json` gäller bara i den läsningen. Den första läsningen är VVS-läsningen, oförändrad.
+Reglerna står i `docs/SYSTEMET.md` (5b).
+
+**Vad den vidgade läsningen gör annorlunda:**
+- En etikett som bladets lista inte nämner namnger en ledning där den är skriven som en: med ett kanalmått (`Ø250`,
+  `400x200`) eller med en systemkod ur den svenska tabellen (BRL, KB, G …).
+- Ett kanalmått är en storlek, som en DN är det. En ledning ritad som sina två kanter mäts en gång, och ledningens
+  eget mått avgör hur långt isär kanterna får ligga. Rörens tak gäller inte där.
+- Bara en etikett som bär en storlek eller ett system namnger en ledning, och bara en sådan etikett ger en ledning
+  dess namn. Taggar (`UT1`, `TD01`), det bladets lista förklarar som en sak (`TD101-Ø100`) och koder med löpnummer
+  och storlek (`AVT101-32`) räknas i styck.
+
+**Vad som behålls:** det som mäts på linjer VVS-läsningen inte tog, under namn som mängden inte har. Det blir rader
+i registret, aldrig i mängden, och varje rad ska granskas. Fliken tänder ledningens linjer och zoomar dit, och den
+markerade PDF:en ritar dem streckade.
+
+**Syntetiska blad** (`engine/tests/test_alla_measures_other_disciplines_runs.py`):
+
+| Blad | Mätt i den vidgade läsningen, granskas | Räknat i styck |
+|---|---|---|
+| Ventilation, två kanaler ritade som sina två kanter | `TL01-Ø250` 6,00 m, `FL01-400x200` 4,00 m | `TD01` 1 |
+| El, två kabelstegar och 24 uttag | `KS1-300x60` 7,00 m, `KS2-200x60` 5,00 m | `UT1` 24 |
+| Sprinklerrör bredvid en VVS-lista | `BRL1-32` 5,00 m | `SAV101-32` 1 |
+| Don som listan förklarar, ritade med kanalernas penna | – | `TD101-Ø100` … 3 |
+| Kanaler ritade som slutna konturer | `TL01-Ø250` 6,50 m, `FL01-400x200` 4,80 m | – |
+
+På bladet med don och lista mäter VVS-läsningen själv kanalerna, eftersom listan kallar TL och FL system
+(tilluft, frånluft). Där har den vidgade läsningen inget att lägga till.
+
+Varje regel är prövad genom att tas bort en i taget, 22 sådana mutationer. Proven fångar alla.
+
+**De 15 facitbladen, planritningen och sektionsbladet, lästa i läget "Alla" som i produktionen:**
+- `quantities.json`, `physical-pipes.json` och `vector-designations.json` är byte för byte VVS-läsningens på 16 av
+  17 blad. På planritningen skiljer sig `physical-pipes.json` bara i fältet `frontiers[].detail.beyond_state` på
+  fem rör. Fältet växlar mellan körningar också i VVS-läget och i Fas 1:s körningar, så det är en äldre ojämnhet
+  och inte den vidgade läsningen. Mängden är densamma.
+- Den vidgade läsningen lägger till en ledning: 0,19 m `S3-P5-160` på A0311, där VVS-läsningen inte gav namnet
+  några meter. Facit har 0,30 m `S3-P5-160` på samma linje, och den vidgade läsningen mätte en del av den. Raden
+  står i registret som granskas, inte i mängden.
+- Bladen har inga andra discipliners ledningar, och den vidgade läsningen hittade inga.
+- Tid: två av bladen, lästa ett i taget, tog 298 s i VVS och 327 s i "Alla".
+
+**Gränser:**
+- Andra discipliners meter är prövade på syntetiska blad: ventilationskanaler, kabelstegar med uttag och ett
+  sprinklerrör bredvid en VVS-lista. Riktiga el-, ventilations- och sprinklerblad med en mängdning saknas.
+- En kanal ritad som en sluten kontur får sina ändar med i längden, alltså kanalens bredd en gång per ände.
+- I läget "Alla" läses bladet två gånger. Den andra läsningen återanvänder den förberedda sidan, så analysen tar
+  bara något längre tid än i VVS.
+
+**Kvar:**
+- Stomlinjernas beteckningar känns igen som stomlinjer. Nu står de som okända.
+- Symboler utan text räknas inte.
+- Riktiga el-, ventilations- och sprinklerblad med mängdning, så att Fas 2 får ett eget facit och en egen spärr.

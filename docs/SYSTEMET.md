@@ -359,9 +359,35 @@ Ur streck läses ett tecken ibland som sin tvilling. I en kod läst ur streck ä
 `RAD1O1` är `RAD101`, och en nolla mellan två bokstäver är ett O. `M0BIL` är alltså ordet MOBIL och ingen kod.
 
 Registret visas i analysvyns flik "Alla beteckningar", där varje förekomst kan pekas ut på bladet. Det ritas som
-rutor på den markerade PDF:en och exporteras som bladet "Alla beteckningar" i Excel och i JSON-exporten. Andra
-discipliners ledningar, som kanaler, kabelstegar och sprinklerrör, mäts ännu inte i meter. Deras etiketter står i
-registret i styck och märks granskas.
+rutor på den markerade PDF:en och exporteras som bladet "Alla beteckningar" i Excel och i JSON-exporten.
+
+**Andra discipliners ledningar** mäts i en andra, vidgad läsning av samma blad (`widened_runs` i `pipeline.py`).
+VVS-läsningen namnger en ledning bara med en kod som bladets lista kallar ett system, och räknar en etikettfamilj som
+rör bara om etiketterna bär en DN. En kanal skrivs `TL01-Ø250` eller `FL01-400x200`, en kabelstege med sin bredd och
+ett brandsläckningsrör med en kod som VVS-listan aldrig nämner. För VVS-läsningen namnger ingen av dem något.
+
+Den andra läsningen använder värdena under `wide` i `disciplines/data/alla.json`, och bara där:
+- En etikett som bladets lista inte nämner får namnge en ledning när den är skriven som en ledning: med ett
+  kanalmått (`Ø250`, `400x200`, där bredden står först och är den bredd planen ritar) eller med en systemkod ur
+  den svenska tabellen (BRL, KB, G …). En kod med löpnummer och storlek och inget mer är en tagg för en ventil
+  eller en apparat (`AVT101-32`). Den räknas och mäts aldrig.
+- Bara en etikett som bär en storlek eller ett system namnger en ledning. En tagg (ett uttags `UT1`, ett dons
+  `TD01`) pekar på en sak. En elritning skriver långt fler taggar än ledningar, och räknade som ledningsnamn var
+  taggarna de flesta av bladets etiketter utan att någon av dem nådde en ledning. Då förkastades läsningen, och
+  kabelstegarna mättes inte alls.
+- Bara en etikett som namnger en ledning ger en ledning dess namn. Det bladets lista förklarar som en sak räknas,
+  också där taggen bär en storlek som en kanals (`TD101-Ø100`) och saken är ritad med kanalernas penna.
+- En ledning ritad som sina två kanter mäts en gång. Kanalens eget mått avgör hur långt isär kanterna ligger.
+
+Det den andra läsningen mäter behålls bara på linjer som VVS-läsningen inte tog, och bara under namn som mängden
+inte redan har. En not som läsningen behållit bredvid namnet ändrar inte namnet: `S3-P5-160 (L)` är mängdens
+`S3-P5-160`. Det som behålls står i registret som en ledning att granska, aldrig i mängden. Fliken tänder dess
+linjer, och den markerade PDF:en ritar dem streckade. VVS-läsningen och dess filer är desamma som utan den. Den
+andra läsningen frågar ingen modell och är deterministisk.
+
+Gränser: en kanal ritad som en sluten kontur får sina ändar med i längden, alltså kanalens bredd en gång per
+ände. Andra discipliners meter är prövade på syntetiska blad. Riktiga el-, ventilations- och sprinklerblad med en
+mängdning saknas än.
 
 ---
 

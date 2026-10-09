@@ -299,4 +299,6 @@ export const mangd: Record<string, string> = {
   "Visa ledningen": "Show the run",
   "Raden kommer ur mängden. Namnet står inte utskrivet så på bladet.": "The row comes from the takeoff. The name is not written out like that on the sheet.",
   "Ingen beteckning matchar filtret.": "No designation matches the filter.",
+  "Av metrarna är {0} m andra ledningar, mätta i den vidgade läsningen.": "Of the metres, {0} m are other runs, measured in the widened reading.",
+  "mätt i den vidgade läsningen, utan referensmängd": "measured in the widened reading, with no reference takeoff",
 };

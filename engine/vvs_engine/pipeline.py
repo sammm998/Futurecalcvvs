@@ -39,13 +39,15 @@ from .text.searchable import searchable_rows
 from .text.vector_text import VectorTextResult, vector_text_rows
 from .measure.scale import ScaleResult, discover_scale, scale_from_the_set, scale_given_by_hand
 from .measure.measure import SETTLED_SCALE, PipeMeasure, aggregate, measure_pipes
-from .pipes.ownership import (Identity, OwnershipResult, complete_identities, identity_of, propagate, DECLARED_RUN_MAX_M)
+from .pipes.ownership import (Identity, OwnershipResult, complete_identities, identity_of, identity_from_text,
+                              propagate, DECLARED_RUN_MAX_M)
 from .pipes.frontier import end_evidence, frontiers_of, summary as frontier_summary
 from .film import Film
 from .handling import reads_as_a_drawing_number
 from .routes import apply_routes, cross_check, review, run_routes
 
 from . import rules as _rules
+from . import disciplines as _disciplines
 
 
 def _R(rule_id, default):
@@ -129,6 +131,7 @@ class PageAnalysis:
     source_assignment: dict | None = None
     frontiers: list[dict] = field(default_factory=list)   # var varje rör slutar och varför (pipes/frontier.py)
     register: dict | None = None            # varje beteckning bladet skriver, i läget "Alla" (register.py)
+    wide_runs: list[dict] = field(default_factory=list)   # andra discipliners ledningar, i läget "Alla" (widened_runs)
 
 
 # A label over a bundle has found its pipes - the leader landed on as many drawn parallel lines as the block has
@@ -1123,7 +1126,14 @@ def analyze_page(page: RawPage, progress: Callable[[str], None] | None = None, o
     # Koder bladets egen förklaringslista aldrig nämner är inga rörbeteckningar på det bladet - rumsnummer har
     # samma form som en rörbeteckning, och formen kan inte skilja dem åt. Räknas de som rörnamn drar de dessutom
     # ned bladets etikettäckning och kan få hela läsningen att förkastas.
+    # In the widened reading of "Alla" another discipline's run is no pipe code of the sheet's VVS list either, and
+    # that is no reason it names nothing: a label written the way a run is written is let through (see
+    # _another_disciplines_run). Everything else the list never mentions stays out, there as here.
+    other_runs = _disciplines.value("pipeline.OTHER_RUNS_NAME_RUNS", False)
     unknown_codes = _unknown_to_the_legend(legend, designations)
+    if other_runs:
+        unknown_codes = {d.did for d in designations
+                         if d.did in unknown_codes and not _another_disciplines_run(d, legend)}
     # a sheet read from pixels (raster/): every run on it is reviewed, and its scale must be measured on the sheet
     from_image = (page.input_class or {}).get("read_as") == "raster"
     # A drawing number names a sheet, never a pipe. It has a pipe label's shape - `V-50-1-A0111` opens with a
@@ -1135,7 +1145,8 @@ def analyze_page(page: RawPage, progress: Callable[[str], None] | None = None, o
     # number has reached no line on any sheet read; that reading is left as it is.
     sheet_numbers = {d.did for d in designations if reads_as_a_drawing_number(d.text)} if from_image else set()
     pipe_labels = {d.did for d in designations
-                   if legend.names_a_pipe(d) and (d.text or "").upper() not in legend.components()
+                   if (_names_a_run(d, legend) if other_runs else legend.names_a_pipe(d))
+                   and (d.text or "").upper() not in legend.components()
                    and d.did not in unknown_codes and d.did not in sheet_numbers and not legend.holds(d.bbox)}
     spelled_out = layer_system_tokens(page)      # the system names the file writes on layers of its own
 
@@ -1761,7 +1772,8 @@ def analyze_page(page: RawPage, progress: Callable[[str], None] | None = None, o
         return complete_identities(_pipe_identities(
             designations, anchors, grammar,
             _R("pipeline.DN_ROWS_ARE_VERTICAL_ONLY", DN_ROWS_ARE_VERTICAL_ONLY), legend=legend,
-            unknown_codes=unknown_codes, sheet_numbers=sheet_numbers))
+            unknown_codes=unknown_codes, sheet_numbers=sheet_numbers,
+            run_labels=pipe_labels if other_runs else None))
 
     scale = discover_scale(page, lines)
     if scale.meters_per_pt is None:
@@ -1816,7 +1828,8 @@ def analyze_page(page: RawPage, progress: Callable[[str], None] | None = None, o
                 ids = complete_identities(_pipe_identities(
                     designations, own, grammar,
                     _R("pipeline.DN_ROWS_ARE_VERTICAL_ONLY", DN_ROWS_ARE_VERTICAL_ONLY), legend=legend,
-                    unknown_codes=unknown_codes, sheet_numbers=sheet_numbers))
+                    unknown_codes=unknown_codes, sheet_numbers=sheet_numbers,
+                    run_labels=pipe_labels if other_runs else None))
                 return propagate(split_graphs, own, page.info.index, ids, spelled_out,
                                  declared=declarations.connection_pipes, declared_max_pt=declared_max_pt,
                                  end_evidence=end_ev)
@@ -1955,12 +1968,53 @@ def analyze_page(page: RawPage, progress: Callable[[str], None] | None = None, o
                       crosscheck=crosscheck, review_findings=review_findings,
                       frontiers=[f.as_dict() for f in frontiers])
     # Den som valt "Alla" får varje beteckning bladet skriver, inte bara rören. Rören är VVS-läsningens egna, och
-    # en VVS-läsning får ingenting av det här - den ser ut exakt som förut.
-    from . import disciplines as _disciplines
-    if _disciplines.current().id == "alla":
+    # en VVS-läsning får ingenting av det här - den ser ut exakt som förut. Andra discipliners ledningar mäts i en
+    # andra, vidgad läsning av samma blad, och bara där VVS-läsningen inte redan äger linjerna.
+    if _disciplines.current().id == "alla" and not _disciplines.is_widened():
+        pa.wide_runs = widened_runs(pa, page, prep, known_families=known_families, known_legend=known_legend,
+                                    known_scale=known_scale, known_scale_pages=known_scale_pages,
+                                    given_scale=given_scale)
         from .register import register_of_designations
         pa.register = register_of_designations(pa)
     return pa
+
+
+def widened_runs(pa: PageAnalysis, page: RawPage, prep: "PreparedPage", **known) -> list[dict]:
+    """What a second reading of the sheet measures when other disciplines' labels may name their runs too.
+
+    The VVS reading names a run only with a code the sheet's list calls a system, and counts a family of labels as
+    pipes only when its labels carry a DN. A duct is written TL01-Ø250 or FL01-400x200, a cable tray with its width,
+    a sprinkler pipe with a code the VVS list never mentions: to the VVS reading none of them names anything. So
+    "Alla" reads the same prepared sheet once more, with the discipline's `wide` values, and keeps what that reading
+    measures on lines the first reading did not take:
+
+    - a run under a name the takeoff already has is the takeoff's, and is left to it - also where the reading kept
+      a note beside the name (S3-P5-160 (L) is S3-P5-160)
+    - a run touching a single line the takeoff owns, measured or ambiguous, is not taken either: the line is VVS's
+    - the second edge of a double-drawn run carries no metres of its own, as in the takeoff
+
+    The second reading asks no model and uses no second reader: it is the engine's own, and deterministic. Every
+    run it gives is for review - no other discipline has a reference takeoff to hold it against.
+    """
+    from .register import NOTE
+    with _disciplines.widened():
+        wide = analyze_page(page, prepared=prep, **known)
+    owned = {sp for p in pa.ownership.pipes for sp in p.source_paths}
+    names = {NOTE.sub("", q.get("designation") or "").upper() for q in pa.quantities}
+    runs: dict[str, dict] = {}
+    for m in wide.measures:
+        p = m.pipe
+        if (p.identity is None or NOTE.sub("", p.identity.display or "").upper() in names
+                or owned.intersection(p.source_paths)):
+            continue
+        r = runs.setdefault(p.identity.key, {"designation": p.identity.display, "size": p.identity.dn,
+                                             "metres": 0.0, "pieces": 0, "runs": []})
+        r["runs"].extend([[round(x, 1), round(y, 1)] for x, y in poly] for poly in p.points)
+        if m.twin_of is not None:
+            continue                     # the run's second edge: its metres are the first edge's
+        r["pieces"] += 1
+        r["metres"] += m.horizontal_m or 0.0
+    return [dict(r, metres=round(r["metres"], 2)) for r in runs.values() if r["metres"] > 0]
 
 
 SAME_RISER = 15.0        # pt: a label's leader ends at the riser symbol it names, not exactly on its centre
@@ -2206,7 +2260,7 @@ def _split_at_tick_contacts(page: RawPage, graphs: dict, pipe_families: dict, an
 
 def _pipe_identities(designations, anchors, grammar, dn_rows_are_vertical_only: bool = False,
                     legend=None, unknown_codes: set[str] | None = None,
-                    sheet_numbers: set[str] | None = None) -> dict[str, Identity]:
+                    sheet_numbers: set[str] | None = None, run_labels: set[str] | None = None) -> dict[str, Identity]:
     """Anchors of pipe-designation grammar families: a family qualifies when >= 50 % of its members carry a DN
     (inline or DN row) or >= 50 % of its verified attachments have layer-token support. Other code families
     (component tags) never seed pipe ownership.
@@ -2215,9 +2269,16 @@ def _pipe_identities(designations, anchors, grammar, dn_rows_are_vertical_only: 
     so that the run its leader touches gets no horizontal metres from it. The reading of the convention is not in
     doubt - a dimension on the row below is a stack - but what the takeoff does with the run underneath it is a
     measured question, not a deduced one, and the switch is here so it can be measured rather than argued.
+
+    run_labels: in the widened reading of "Alla", the labels that name runs (_names_a_run). Only they seed a run
+    there. A size makes a family of tags look like one of runs: a terminal the sheet's list explains, tagged with
+    its connection's size, had the outline it is drawn as measured under its tag. What the list explains as a
+    thing, a tag and a code the list never mentions are counted there, never measured. The VVS reading passes none.
     """
     des_by_id = {d.did: d for d in designations}
     unknown = unknown_codes or set()
+    # In the widened reading of "Alla" a duct's size (Ø250, 400x200) is a size as a DN is
+    sized = _disciplines.value("pipeline.DUCT_SIZES_ARE_SIZES", False)
     fam_members: Counter = Counter()
     fam_dn: Counter = Counter()
     fam_ver: Counter = Counter()
@@ -2229,7 +2290,7 @@ def _pipe_identities(designations, anchors, grammar, dn_rows_are_vertical_only: 
         if d.did in unknown:
             continue
         fam_members[d.family] += 1
-        if d.dn is not None:
+        if d.dn is not None or (sized and run_size(d) is not None):
             fam_dn[d.family] += 1
     for a in anchors:
         if a.state != "VERIFIED_PIPE_ATTACHMENT":
@@ -2251,6 +2312,8 @@ def _pipe_identities(designations, anchors, grammar, dn_rows_are_vertical_only: 
         d = des_by_id.get(a.designation_id)
         if d is None:
             continue
+        if run_labels is not None and d.did not in run_labels:
+            continue        # the widened reading of "Alla": only a label that names a run seeds one
         # A pattern is a weak test of whether a code names a pipe: on a sheet where the component tags happen to
         # share the shape of the system codes, the whole shape fails the test and the systems go with it. The
         # sheet's own designation list settles it directly, so a code it lists as a system qualifies whatever the
@@ -2274,8 +2337,57 @@ def _pipe_identities(designations, anchors, grammar, dn_rows_are_vertical_only: 
             toks = d.tokens
             cand = [i for i, t in enumerate(toks) if t.isdigit() and int(t) == d.dn]
             dn_idx = cand[0] if cand else None
-        out[a.anchor_id] = identity_of(a, dn_idx)
+        size = run_size(d) if sized and a.dn is None else None
+        out[a.anchor_id] = (identity_from_text(a.designation_display or a.designation, size, a.system_token, None)
+                            if size is not None else identity_of(a, dn_idx))
     return out
+
+
+# A run's size as other disciplines write it: a round duct by its diameter (Ø250), a rectangular one by width and
+# height (400x200). The width comes first, and the width is what a plan draws, so the duct's two edges lie that far
+# apart. Read only in the widened reading of "Alla"; to the VVS reading these are no sizes.
+ROUND_SIZE = re.compile(r"^[ØøΦφ⌀](\d{2,4})$")
+RECT_SIZE = re.compile(r"^(\d{2,4})[xX×](\d{2,4})$")
+
+
+def run_size(d) -> int | None:
+    """The size a label writes for a duct, in mm across the plan, or None."""
+    from .semantics.grammar import split_tokens
+    for t in (getattr(d, "tokens", None) or split_tokens(getattr(d, "text", "") or "")):
+        m = ROUND_SIZE.match(t.strip()) or RECT_SIZE.match(t.strip())
+        if m:
+            return int(m.group(1))
+    return None
+
+
+def _another_disciplines_run(d, legend) -> bool:
+    """A label the sheet's own list says nothing about, written the way a run is written: with a duct's size
+    (Ø250, 400x200), or with a system code of the Swedish table (BRL, KB, G ...).
+
+    A code with a serial number and a size and nothing more is how a valve or an apparatus is tagged, and the tag
+    names the thing, not the pipe it sits on. On a section sheet the widened reading measured the outline of a
+    drain assembly under its tag AVT101-32: 1.36 m of a device. Such a tag is counted and never measured."""
+    from .source_rules.systems import system_code, systems
+    text = (d.text or "").upper()
+    head = (getattr(d, "system_token", "") or "").upper()
+    if legend is not None and legend.entries and (legend.role_of_head(text) is not None
+                                                  or legend.role_of_head(head) is not None
+                                                  or legend.names_a_component(text)):
+        return False
+    return run_size(d) is not None or system_code(head) in systems()
+
+
+def _names_a_run(d, legend) -> bool:
+    """Which labels name runs in the widened reading of "Alla": a label the VVS reading would take that writes a
+    size or a system the list knows, and another discipline's run.
+
+    A tag (an outlet's UT1, a terminal's TD01) names a thing, and an electrical plan writes far more of them than
+    labels of runs. Taken for names of runs, the tags are most of the sheet's labels and none of them reaches a run;
+    a sheet whose labels miss their runs is refused (LABELS_MUST_REACH), and the trays went unmeasured with it."""
+    head = (getattr(d, "system_token", "") or "").upper()
+    sized = d.dn is not None or run_size(d) is not None
+    listed = legend is not None and legend.role_of_head(head) == "system"
+    return (legend.names_a_pipe(d) and (sized or listed)) or _another_disciplines_run(d, legend)
 
 
 # Ventilkoder i svensk VVS-praxis: avstängnings-, styr-, injusterings-, back-, säkerhets-, tapp- och

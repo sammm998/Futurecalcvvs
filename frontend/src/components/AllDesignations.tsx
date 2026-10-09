@@ -18,13 +18,14 @@ type Entry = {
   name: string; kind: string; unit: string; quantity: number; labels: number; state: string; reasons: string[];
   description: string | null; described_by: string | null; discipline: string | null; places: Place[];
   description_en?: string | null;     // the reference data's own English term, where the hint comes from it
+  runs?: number[][][];                // a run of another discipline: the lines the widened reading measured it on
   variants: { line: string; labels: number }[];
 };
 export type Register = {
   page?: number;
   entries: Entry[];
   totals: { entries: number; by_kind: Record<string, number>; metres: number; pieces: number; square_metres: number;
-            to_review: number };
+            to_review: number; wide_metres?: number };
   not_counted?: Record<string, number>;
 };
 
@@ -64,11 +65,18 @@ const unionOf = (places: Place[]) => places.length ? [
   Math.min(...places.map((p) => p.bbox[0])), Math.min(...places.map((p) => p.bbox[1])),
   Math.max(...places.map((p) => p.bbox[2])), Math.max(...places.map((p) => p.bbox[3])),
 ] : null;
+// the box round a run's drawn lines
+const spanOfRuns = (runs: number[][][]) => {
+  const pts = runs.flat();
+  return pts.length ? [Math.min(...pts.map((p) => p[0])), Math.min(...pts.map((p) => p[1])),
+    Math.max(...pts.map((p) => p[0])), Math.max(...pts.map((p) => p[1]))] : null;
+};
 
-export default function AllDesignations({ register, onZoom, onShowPipe }: {
+export default function AllDesignations({ register, onZoom, onShowPipe, onShowRuns }: {
   register: Register;
   onZoom: (bbox: number[]) => void;
   onShowPipe?: (designation: string) => void;
+  onShowRuns?: (runs: number[][][], bbox: number[]) => void;   // another discipline's run: its own lines
 }) {
   const [q, setQ] = useState("");
   const [kind, setKind] = useState("alla");
@@ -97,6 +105,7 @@ export default function AllDesignations({ register, onZoom, onShowPipe }: {
               {trf("{0} beteckningar: {1} ledningar med {2} m, {3} komponenter och klasser med {4} st, {5} rum med {6} m².",
                 tot.entries, k.ledning ?? 0, num(tot.metres), (k.komponent ?? 0) + (k.klass ?? 0) + (k.okänd ?? 0),
                 tot.pieces, k.rum ?? 0, num(tot.square_metres, 1))}
+              {(tot.wide_metres ?? 0) > 0 && <>{" "}{trf("Av metrarna är {0} m andra ledningar, mätta i den vidgade läsningen.", num(tot.wide_metres ?? 0))}</>}
               {" "}
               {tot.to_review > 0 ? trf("{0} ska granskas.", tot.to_review) : tr("Ingen ska granskas.")}
             </p>
@@ -171,9 +180,16 @@ export default function AllDesignations({ register, onZoom, onShowPipe }: {
                                 {e.places.length > 1 ? trf("Visa alla {0} på bladet", e.places.length) : tr("Visa på bladet")}
                               </button>
                             )}
-                            {e.kind === "ledning" && e.quantity > 0 && onShowPipe && (
+                            {e.kind === "ledning" && e.quantity > 0 && (e.runs?.length ? (
+                              <button className="small" onClick={() => {
+                                const b = spanOfRuns(e.runs!);
+                                if (b) { if (onShowRuns) onShowRuns(e.runs!, b); else onZoom(b); }
+                              }}>
+                                {tr("Visa ledningen")}
+                              </button>
+                            ) : onShowPipe && (
                               <button className="small" onClick={() => onShowPipe(e.name)}>{tr("Visa ledningen")}</button>
-                            )}
+                            ))}
                           </div>
                           {e.places.length === 0 ? (
                             <p className="muted">{tr("Raden kommer ur mängden. Namnet står inte utskrivet så på bladet.")}</p>
