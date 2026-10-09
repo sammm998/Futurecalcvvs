@@ -73,6 +73,9 @@ export interface ViewerProps {
   selectedIdentity: string | null;
   selectedPipe: string | null;
   selectedRun?: string[] | null;   // every piece of the picked pipe: it lights up as one pipe
+  /** Another discipline's run in "Alla", measured in the widened reading and picked: the takeoff has no pipe for
+   *  it, so its own lines are lit. */
+  markedRuns?: number[][][] | null;
   layers: Record<Layer, boolean>;
   onPipeClick: (pipe: any) => void;
   /** A click on ink with no edit mode active: what the reading made of it. */
@@ -931,6 +934,19 @@ const PdfViewer = forwardRef<ViewerHandle, ViewerProps>(function PdfViewer(props
               <circle key={flash.at} className="focusring" cx={flash.x} cy={flash.y} r={flash.r}
                 fill="none" stroke="#ff5a3d" strokeWidth={sw(2.5)} />
             )}
+            {/* a picked run of another discipline: lit as a picked pipe is, with the amber halo and broken line of
+                a run to be checked */}
+            {props.markedRuns?.map((pl, k) => {
+              const pts = pl.map((q) => q.join(",")).join(" ");
+              return (
+                <g key={`wide-${k}`} style={{ pointerEvents: "none" }}>
+                  <polyline points={pts} fill="none" stroke="#f59e0b" strokeWidth={sw(9)} strokeOpacity={0.9}
+                    strokeLinecap="round" strokeLinejoin="round" />
+                  <polyline points={pts} fill="none" stroke="#ff2d00" strokeWidth={sw(5.5)}
+                    strokeDasharray={`${sw(7)} ${sw(4)}`} strokeLinecap="round" strokeLinejoin="round" />
+                </g>
+              );
+            })}
             {props.layers.pipes && props.pipes.map((p) => {
               const sel = props.selectedPipe !== null ? (props.selectedRun?.includes(p.physical_pipe_id) ?? props.selectedPipe === p.physical_pipe_id) : (props.selectedIdentity !== null && props.selectedIdentity === p.identity);
               const dim = props.selectedIdentity !== null && !sel;

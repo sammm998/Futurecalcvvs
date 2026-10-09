@@ -1,5 +1,7 @@
 {
  "id": "alla", "name": "Alla", "status": "active", "kind": "all", "measures": ["LENGTH", "COUNT", "AREA"], "order": 7,
  "engine": {},
+ "wide": {"pipeline.OTHER_RUNS_NAME_RUNS": true, "pipeline.DUCT_SIZES_ARE_SIZES": true,
+          "measure.DOUBLE_LINE_BY_SIZE_ONLY": true},
  "notes": "Varje beteckning på bladet, oavsett disciplin. Rören läses och mäts exakt som i VVS; allt annat bladet skriver listas, markeras och räknas i styck, och rum med area i texten får m². Det bladet själv inte förklarar märks granskas."
 }

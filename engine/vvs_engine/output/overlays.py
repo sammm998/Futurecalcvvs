@@ -188,6 +188,12 @@ KIND_TEXT = {"ledning": "ledning (m)", "komponent": "komponent (st)", "klass": "
 def _draw_register(page, shape, register, y):
     for e in register.get("entries") or []:
         col = KIND_COLORS.get(e["kind"], COLORS["designation"])
+        # another discipline's run, measured in the widened reading: drawn where it was measured, dashed - it is
+        # to be reviewed - and in the colour of a run
+        for run in e.get("runs") or []:
+            if len(run) >= 2:
+                shape.draw_polyline([_pt(page, x, y_) for x, y_ in run])
+                shape.finish(color=col, width=2.0, lineCap=1, dashes="[4 2] 0", closePath=False)
         for p in e.get("places") or []:
             shape.draw_rect(_rect(page, p["bbox"]))
             if e.get("state") == "säker":

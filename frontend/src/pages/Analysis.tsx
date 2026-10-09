@@ -94,6 +94,9 @@ export default function AnalysisPage() {
   const [staff, setStaff] = useState(false);
   useEffect(() => { api.myRole().then((r: any) => setStaff(r?.role === "admin")).catch(() => setStaff(false)); }, []);   // det agenten senast visade, så samma rad inte zoomas om och om
   const [selPipe, setSelPipe] = useState<any>(null);
+  // a run of another discipline picked in "Alla": it has no pipe in the takeoff, so its own lines are lit
+  const [wideRun, setWideRun] = useState<number[][][] | null>(null);
+  useEffect(() => { if (selIdent !== null || selPipe !== null) setWideRun(null); }, [selIdent, selPipe]);
   // Frågan som ska ligga i agentens ruta när man går dit från ett utpekat rör.
   const [agentAsk, setAgentAsk] = useState("");
   const [why, setWhy] = useState<any>(null);
@@ -433,6 +436,11 @@ export default function AnalysisPage() {
             const key = identityKey(row);
             setSelIdent(key); setSelPipe(null); setWhy(null);
             zoomWhenShown(spanOf(result.pipes.filter((p: any) => p.identity === key && (p.page ?? 0) === page)));
+          }}
+          onShowRuns={(lines, bbox) => {
+            setView("analys"); setSelIdent(null); setSelPipe(null); setWhy(null);
+            setWideRun(lines);
+            zoomWhenShown(bbox);
           }} />
       </div>
     );
@@ -608,7 +616,7 @@ export default function AnalysisPage() {
         <Boundary what="ritningsvyn"><PdfViewer ref={viewer} data={pdf} page={displayedPage} pipes={pipesOnPage} ambiguous={result.ambiguous_geometry} unowned={result.unowned_geometry} claimed={result.claimed_geometry ?? []}
           designations={result.designations} legend={result.legend ?? null} leaders={result.leaders} anchors={result.anchors} nativeLabels={result.native_labels ?? []} hatched={result.hatched_geometry ?? []} selectedIdentity={selIdent}
           declined={[...(result.declined_geometry?.families ?? []), ...(result.declined_geometry?.unconsidered ?? [])]} selectedDeclined={selDeclined}
-          selectedPipe={selPipe?.physical_pipe_id ?? null} selectedRun={selPipe ? (runs.get(selPipe.physical_pipe_id) ?? null) : null} layers={layers} onPipeClick={onPipeClick} onPageCount={setNPages}
+          selectedPipe={selPipe?.physical_pipe_id ?? null} selectedRun={selPipe ? (runs.get(selPipe.physical_pipe_id) ?? null) : null} markedRuns={wideRun} layers={layers} onPipeClick={onPipeClick} onPageCount={setNPages}
           ink={ink} onInkClick={setInk}
           editKind={(tab === "markera"
             ? (markTool ? "draw" : null)

@@ -44,6 +44,11 @@ def double_line_gap(dn: int | None, mpp: float | None) -> float | None:
         # sizes were coincident (0-0.5 pt apart) wherever the reference drew one line for both, and 1.3-3.6 pt
         # apart wherever it measured two pipes - 436 pt of real pipe the old 1.5 pt floor had folded away.
         return _R("measure.measure.DUPLICATE_LINE_MAX", DUPLICATE_LINE_MAX)
+    # A duct's two edges lie its own width apart, wider than any pipe's: in the widened reading of "Alla" the run's
+    # own size decides how far apart its edges may lie, and the cap for pipes does not hold there
+    from .. import disciplines
+    if disciplines.value("measure.DOUBLE_LINE_BY_SIZE_ONLY", False):
+        return max(DOUBLE_LINE_MIN, DOUBLE_LINE_FACTOR * dy_pt)
     return min(_R("measure.measure.DOUBLE_LINE_MAX", DOUBLE_LINE_MAX), max(DOUBLE_LINE_MIN, DOUBLE_LINE_FACTOR * dy_pt))
 
 
