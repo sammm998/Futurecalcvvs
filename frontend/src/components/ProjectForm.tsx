@@ -14,7 +14,7 @@ export const CONTRACT_FORMS = [
 
 export const CONTRACT_LABEL: Record<string, string> = { AB04: "AB 04", ABT06: "ABT 06" };
 
-export type Discipline = { id: string; name: string; status: string; kind: string };
+export type Discipline = { id: string; name: string; status: string; kind: string; notes?: string };
 
 // what the reader is shown when the list has not arrived: today's one discipline
 export const FALLBACK_DISCIPLINES: Discipline[] = [{ id: "vvs", name: "VVS", status: "active", kind: "pipe" }];
@@ -52,6 +52,11 @@ export function DisciplineChoice({ value, onChange, disciplines, name = "discipl
         );
       })}
       </div>
+      {/* "Alla" läser något annat än de andra: varje beteckning på bladet. Det sägs där valet görs. */}
+      {(() => {
+        const d = disciplines.find((x) => x.id === value);
+        return d?.kind === "all" && d.notes ? <p className="muted small">{tr(d.notes)}</p> : null;
+      })()}
     </fieldset>
   );
 }

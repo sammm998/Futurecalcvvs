@@ -650,6 +650,12 @@ def write_all(pdf_path: str, doc, analyses: list, out_dir: str, name: str, timin
     W("reading-coverage.json", {"sheets": [{"page": sh.get("page"), **(sh.get("coverage") or {})}
                                            for sh in (sheets or [])]} if sheets
       else {"sheets": [{"page": pa.page.info.index, **reading_coverage(pa)}]})
+    # Varje beteckning bladet skriver, med slag, platser och mängd - bara i läget "Alla" (register.py). En
+    # VVS-läsning skriver inte filen alls.
+    registers = [{"page": sh.get("page"), **sh["register"]} for sh in (sheets or []) if sh.get("register")] \
+        if sheets else ([{"page": pa.page.info.index, **pa.register}] if getattr(pa, "register", None) else [])
+    if registers:
+        W("all-designations.json", {"sheets": registers})
     # This sheet's own reading, written down once. The same shape is written per sheet under sheets/<page>/ by
     # write_sheet as each sheet is read, so a set is served the sheet the reader is looking at rather than
     # whichever sheet happened to be kept in memory.

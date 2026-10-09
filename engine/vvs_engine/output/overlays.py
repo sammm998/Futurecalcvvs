@@ -173,6 +173,33 @@ def _draw_production(page, shape, pa):
     for a in pa.anchors:
         if a.state == "VERIFIED_PIPE_ATTACHMENT":
             shape.draw_circle(_pt(page, a.endpoint[0], a.endpoint[1]), 1.6); shape.finish(color=COLORS["endpoint"], width=0.6)
+    if getattr(pa, "register", None):
+        _draw_register(page, shape, pa.register, y + 7)
+
+
+# Läget "Alla": varje beteckning bladet skriver får en ruta, i en färg för sitt slag. Heldragen är säker, streckad
+# ska granskas: en kod bladet själv inte förklarar, eller en ledning med meter att granska.
+KIND_COLORS = {"ledning": (0.0, 0.3, 1.0), "komponent": (0.0, 0.5, 0.25), "klass": (0.55, 0.3, 0.0),
+               "rum": (0.0, 0.55, 0.6), "okänd": (0.85, 0.35, 0.0)}
+KIND_TEXT = {"ledning": "ledning (m)", "komponent": "komponent (st)", "klass": "klass (st)", "rum": "rum (m2)",
+             "okänd": "okand kod (st)"}
+
+
+def _draw_register(page, shape, register, y):
+    for e in register.get("entries") or []:
+        col = KIND_COLORS.get(e["kind"], COLORS["designation"])
+        for p in e.get("places") or []:
+            shape.draw_rect(_rect(page, p["bbox"]))
+            if e.get("state") == "säker":
+                shape.finish(color=col, width=0.7)
+            else:
+                shape.finish(color=col, width=0.7, dashes="[2 1] 0")
+    for kind in ("ledning", "komponent", "klass", "rum", "okänd"):
+        shape.draw_rect(_rect(page, (8, y - 2, 28, y + 2)))
+        shape.finish(color=KIND_COLORS[kind], width=0.7)
+        shape.insert_text(_pt(page, 31, y + 1.5), KIND_TEXT[kind], fontsize=4.5, color=(0, 0, 0))
+        y += 7
+    shape.insert_text(_pt(page, 8, y + 1.5), "streckad ruta: granskas", fontsize=4.5, color=(0, 0, 0))
 
 
 def _draw_designations(page, shape, pa):

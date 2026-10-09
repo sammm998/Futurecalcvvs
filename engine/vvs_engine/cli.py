@@ -146,6 +146,8 @@ def sheet_record(pa) -> dict:
         "second_reader": pa.second_reader,
         "source_assignment": {k: v for k, v in (pa.source_assignment or {}).items()
                               if k in ("mode", "selected", "comparison_status", "statuses")},
+        # varje beteckning bladet skriver - bara i läget "Alla"; en VVS-läsnings blad ser ut som förut
+        **({"register": pa.register} if getattr(pa, "register", None) is not None else {}),
     }
 
 
@@ -285,7 +287,10 @@ def analyze_pdf(pdf_path: str, out_dir: str, name: str | None = None, determinis
                "legend": {"codes": len(vocab.entries) if vocab else 0,
                           "own_sheet": bool(first.legend.own and first.legend.entries),
                           "from_sheet": next((e.page for e in (vocab.entries if vocab else []) if e.page is not None), None)},
-               "sheets": sheets,
+               # registret i läget "Alla" står i all-designations.json; här bara dess summor
+               "sheets": [{**{k: v for k, v in sh.items() if k != "register"},
+                           **({"register": {"totals": sh["register"]["totals"]}} if sh.get("register") else {})}
+                          for sh in sheets],
                "scale": {"of_the_set": set_scale, "sheets_reread_with_it": rescaled},
                "contamination": cont["state"] if cont else None, "files": files, "total_seconds": round(timings["total_s"], 2),
                "input": getattr(doc.pages[0], "input_class", None), "skipped_pages": doc.skipped_pages,

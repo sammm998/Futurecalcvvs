@@ -101,6 +101,28 @@ def _markup_row(m: dict) -> list:
             m.get("text") or ""]
 
 
+ALL_HEADERS = ["Blad", "Beteckning", "Slag", "Mängd", "Enhet", "Etiketter", "Status", "Skäl", "Förklaring",
+               "Förklarad av", "Disciplin"]
+KIND_SV = {"ledning": "Ledning", "komponent": "Komponent", "klass": "Klass", "rum": "Rum", "okänd": "Okänd"}
+
+
+def _all_designations(result_dir: str) -> list[list]:
+    """The register of every designation (all-designations.json) as spreadsheet rows; empty outside "Alla"."""
+    path = os.path.join(result_dir, "all-designations.json")
+    if not os.path.isfile(path):
+        return []
+    with open(path, "r", encoding="utf-8") as fh:
+        sheets = json.load(fh).get("sheets") or []
+    out = []
+    for sh in sheets:
+        for e in sh.get("entries") or []:
+            out.append([int(sh.get("page") or 0) + 1, e.get("name"), KIND_SV.get(e.get("kind"), e.get("kind")),
+                        e.get("quantity"), e.get("unit"), e.get("labels"), e.get("state"),
+                        "; ".join(e.get("reasons") or []), e.get("description") or "", e.get("described_by") or "",
+                        e.get("discipline") or ""])
+    return out
+
+
 def to_xlsx(result_dir: str, floor_height: float | None = None, include_hatched: bool = False,
           rows: list[dict] | None = None, riser_source: str = "symbols", markups: list[dict] | None = None,
           include_declared: bool = True) -> bytes:
@@ -119,6 +141,18 @@ def to_xlsx(result_dir: str, floor_height: float | None = None, include_hatched:
                    r.get("risers_slab", r.get("riser_slab_count", 0))])
     for i, _ in enumerate(HEADERS, 1):
         ws.column_dimensions[get_column_letter(i)].width = 20
+    # I läget "Alla": varje beteckning bladen skriver, på ett eget blad. Rören står som de står i mängden ovan;
+    # här står de bredvid allt det andra bladet skriver, var och en med sin enhet och med vad bladet själv säger.
+    everything = _all_designations(result_dir)
+    if everything:
+        ws3 = wb.create_sheet("Alla beteckningar")
+        ws3.append(ALL_HEADERS)
+        for c in ws3[1]:
+            c.font = Font(bold=True)
+        for row in everything:
+            ws3.append(row)
+        for i, _ in enumerate(ALL_HEADERS, 1):
+            ws3.column_dimensions[get_column_letter(i)].width = 18
     # Det mängdaren själv ritade in, på ett eget blad. Aldrig i samma tabell som läsningen: de två svarar på
     # olika frågor, och en summa som blandar dem går inte att härleda.
     if markups:

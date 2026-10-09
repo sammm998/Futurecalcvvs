@@ -898,6 +898,7 @@ def test_every_export_actually_opens_in_the_program_it_is_meant_for(client, synt
     wb = openpyxl.load_workbook(io.BytesIO(x.content), data_only=True)
     cells = {str(c.value) for ws in wb.worksheets for row in ws.iter_rows() for c in row if c.value is not None}
     assert names <= cells, f"beteckningar som inte kom med i Excel: {names - cells}"
+    assert "Alla beteckningar" not in wb.sheetnames and res["all_designations"] is None, "VVS exporterar som förut"
 
     c = client.get(f"/api/jobs/{j['id']}/export/csv", headers=H)
     assert c.content.startswith(b"\xef\xbb\xbf"), "utan BOM läser Excel svenska tecken fel"
@@ -1658,7 +1659,9 @@ def test_a_project_is_created_with_a_contract_form_and_a_discipline_and_changed_
     tok = client.post("/api/auth/register", json={"email": "lagen@example.com", "password": "hemligt1"}).json()["access_token"]
     H = {"Authorization": f"Bearer {tok}"}
     ds = client.get("/api/disciplines").json()
-    assert [d["id"] for d in ds if d["status"] == "active"] == ["vvs"] and len(ds) == 6
+    assert [d["id"] for d in ds if d["status"] == "active"] == ["vvs", "alla"] and len(ds) == 7
+    alla = client.post("/api/projects", json={"name": "Allt", "description": "", "discipline": "alla"}, headers=H).json()
+    assert alla["discipline"] == "alla"
     plain = client.post("/api/projects", json={"name": "Vanligt", "description": ""}, headers=H).json()
     assert (plain["contract_form"], plain["discipline"]) == ("AB04", "vvs")
     abt = client.post("/api/projects", json={"name": "Total", "description": "", "contract_form": "ABT06"}, headers=H).json()
@@ -1678,6 +1681,54 @@ def test_a_project_is_created_with_a_contract_form_and_a_discipline_and_changed_
         old_id = old.id
     got = client.get(f"/api/projects/{old_id}", headers=H).json()
     assert (got["contract_form"], got["discipline"]) == ("AB04", "vvs")
+
+
+def test_an_alla_project_lists_every_designation_in_its_result_and_its_exports(client, synthetic_pdf, tmp_path):
+    """Läget "Alla" hela vägen: valt på projektet, läst med det, och registret i resultatet, i Excel och i JSON."""
+    import io
+    import json as _json
+
+    import openpyxl
+    import pymupdf
+
+    src = pymupdf.open(synthetic_pdf)
+    for y in (340, 370, 400):
+        src[0].insert_text((640, y), "AV201-40", fontsize=10, fontname="helv")
+    src[0].insert_text((640, 460), "4*TV103", fontsize=10, fontname="helv")
+    path = tmp_path / "alla.pdf"
+    src.save(path)
+    src.close()
+    tok = client.post("/api/auth/register", json={"email": "alla@example.com", "password": "hemligt1"}).json()["access_token"]
+    H = {"Authorization": f"Bearer {tok}"}
+    p = client.post("/api/projects", json={"name": "Allt", "description": "", "discipline": "alla"}, headers=H).json()
+    with open(path, "rb") as fh:
+        d = client.post(f"/api/projects/{p['id']}/drawings", files={"file": ("alla.pdf", fh, "application/pdf")}, headers=H).json()
+    j = client.post(f"/api/drawings/{d['id']}/analyze", headers=H).json()
+    for _ in range(240):
+        j = client.get(f"/api/jobs/{j['id']}", headers=H).json()
+        if j["status"] in ("COMPLETED", "FAILED"):
+            break
+        time.sleep(0.5)
+    assert j["status"] == "COMPLETED", j
+    from app.db import AnalysisJob, SessionLocal
+    with SessionLocal() as db:
+        assert db.get(AnalysisJob, j["id"]).discipline == "alla"
+    res = client.get(f"/api/jobs/{j['id']}/result", headers=H).json()
+    reg = res["all_designations"]
+    E = {e["name"]: e for e in reg["entries"]}
+    assert (E["AV201-40"]["kind"], E["AV201-40"]["quantity"]) == ("komponent", 3)
+    assert (E["TV103"]["kind"], E["TV103"]["quantity"]) == ("komponent", 4)
+    measured = {q["designation"]: q["confirmed_total_m"] for q in res["quantities"] if q.get("confirmed_total_m")}
+    assert measured and all(E[n]["kind"] == "ledning" and E[n]["quantity"] == round(m, 2) for n, m in measured.items())
+
+    wb = openpyxl.load_workbook(io.BytesIO(client.get(f"/api/jobs/{j['id']}/export/xlsx", headers=H).content), data_only=True)
+    ws = wb["Alla beteckningar"]
+    rows = [[c.value for c in r] for r in ws.iter_rows(min_row=2)]
+    assert ["AV201-40", "Komponent", 3, "st"] in [r[1:5] for r in rows], rows
+    body = _json.loads(client.get(f"/api/jobs/{j['id']}/export/json", headers=H).content)
+    assert body["all_designations"]["sheets"][0]["entries"] == reg["entries"]
+    arts = {a["name"] for a in client.get(f"/api/jobs/{j['id']}/artifacts", headers=H).json()}
+    assert "all-designations.json" in arts
 
 
 def test_a_reading_records_the_discipline_it_was_made_in(client, source_api_pdf):
